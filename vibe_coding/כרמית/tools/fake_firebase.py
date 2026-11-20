@@ -6,7 +6,8 @@ IMG = "data:image/gif;base64,R0lGODlhAQABAAAAACw="
 APP = "export const initializeApp = () => ({});"
 FS = """
 const img = '%s';
-const store = window.__store = { riddles: {}, quizzes: {}, letters: structuredClone(window.__LETTERS || {}), links: structuredClone(window.__LINKS || {}) };
+const store = window.__store = { riddles: {}, quizzes: {}, letters: structuredClone(window.__LETTERS || {}), links: structuredClone(window.__LINKS || {}),
+  ratings: structuredClone(window.__RATINGS || {}), visits: structuredClone(window.__VISITS || {}) };
 for (let i = 1; i <= 4; i++) store.riddles['r' + i] = { image: img, answerType: 'text', answers: ['ANS' + i], primary: 0, created: i };
 store.quizzes.qold = { title: 'ישן', cover: '', riddleIds: ['r1'], created: 4 };
 store.quizzes.qe = { title: 'קל', cover: '', riddleIds: ['r1', 'r2'], level: 'easy', created: 3 };
@@ -29,7 +30,7 @@ export const getDocs = async (c) => ({ docs: Object.keys(store[c.name]).filter((
 export const getDoc = async (d) => snapDoc(d.name, d.id);
 export const addDoc = async (c, data) => { const id = 'new' + Date.now(); store[c.name][id] = structuredClone(data); return { id }; };
 export const updateDoc = async (d, patch) => { Object.assign(store[d.name][d.id], structuredClone(patch)); sessionStorage.setItem('__last', JSON.stringify(patch)); };
-export const setDoc = async (d, data) => { store[d.name][d.id] = structuredClone(data); };
+export const setDoc = async (d, data, opt) => { store[d.name][d.id] = { ...(opt && opt.merge ? store[d.name][d.id] : {}), ...structuredClone(data) }; };
 export const deleteDoc = async (d) => { delete store[d.name][d.id]; };
 """ % IMG
 AUTH = """

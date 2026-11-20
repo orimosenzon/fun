@@ -97,6 +97,55 @@ export const levelLabel = (q) => {
   return L ? `רמה ${L.name}` : '';
 };
 
+// After answering a riddle the player can say how hard it was for them (the same three words as the quiz levels).
+// One document per riddle per visit, so changing one's mind overwrites instead of counting twice.
+// Anyone can write a rating; only Ori and Carmit can read them (the statistics tab in the admin).
+export function saveRating(id, { quiz, riddle, level, correct, hint }) {
+  return fs.setDoc(fs.doc(db, 'ratings', id), { quiz, riddle, level, correct, hint, created: fs.serverTimestamp() });
+}
+
+export async function loadRatings() {
+  const snap = await fs.getDocs(fs.collection(db, 'ratings'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// Visits, for the statistics tab. A browser gets a random id of its own (nothing about the person), and each
+// day it opens the start screen or a quiz leaves one document: { visitor, day, quiz ('' = the start screen), solo,
+// own, started, finished }. "own" marks Ori and Carmit themselves: any browser that ever signed in to the admin.
+const OWN_KEY = 'carmit-own-device';
+const VISITOR_KEY = 'carmit-visitor';
+export function markOwnDevice() {
+  try { localStorage.setItem(OWN_KEY, '1'); } catch { /* private mode */ }
+}
+export function isOwnDevice() {
+  try { return localStorage.getItem(OWN_KEY) === '1'; } catch { return false; }
+}
+export const randomId = (bytes = 12) =>
+  Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (b) => b.toString(36).padStart(2, '0')).join('');
+function visitorId() {
+  try {
+    let id = localStorage.getItem(VISITOR_KEY);
+    if (!id) localStorage.setItem(VISITOR_KEY, id = randomId());
+    return id;
+  } catch { return randomId(); }
+}
+export const dayKey = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// flags: { started: true } when the player presses start, { finished: true } at the results. Merged into the
+// day's document, so coming back the same day never erases that they finished.
+export function saveVisit({ quiz, solo, own }, flags = {}) {
+  const visitor = visitorId();
+  const day = dayKey();
+  return fs.setDoc(fs.doc(db, 'visits', `${visitor}-${day}-${quiz || 'home'}`),
+    { visitor, day, quiz: quiz || '', solo: !!solo, own: !!own, ...flags, created: fs.serverTimestamp() }, { merge: true });
+}
+
+export async function loadVisits() {
+  const snap = await fs.getDocs(fs.collection(db, 'visits'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 // The path: the quizzes players see, in Carmit's order (quiz.path is the position; no path = not shown).
 // Until any quiz has a position, every quiz with riddles is on it, easy first, so the game never goes empty.
 export function playerPath(quizzes) {

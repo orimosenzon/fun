@@ -18,7 +18,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611170941">
+<link rel="stylesheet" href="style.css?v=202611200724">
 </head>
 <body>
   <div id="app">
@@ -97,6 +97,15 @@
           <button id="self-no" class="secondary-btn">לא צדקתי</button>
         </div>
         <div id="feedback" class="feedback hidden"></div>
+        <div id="rate" class="rate hidden">
+          <span class="rate-q">איך הייתה החידה הזאת בשבילכם?</span>
+          <div class="rate-options" role="radiogroup" aria-label="כמה קשה הייתה החידה">
+            <button type="button" class="rate-btn" data-rate="easy" role="radio" aria-checked="false">קלה</button>
+            <button type="button" class="rate-btn" data-rate="medium" role="radio" aria-checked="false">בינונית</button>
+            <button type="button" class="rate-btn" data-rate="hard" role="radio" aria-checked="false">קשה</button>
+          </div>
+          <small id="rate-note" class="rate-note hidden">זה מכשיר של ניהול, אז הדירוג לא נספר בסטטיסטיקה.</small>
+        </div>
         <button id="next-btn" class="primary-btn hidden">לחידה הבאה ←</button>
       </div>
       <div class="nav-row">
@@ -138,6 +147,6 @@
 
   </div>
 
-  <script type="module" src="script.js?v=202611170941"></script>
+  <script type="module" src="script.js?v=202611200724"></script>
 </body>
 </html>

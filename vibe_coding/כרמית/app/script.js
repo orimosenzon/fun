@@ -6,7 +6,7 @@
 // they see only that quiz, never the start screen or the other quizzes.
 // A solo quiz can come with a letter before it (&b=<id>, or &m=<id> in older links) and one after it (&a=<id>).
 import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611170941';
+  hasHeading, fillHeading, safeUrl, saveRating, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611200724';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -49,6 +49,45 @@ let lastPointer = matchMedia('(any-pointer: coarse)').matches ? 'touch' : '';
 addEventListener('pointerdown', (e) => { lastPointer = e.pointerType; }, { capture: true, passive: true });
 const fingerFirst = () => lastPointer === 'touch' || lastPointer === 'pen';
 
+// How hard the riddle was for the player: asked once the answer is known, never required.
+const rateBox = $('rate');
+const rateBtns = [...document.querySelectorAll('.rate-btn')];
+// One id per visit: with the riddle's id it names the rating document, so a changed mind overwrites.
+const VISIT = randomId();
+// Ori or Carmit themselves: signed in to the admin now, or a browser that ever was. Their ratings stay out of
+// the statistics, and their visits are counted apart from the real players'.
+let OWN = isOwnDevice();
+// Visits are written once we know who is playing (the sign-in check comes after the game has loaded).
+let whoKnown = false;
+let visitFlags = {};
+let visitBase = null;    // { quiz, solo } once the page knows what it shows
+function noteVisit(flags = {}) {
+  Object.assign(visitFlags, flags);
+  if (!whoKnown || !visitBase) return;
+  saveVisit({ ...visitBase, own: OWN }, visitFlags).catch((e) => console.error(e));
+}
+
+function showRating(level) {
+  rateBox.classList.remove('hidden');
+  rateBtns.forEach((b) => {
+    const on = b.dataset.rate === level;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(on));
+  });
+}
+
+function rate(level) {
+  const res = results[current];
+  if (!res || res.skipped) return;
+  res.rating = level;
+  showRating(level);
+  if (OWN) return;
+  // The game never waits for this, and a rating that didn't get through is not the player's problem.
+  saveRating(`${VISIT}-${res.riddle.id}`, { quiz: QUIZ_ID, riddle: res.riddle.id, level, correct: res.correct, hint: res.hintUsed })
+    .catch((e) => console.error(e));
+}
+rateBtns.forEach((b) => b.addEventListener('click', () => rate(b.dataset.rate)));
+
 const PRAISES =['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
 const CONSOLATIONS = ['לא הפעם. התשובה:', 'לא בדיוק. התשובה:', 'כמעט. התשובה:'];
 
@@ -83,6 +122,7 @@ function startQuiz() {
   }
   current = 0;
   results = [];
+  noteVisit({ started: true });
   startScreen.classList.add('hidden');
   reportScreen.classList.add('hidden');
   quizScreen.classList.remove('hidden');
@@ -112,6 +152,7 @@ function showRiddle() {
   feedback.textContent = '';
   feedback.className = 'feedback hidden';
   nextBtn.classList.add('hidden');
+  rateBox.classList.add('hidden');
   submitBtn.disabled = false;
   hintBtn.disabled = !r.hint;
   hintBtn.textContent = r.hint ? 'רמז' : 'אין רמז';
@@ -177,8 +218,9 @@ function finish(correct, userAnswer) {
   nextBtn.focus();
 }
 
-function showDone({ correct }) {
+function showDone({ correct, rating }) {
   const r = riddle();
+  showRating(rating);
   feedback.classList.remove('hidden');
   if (correct) {
     feedback.textContent = pick(PRAISES);
@@ -241,6 +283,7 @@ function thumb(src) {
 function showReport() {
   quizScreen.classList.add('hidden');
   reportScreen.classList.remove('hidden');
+  noteVisit({ finished: true });
   results = results.filter(Boolean);
   const score = results.filter((r) => r.correct).length;
   scoreHeadline.innerHTML = `הציון שלכם<span class="score"><b>${score}</b>/${results.length}</span>`;
@@ -392,14 +435,25 @@ if (SOLO) {
 const ON_START = !params.has('p') && !params.has('q');
 if (ON_START) $('admin-btn').classList.remove('hidden');
 watchAdmin((isAdmin) => {
+  OWN = OWN || isAdmin;
+  $('rate-note').classList.toggle('hidden', !OWN);
+  whoKnown = true;
+  noteVisit();
   $('admin-btn').textContent = isAdmin ? '⚙ לממשק הניהול' : '🔑 כניסה לניהול';
   $('admin-btn').classList.toggle('hidden', !isAdmin && !ON_START);
-}).catch((e) => console.error(e));
+}).catch((e) => {
+  console.error(e);
+  whoKnown = true;
+  noteVisit();
+});
+$('rate-note').classList.toggle('hidden', !OWN);
 
 try {
   const quizId = params.get('p') || params.get('q');
   if (!quizId) {
     showGallery(await loadQuizzes());
+    visitBase = { quiz: '', solo: false };
+    noteVisit();
   } else {
     if (!SOLO) $('home-btn').classList.remove('hidden');
     // A letter that was deleted since the link was sent just isn't there.
@@ -411,6 +465,8 @@ try {
     } else {
       RIDDLES = quiz.riddles;
       QUIZ_ID = quiz.id;
+      visitBase = { quiz: quiz.id, solo: SOLO };
+      noteVisit();
       SHUFFLE = !!quiz.shuffle;
       document.title = `${quiz.title} · חידות לכרמית`;
       $('quiz-intro').classList.remove('hidden');

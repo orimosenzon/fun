@@ -1,8 +1,8 @@
 // Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
-import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, loadLetters, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611170941';
+import { app, db, fs, ADMINS, LEVELS, loadRiddles, loadQuizzes, loadLetters, loadRatings, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611200724';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -73,6 +73,7 @@ au.onAuthStateChanged(auth, async (user) => {
   }
   if (ok) {
     $('who').textContent = user.email;
+    markOwnDevice();   // from now on visits from this browser count as ours, not as a player's
     await reload();
     route();
   }
@@ -97,8 +98,10 @@ function route() {
   $('quiz-view').classList.toggle('hidden', !quiz);
   if (quiz) return openQuiz(quiz);
   current = null;
-  setTab({ '#pool': 'pool', '#path': 'path', '#letters': 'letters' }[location.hash] || 'quizzes');
+  const tab = { '#pool': 'pool', '#path': 'path', '#letters': 'letters', '#stats': 'stats' }[location.hash] || 'quizzes';
+  setTab(tab);
   renderHome();
+  if (tab === 'stats') loadStats();
 }
 
 function setTab(tab) {
@@ -107,6 +110,7 @@ function setTab(tab) {
   $('tab-pool').classList.toggle('hidden', tab !== 'pool');
   $('tab-path').classList.toggle('hidden', tab !== 'path');
   $('tab-letters').classList.toggle('hidden', tab !== 'letters');
+  $('tab-stats').classList.toggle('hidden', tab !== 'stats');
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
   history.replaceState(null, '', t.dataset.tab === 'quizzes' ? location.pathname : `#${t.dataset.tab}`);
@@ -122,6 +126,251 @@ function renderHome() {
   renderPath();
   renderPool();
   renderAllLetters();
+}
+
+// ---------- statistics: how hard players found each riddle ----------
+
+let ratings = null;      // every rating ever given; loaded when the tab is first opened
+let visits = null;       // one per browser per day per page (the start screen or a quiz)
+
+async function loadStats(force) {
+  const body = $('stats-body');
+  if (!ratings || force) {
+    body.replaceChildren(el('p', 'help', 'טוענים…'));
+    $('visits-body').replaceChildren();
+    try {
+      [ratings, visits] = await Promise.all([loadRatings(), loadVisits()]);
+    } catch (e) {
+      console.error(e);
+      body.replaceChildren(el('p', 'help warn', 'לא הצלחנו לטעון את הנתונים. נסו לרענן.'));
+      return;
+    }
+  }
+  renderVisits();
+  renderStats();
+}
+$('stats-refresh').addEventListener('click', () => loadStats(true));
+
+// { easy, medium, hard, n, correct } over a list of ratings
+function tally(list) {
+  const t = { easy: 0, medium: 0, hard: 0, n: 0, correct: 0 };
+  for (const r of list) {
+    if (!(r.level in t)) continue;
+    t[r.level]++;
+    t.n++;
+    if (r.correct) t.correct++;
+  }
+  return t;
+}
+
+// What the players think on the whole: the average of easy = 1, medium = 2, hard = 3, cut into thirds.
+// With fewer than three ratings one person decides it, so no verdict yet.
+const MIN_VERDICT = 3;
+function verdict(t) {
+  if (t.n < MIN_VERDICT) return null;
+  const avg = (t.easy + 2 * t.medium + 3 * t.hard) / t.n;
+  return LEVELS[avg < 5 / 3 ? 0 : avg <= 7 / 3 ? 1 : 2];
+}
+
+const pct = (part, n) => `${Math.round((100 * part) / n)}%`;
+
+// One horizontal bar split into easy / medium / hard, each part as wide as its share.
+function levelBar(t) {
+  const bar = el('div', 'lv-bar');
+  bar.setAttribute('role', 'img');
+  bar.setAttribute('aria-label', LEVELS.map((L) => `${L.name}: ${t[L.id]}`).join(', '));
+  for (const L of LEVELS) {
+    if (!t[L.id]) continue;
+    const seg = el('span', `lv-seg lv-${L.id}`, t[L.id] / t.n >= 0.1 ? String(t[L.id]) : '');
+    seg.style.flexGrow = t[L.id];
+    seg.title = `${L.name}: ${t[L.id]} מתוך ${t.n} (${pct(t[L.id], t.n)})`;
+    bar.appendChild(seg);
+  }
+  return bar;
+}
+
+const countsText = (t) => LEVELS.map((L) => `${L.name} ${t[L.id]}`).join(' · ');
+
+function statTile(value, label) {
+  const tile = el('div', 'stat-tile');
+  tile.append(el('b', '', value), el('span', '', label));
+  return tile;
+}
+
+function riddleStatRow(r, t) {
+  const li = el('li', 'stat-riddle');
+  const img = el('img', 'thumb');
+  img.src = r.image;
+  img.alt = '';
+  img.loading = 'lazy';
+  const main = el('div', 'stat-main');
+  const head = el('div', 'stat-head');
+  head.append(el('b', '', riddleLabel(r)), el('span', 'help', `${plural(t.n, 'דירוג אחד', 'דירוגים')} · ${pct(t.correct, t.n)} פתרו`));
+  main.append(head, levelBar(t), el('span', 'help stat-counts', countsText(t)));
+  li.append(img, main);
+  return li;
+}
+
+function quizStatCard(q, list) {
+  const t = tally(list);
+  const card = el('section', 'pane stat-quiz');
+  const head = el('div', 'pane-head');
+  const title = el('h2', '', q.title || 'חידון ללא שם');
+  const meta = el('span', 'help', plural(t.n, 'דירוג אחד', 'דירוגים'));
+  head.append(title, meta);
+  card.append(head, levelBar(t), el('span', 'help stat-counts', countsText(t)));
+
+  const v = verdict(t);
+  const line = el('p', 'stat-verdict');
+  const declared = levelLabel(q);
+  if (!v) {
+    line.textContent = `עוד מעט מדי דירוגים כדי לומר מה השחקנים חושבים (צריך לפחות ${MIN_VERDICT}).`;
+    line.classList.add('help');
+  } else {
+    line.append('לפי השחקנים: ', el('b', '', `רמה ${v.name}`), declared ? ` · הוגדר: ${declared}` : ' · הוגדר: בלי רמה');
+    if (declared && v.id !== levelOf(q)) line.append(el('span', 'stat-gap', ' ← שונה ממה שהוגדר'));
+  }
+  card.appendChild(line);
+
+  // The riddles in the quiz's own order; a riddle since taken out of the quiz still shows its ratings, at the end.
+  const byRiddle = Map.groupBy(list, (r) => r.riddle);
+  const ids = [...q.riddleIds.filter((id) => byRiddle.has(id)), ...[...byRiddle.keys()].filter((id) => !q.riddleIds.includes(id))];
+  const rows = ids.filter((id) => byId.has(id)).map((id) => riddleStatRow(byId.get(id), tally(byRiddle.get(id))));
+  if (rows.length) {
+    const details = el('details', 'stat-details');
+    details.appendChild(el('summary', '', `לפי חידה (${rows.length})`));
+    const ul = el('ul', 'stat-riddles');
+    ul.append(...rows);
+    details.appendChild(ul);
+    card.appendChild(details);
+  }
+  return card;
+}
+
+const DAYS_SHOWN = 30;
+const shortDay = (key) => `${Number(key.slice(8))}/${Number(key.slice(5, 7))}`;
+const uniq = (list) => new Set(list.map((v) => v.visitor)).size;
+
+// A bar for each of the last 30 days: how many different real visitors came that day.
+function daysChart(real) {
+  const perDay = Map.groupBy(real, (v) => v.day);
+  const days = [];
+  for (let i = DAYS_SHOWN - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = dayKey(d);
+    days.push({ key, n: uniq(perDay.get(key) || []) });
+  }
+  const max = Math.max(1, ...days.map((d) => d.n));
+  const fig = el('figure', 'days-chart');
+  fig.appendChild(el('figcaption', 'help', `מבקרים בכל יום, ${DAYS_SHOWN} הימים האחרונים (היום מימין). היום העמוס ביותר: ${max}.`));
+  const plot = el('div', 'days-plot');
+  plot.dir = 'ltr';
+  days.forEach((d, i) => {
+    const col = el('div', 'day-col');
+    col.title = `${shortDay(d.key)}: ${plural(d.n, 'מבקר אחד', 'מבקרים')}`;
+    const bar = el('i', 'day-bar');
+    bar.style.height = `${(100 * d.n) / max}%`;
+    if (!d.n) bar.classList.add('zero');
+    // A date under every seventh bar, counted back from today.
+    const label = el('span', 'day-label', (DAYS_SHOWN - 1 - i) % 7 === 0 ? shortDay(d.key) : '');
+    const track = el('div', 'day-track');
+    if (d.n === max && d.n > 0) track.appendChild(el('b', 'day-top', String(d.n)));
+    track.appendChild(bar);
+    col.append(track, label);
+    plot.appendChild(col);
+  });
+  fig.appendChild(plot);
+  return fig;
+}
+
+function renderVisits() {
+  const body = $('visits-body');
+  // A browser that was ever marked as ours is ours on all its days, also those before it first signed in.
+  const ours = new Set(visits.filter((v) => v.own).map((v) => v.visitor));
+  const real = visits.filter((v) => !ours.has(v.visitor));
+  const own = visits.filter((v) => ours.has(v.visitor));
+  if (!visits.length) {
+    body.replaceChildren(el('p', 'help', 'עוד לא נרשמו כניסות.'));
+    return;
+  }
+  const today = dayKey();
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 6);
+  const weekKey = dayKey(weekAgo);
+  const visitDays = (list) => new Set(list.map((v) => `${v.visitor} ${v.day}`)).size;
+  const tiles = el('div', 'stat-tiles');
+  tiles.append(
+    statTile(String(uniq(real)), 'מבקרים אמיתיים בסך הכול'),
+    statTile(String(uniq(real.filter((v) => v.day >= weekKey))), 'ב-7 הימים האחרונים'),
+    statTile(String(uniq(real.filter((v) => v.day === today))), 'היום'),
+    statTile(String(visitDays(real)), 'ביקורים (מבקר ביום)'),
+  );
+  const ownLine = el('p', 'help', own.length
+    ? `בנפרד, הכניסות שלכם (כרמית ואורי): ${plural(visitDays(own), 'ביקור אחד', 'ביקורים')} מ-${plural(ours.size, 'דפדפן אחד', 'דפדפנים')}. הן לא נכללות באף מספר אחר כאן.`
+    : 'עוד לא נרשמו כניסות מהמכשירים שלכם.');
+  const out = [tiles, ownLine];
+  if (real.length) {
+    const chart = el('section', 'pane');
+    chart.appendChild(daysChart(real));
+    out.push(chart);
+    // Per quiz: how many real visitors opened it, pressed start, and reached the results.
+    const perQuiz = Map.groupBy(real.filter((v) => v.quiz), (v) => v.quiz);
+    const rows = quizzes.filter((q) => perQuiz.has(q.id))
+      .map((q) => {
+        const list = perQuiz.get(q.id);
+        return { q, opened: uniq(list), started: uniq(list.filter((v) => v.started)), finished: uniq(list.filter((v) => v.finished)),
+          solo: uniq(list.filter((v) => v.solo)) };
+      })
+      .sort((a, b) => b.opened - a.opened);
+    if (rows.length) {
+      const pane = el('section', 'pane');
+      pane.appendChild(el('h2', 'stat-h', 'לפי חידון'));
+      const wrap = el('div', 'table-wrap');
+      const table = el('table', 'visits-table');
+      const head = el('tr');
+      ['חידון', 'פתחו', 'התחילו', 'סיימו', 'הגיעו מקישור שנשלח'].forEach((h) => head.appendChild(el('th', '', h)));
+      table.appendChild(head);
+      for (const r of rows) {
+        const tr = el('tr');
+        tr.append(el('td', '', r.q.title || 'חידון ללא שם'), el('td', 'num', String(r.opened)), el('td', 'num', String(r.started)),
+          el('td', 'num', String(r.finished)), el('td', 'num', String(r.solo)));
+        table.appendChild(tr);
+      }
+      wrap.appendChild(table);
+      pane.append(wrap, el('p', 'help', `דף הפתיחה (רשימת החידונים): ${plural(uniq(real.filter((v) => !v.quiz)), 'מבקר אחד', 'מבקרים')}.`));
+      out.push(pane);
+    }
+  } else {
+    out.push(el('p', 'help', 'עוד לא נרשמו מבקרים אמיתיים.'));
+  }
+  body.replaceChildren(...out);
+}
+
+function renderStats() {
+  const body = $('stats-body');
+  // Ratings of a quiz that was deleted since have nowhere to show.
+  const byQuiz = Map.groupBy(ratings.filter((r) => quizzes.some((q) => q.id === r.quiz)), (r) => r.quiz);
+  const all = tally([...byQuiz.values()].flat());
+  $('stats-count').textContent = all.n || '';
+  if (!all.n) {
+    body.replaceChildren(el('p', 'help', 'עוד אין דירוגים. הם יופיעו כאן אחרי ששחקנים יסמנו כמה קשה הייתה להם חידה.'));
+    return;
+  }
+  const tiles = el('div', 'stat-tiles');
+  tiles.append(
+    statTile(String(all.n), 'דירוגים בסך הכול'),
+    ...LEVELS.map((L) => statTile(pct(all[L.id], all.n), `סימנו "${L.name}"`)),
+  );
+  const total = el('section', 'pane');
+  total.append(el('h2', 'stat-h', 'כל החידונים יחד'), levelBar(all), el('span', 'help stat-counts', countsText(all)));
+  // Quizzes with the most ratings first: that's where there is the most to learn.
+  const cards = quizzes.filter((q) => byQuiz.has(q.id))
+    .sort((a, b) => byQuiz.get(b.id).length - byQuiz.get(a.id).length)
+    .map((q) => quizStatCard(q, byQuiz.get(q.id)));
+  const silent = quizzes.filter((q) => !byQuiz.has(q.id) && q.riddleIds.length);
+  body.replaceChildren(tiles, total, ...cards);
+  if (silent.length) body.appendChild(el('p', 'help', `עוד בלי דירוגים: ${silent.map((q) => q.title || 'חידון ללא שם').join(', ')}.`));
 }
 
 // ---------- the path: which quizzes players see, and in what order ----------

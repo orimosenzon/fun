@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611170941">
+<link rel="stylesheet" href="style.css?v=202611200724">
 </head>
 <body class="admin">
   <div id="app">
@@ -34,12 +34,33 @@
         <button class="tab" data-tab="path" role="tab">מה השחקן רואה <span id="path-count" class="count"></span></button>
         <button class="tab" data-tab="pool" role="tab">מאגר החידות <span id="pool-count" class="count"></span></button>
         <button class="tab" data-tab="letters" role="tab">מכתבים <span id="all-letters-count" class="count"></span></button>
+        <button class="tab" data-tab="stats" role="tab">סטטיסטיקה <span id="stats-count" class="count"></span></button>
       </nav>
 
       <div id="tab-letters" class="hidden">
         <p class="help">מכתבים שאפשר לצרף לחידון כששולחים אותו: לפני החידון (רישא) או אחריו (סיפא). כל מכתב יכול לשמש כל חידון. את המכתבים לשליחה בוחרים בתוך החידון עצמו.</p>
         <p><button id="letter-new-home" class="primary-btn small">+ מכתב חדש</button></p>
         <ul id="all-letters" class="letters-list"></ul>
+      </div>
+
+      <div id="tab-stats" class="hidden">
+        <div class="stats-bar">
+          <h2 class="stat-h">כניסות לאתר</h2>
+          <button id="stats-refresh" class="link-btn">↻ רענון</button>
+        </div>
+        <p class="help">מבקר הוא דפדפן אחד: מי שנכנס גם מהטלפון וגם מהמחשב נספר פעמיים, ומי שנכנס כמה פעמים באותו יום נספר פעם אחת באותו יום. הכניסות שלך ושל אורי נספרות בנפרד: כל דפדפן שנכנסו ממנו פעם לממשק הניהול מסומן כ"שלנו", גם אחרי יציאה מהחשבון. מכשיר שמעולם לא נכנסת ממנו לניהול ייספר כמבקר רגיל. הספירה התחילה ב-20/11/2026.</p>
+        <div id="visits-body" class="stats-body"></div>
+
+        <h2 class="stat-h stat-section">כמה קשות החידות</h2>
+        <p class="help">אחרי כל חידה השחקן יכול לסמן אם היא הייתה לו קלה, בינונית או קשה. כאן רואים מה סימנו כולם, לכל חידון ולכל חידה בתוכו. הסימון לא חובה, אז לא כל מי ששיחק מופיע כאן. גם כאן, דירוגים מהמכשירים שלך ושל אורי לא נספרים.</p>
+        <div class="stats-bar">
+          <ul class="stats-legend" aria-label="מקרא">
+            <li><i class="sw lv-easy"></i>קלה</li>
+            <li><i class="sw lv-medium"></i>בינונית</li>
+            <li><i class="sw lv-hard"></i>קשה</li>
+          </ul>
+        </div>
+        <div id="stats-body" class="stats-body"></div>
       </div>
 
       <div id="tab-quizzes">
@@ -267,6 +288,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611170941"></script>
+  <script type="module" src="admin.js?v=202611200724"></script>
 </body>
 </html>
