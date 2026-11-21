@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>המושבה מהאוויר · מודל תלת-ממדי מרחפן</title>
+<meta property="og:type" content="article">
+<meta property="og:locale" content="he_IL">
+<meta property="og:title" content="המושבה מהאוויר: מודל תלת-ממדי של פרדס חנה-כרכור מרחפן">
+<meta property="og:description" content="איך הופכים צילומי רחפן למודל תלת-ממדי של פרדס חנה-כרכור: שיטות, ציוד, תוכנה, החוק בישראל, צי רחפנים ומחשבון עלויות.">
+<meta property="og:url" content="https://orimosenzon.github.io/fun/vibe_coding/drones3d/">
+<meta property="og:image" content="https://orimosenzon.github.io/fun/vibe_coding/drones3d/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="שרטוט איזומטרי של בתים ופרדס, ורחפן שטס מעליהם בקווי צילום">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://orimosenzon.github.io/fun/vibe_coding/drones3d/og.jpg">
+
+<meta name="description" content="מדריך אינטראקטיבי לבניית מודלים תלת-ממדיים של פרדס חנה-כרכור עם רחפן: שיטות, ציוד, תוכנה, רגולציה בישראל, צי רחפנים ומחשבון עלויות.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Rubik:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~68ch) on a pale "survey sheet" ground; tools break out to a wider band. Hi-vis orange = ground-control targets, sky blue = flight lines. */
+:root{
+  --paper:#f2f4f1;
+  --sheet:#ffffff;
+  --ink:#18211d;
+  --ink-soft:#4b5a53;
+  --rule:#d5ddd8;
+  --target:#d4520f;      /* GCP target orange */
+  --target-soft:#fbe6d9;
+  --line:#1f6fa8;        /* flight line blue */
+  --line-soft:#dceaf4;
+  --leaf:#3d7a4c;
+  --ok:#2f7d46; --warn:#b07400; --bad:#b3261e;
+  --ok-bg:#e1f1e5; --warn-bg:#fbefd2; --bad-bg:#f8dedb;
+  --f-display:"Rubik","Heebo",system-ui,sans-serif;
+  --f-body:"Heebo",system-ui,"Segoe UI",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --s-1:.8125rem; --s0:1rem; --s1:1.125rem; --s2:1.375rem; --s3:1.75rem; --s4:2.5rem;
+  --radius:6px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#111614; --sheet:#182019; --ink:#e6ece8; --ink-soft:#9fb0a7; --rule:#2c3832;
+    --target:#ff8a4c; --target-soft:#3a2318; --line:#6cb4e8; --line-soft:#16293a; --leaf:#7cc28e;
+    --ok:#7fd39a; --warn:#f0c060; --bad:#ff8f86; --ok-bg:#16301f; --warn-bg:#352a10; --bad-bg:#3a1a18;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111614; --sheet:#182019; --ink:#e6ece8; --ink-soft:#9fb0a7; --rule:#2c3832;
+  --target:#ff8a4c; --target-soft:#3a2318; --line:#6cb4e8; --line-soft:#16293a; --leaf:#7cc28e;
+  --ok:#7fd39a; --warn:#f0c060; --bad:#ff8f86; --ok-bg:#16301f; --warn-bg:#352a10; --bad-bg:#3a1a18;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:var(--s0);line-height:1.7}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 4rem}
+.col{max-width:46rem;margin-inline:auto}
+.wide{max-width:64rem;margin-inline:auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:clamp(2rem,6vw,3.25rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:var(--s3);font-weight:700;margin-block:0 .75rem}
+h3{font-size:var(--s1);font-weight:700}
+p{margin:0 0 .9em}
+a{color:var(--line);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,label:focus-within{outline:2px solid var(--target);outline-offset:2px}
+bdi,.en{font-family:var(--f-body)}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:var(--s-1);letter-spacing:.06em;color:var(--target);text-transform:uppercase}
+.muted{color:var(--ink-soft)}
+small,.small{font-size:var(--s-1)}
+
+/* hero */
+.hero{padding-block:2.5rem 1.5rem;display:grid;gap:1.5rem;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:center}
+.hero p.lead{font-size:var(--s1);color:var(--ink-soft);max-width:36rem}
+.hero svg{width:100%;height:auto;max-width:100%}
+@media (max-width:720px){.hero{grid-template-columns:1fr}}
+
+nav.toc{display:flex;flex-wrap:wrap;gap:.4rem;padding-block:.5rem 1.5rem;border-bottom:1px solid var(--rule)}
+nav.toc a{font-size:var(--s-1);padding:.25rem .65rem;border:1px solid var(--rule);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--sheet)}
+nav.toc a:hover{border-color:var(--target)}
+
+section{padding-block:2.5rem 1rem;border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+.verdict{background:var(--target-soft);border-inline-start:4px solid var(--target);padding:1rem 1.1rem;border-radius:var(--radius);margin-block:1rem}
+.verdict p:last-child{margin:0}
+.note{background:var(--line-soft);padding:.8rem 1rem;border-radius:var(--radius);font-size:.95rem;margin-block:1rem}
+.note p:last-child{margin:0}
+ul.tight{padding-inline-start:1.2rem;margin:0 0 1em}
+ul.tight li{margin-bottom:.35em}
+dl.terms{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem;margin:0 0 1rem}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0;min-width:0}
+@media (max-width:520px){dl.terms{grid-template-columns:1fr}dl.terms dd{margin-bottom:.5rem}}
+
+/* tool panels */
+.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:1.1rem;margin-block:1.25rem}
+.seg{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.9rem}
+.seg button{font:inherit;font-size:.95rem;padding:.35rem .8rem;border-radius:999px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip{display:inline-block;font-size:.75rem;font-weight:700;padding:.08rem .5rem;border-radius:999px;white-space:nowrap;vertical-align:middle}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}
+
+.scroll-x{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:.55rem .6rem;border-bottom:1px solid var(--rule);text-align:start;vertical-align:top}
+th{font-family:var(--f-display);font-weight:600;font-size:.9rem;color:var(--ink-soft)}
+.meter{display:inline-flex;gap:3px;vertical-align:middle;direction:ltr}
+.meter i{width:14px;height:8px;border-radius:2px;background:var(--rule);display:block}
+.meter i.on{background:var(--leaf)}
+.meter.lo i.on{background:var(--warn)}
+
+/* flight diagram */
+.diagram-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:1rem;align-items:start}
+@media (max-width:720px){.diagram-grid{grid-template-columns:1fr}}
+.diagram-grid svg{width:100%;height:auto;background:var(--paper);border-radius:var(--radius)}
+.ctrl{display:grid;gap:.25rem;margin-bottom:.8rem}
+.ctrl label{font-weight:500;font-size:.95rem;display:flex;justify-content:space-between;gap:.5rem}
+.ctrl output{font-family:var(--f-mono)}
+input[type=range]{width:100%;accent-color:var(--target)}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:1.25rem}
+@media (max-width:760px){.calc{grid-template-columns:1fr}}
+.field{display:grid;gap:.25rem;margin-bottom:.8rem}
+.field label{font-weight:500;font-size:.95rem}
+.field input[type=number],.field select{font:inherit;padding:.45rem .55rem;border:1px solid var(--rule);border-radius:var(--radius);background:var(--paper);color:var(--ink);width:100%}
+.field .hint{font-size:var(--s-1);color:var(--ink-soft)}
+.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.res{background:var(--paper);border-radius:var(--radius);padding:.6rem .75rem;min-width:0}
+.res .k{font-size:var(--s-1);color:var(--ink-soft)}
+.res .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:1.35rem;font-weight:500;direction:ltr;text-align:right;unicode-bidi:isolate}
+.res.hl{background:var(--target-soft)}
+.calc-warn{margin-top:.75rem;font-size:.9rem}
+.calc-warn:empty{display:none}
+
+/* hardware cards */
+.tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.9rem;margin-block:1rem}
+.tier{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:1rem;display:flex;flex-direction:column;gap:.5rem;min-width:0}
+.tier .price{font-family:var(--f-mono);font-size:1.05rem}
+.tier ul{padding-inline-start:1.1rem;margin:0;font-size:.93rem}
+.tier .tag{align-self:flex-start}
+.tier.pick{border-color:var(--target);box-shadow:0 0 0 1px var(--target)}
+
+/* checklist */
+.check{list-style:none;padding:0;margin:0;display:grid;gap:.5rem}
+.check li{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:.7rem .85rem;display:grid;grid-template-columns:auto 1fr;gap:.2rem .7rem;align-items:start}
+.check input{margin-top:.35rem;width:1.1rem;height:1.1rem;accent-color:var(--ok)}
+.check .body{min-width:0}
+.check .body p{margin:.2rem 0 0;font-size:.93rem;color:var(--ink-soft)}
+.check li.done{opacity:.7}
+.check li.done strong{text-decoration:line-through}
+.progress{font-family:var(--f-mono);font-size:var(--s-1);color:var(--ink-soft);margin-bottom:.5rem}
+
+/* roadmap */
+ol.road{list-style:none;padding:0;margin:1rem 0;counter-reset:m;display:grid;gap:.9rem}
+ol.road li{counter-increment:m;display:grid;grid-template-columns:2.4rem 1fr;gap:.8rem}
+ol.road li::before{content:counter(m);font-family:var(--f-mono);font-weight:500;width:2.4rem;height:2.4rem;border-radius:50%;border:2px solid var(--target);color:var(--target);display:grid;place-items:center}
+ol.road li > div{min-width:0}
+ol.road .when{font-family:var(--f-mono);font-size:var(--s-1);color:var(--ink-soft)}
+
+.sources{columns:2 20rem;column-gap:2rem;font-size:.9rem;padding-inline-start:1.2rem}
+.sources li{break-inside:avoid;margin-bottom:.45rem}
+
+footer{padding-block:2rem;font-size:var(--s-1);color:var(--ink-soft)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap" dir="rtl" lang="he">
+
+<header class="wide hero">
+  <div>
+    <div class="eyebrow">פרדס חנה-כרכור · מיפוי תלת-ממדי</div>
+    <h1>המושבה מהאוויר</h1>
+    <p class="lead">איך הופכים כמה מאות תמונות מרחפן למודל תלת-ממדי של בית ראשונים, שדרה או פרדס, שאפשר לשים בפרדספדיה, בדרך קיצור וב-<bdi>pardes3d</bdi>. שיטות, ציוד, תוכנה, החוק בישראל, ומחשבון שמראה כמה זה עולה.</p>
+    <p class="small muted">מעודכן לנובמבר 2026. מחירים הם הערכות; כל מה שלא הצלחתי לאמת מסומן.</p>
+  </div>
+  <svg viewBox="0 0 320 220" role="img" aria-label="שרטוט: רחפן טס בקווים מקבילים מעל חלקה, טביעות הרגל של התמונות חופפות, ומטרות בקרה כתומות על הקרקע">
+    <rect x="20" y="30" width="280" height="170" rx="4" fill="var(--sheet)" stroke="var(--rule)"/>
+    <g fill="var(--line)" fill-opacity=".09" stroke="var(--line)" stroke-opacity=".35">
+      <rect x="30" y="40" width="70" height="52"/><rect x="62" y="40" width="70" height="52"/><rect x="94" y="40" width="70" height="52"/><rect x="126" y="40" width="70" height="52"/>
+      <rect x="30" y="76" width="70" height="52"/><rect x="62" y="76" width="70" height="52"/>
+    </g>
+    <path d="M45 66 H275 V102 H45 V138 H275 V174 H45" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="6 4"/>
+    <g fill="var(--target)">
+      <path d="M60 182 l8 -8 l8 8 l-8 8z"/><path d="M250 50 l8 -8 l8 8 l-8 8z"/><path d="M168 118 l8 -8 l8 8 l-8 8z"/>
+    </g>
+    <g transform="translate(240 66)">
+      <rect x="-9" y="-4" width="18" height="8" rx="2" fill="var(--ink)"/>
+      <circle cx="-14" cy="-8" r="6" fill="none" stroke="var(--ink)"/><circle cx="14" cy="-8" r="6" fill="none" stroke="var(--ink)"/>
+      <circle cx="-14" cy="8" r="6" fill="none" stroke="var(--ink)"/><circle cx="14" cy="8" r="6" fill="none" stroke="var(--ink)"/>
+    </g>
+    <text x="20" y="20" direction="ltr" style="direction:ltr;unicode-bidi:isolate" text-anchor="start" fill="var(--ink-soft)" font-size="11" font-family="IBM Plex Mono, monospace">overlap 75% / 70%</text>
+  </svg>
+</header>
+
+<nav class="wide toc" aria-label="תוכן העניינים">
+  <a href="#bottom-line">בקצרה</a><a href="#methods">שיטות</a><a href="#patterns">דפוסי טיסה</a><a href="#hardware">ציוד</a><a href="#software">תוכנה ופורמטים</a><a href="#law">רגולציה</a><a href="#fleet">צי רחפנים</a><a href="#calc">מחשבון</a><a href="#existing">מידע קיים</a><a href="#path">מסלול מומלץ</a><a href="#sources">מקורות</a>
+</nav>
+
+<!-- ============ BOTTOM LINE ============ -->
+<section id="bottom-line" class="col">
+  <h2>בקצרה</h2>
+  <div class="verdict">
+    <p><strong>ההמלצה:</strong> רחפן אחד מסדרת <bdi>DJI Mini 5 Pro</bdi> (או <bdi>Mini 4 Pro</bdi> אם הוא בהנחה), תוכנה חינמית (<bdi>RealityScan</bdi> על כרטיס <bdi>NVIDIA</bdi>, או <bdi>WebODM</bdi>), ופרויקט ראשון קטן: מבנה היסטורי אחד בחלקה סגורה, עם אישור הבעלים. משם עוברים לרחוב, ורק אחר כך לשכונה.</p>
+    <p>לפני הטיסה הראשונה: רישיון מטיס מרשות התעופה האזרחית, בדיקה באפליקציה הרשמית שהאזור לא בתוך אזור הפיקוח של בסיס עין שמר, ומדיניות פרטיות פשוטה (טשטוש פנים ולוחיות, בלי חצרות פרטיות בלי הסכמה).</p>
+  </div>
+  <p>שלוש עובדות שכדאי לזכור מהעמוד הזה:</p>
+  <ul class="tight">
+    <li><strong>מבנים ורחובות</strong> יוצאים הכי טוב בפוטוגרמטריה עם צילום אלכסוני, ומייצאים אותם ל-<bdi>3D Tiles</bdi> או <bdi>glTF</bdi> שעובדים ב-<bdi>Three.js</bdi>, ב-<bdi>Cesium</bdi> וב-<bdi>Godot</bdi>.</li>
+    <li><strong>עצים ופרדסים</strong> הם החולשה של רשת משולשים. שם <bdi>Gaussian Splatting</bdi> נראה הרבה יותר טוב, ואם צריך גם גובה קרקע מדויק מתחת לעצים, רק <bdi>LiDAR</bdi> עושה את זה.</li>
+    <li><strong>הצוואר הצר הוא החוק, לא הטכנולוגיה:</strong> בתוך יישוב אסור לטוס מעל אנשים שלא משתתפים, וצריך לשמור מהם מרחק אופקי של 50 מטר לפחות. זה קובע מתי ואיפה אפשר לצלם יותר מכל מפרט טכני.</li>
+  </ul>
+</section>
+
+<!-- ============ METHODS ============ -->
+<section id="methods" class="col">
+  <div class="eyebrow">שיטות</div>
+  <h2>ארבע דרכים להפוך מקום לתלת-ממד</h2>
+
+  <h3>פוטוגרמטריה</h3>
+  <p><bdi>Photogrammetry</bdi> (מיוונית: "מדידה מתוך אור כתוב", כלומר מדידה מתוך תמונות). התוכנה מוצאת את אותן נקודות בהרבה תמונות חופפות, מחשבת מאיפה צולמה כל תמונה, ובונה ענן נקודות, ממנו רשת משולשים עם טקסטורה (<bdi>mesh</bdi>), מפת גבהים ותצלום אוויר מיושר (<bdi>orthophoto</bdi>, אורתופוטו: תמונה שבה כל נקודה נראית כאילו צולמה ישר מלמעלה, כך שאפשר למדוד עליה מרחקים).</p>
+  <dl class="terms">
+    <dt>חפיפה (<bdi>overlap</bdi>)</dt><dd>כמה מכל תמונה מופיע גם בשכנה. למודל תלת-ממדי מקובל 75% עד 80% קדימה ו-70% עד 75% לצדדים. לעצים ולצמחייה צפופה מעלים ל-85% ו-80%, כי עלים זזים ונראים שונה מכל זווית.</dd>
+    <dt><bdi>GSD</bdi></dt><dd><bdi>Ground Sample Distance</bdi>: כמה סנטימטרים של קרקע נכנסים לפיקסל אחד. גדל ביחס ישר לגובה. ב-<bdi>Mini 5 Pro</bdi> במצב 12 מגה-פיקסל, בגובה 50 מטר, יוצא בערך 1.8 ס"מ לפיקסל. לחזית בניין נאה צריך 1 עד 2 ס"מ; למפת שכונה 3 עד 5 ס"מ מספיקים.</dd>
+    <dt>נקודות בקרה (<bdi>GCP</bdi>)</dt><dd><bdi>Ground Control Points</bdi>: מטרות מצוירות על הקרקע (משבצות שחור-לבן או כתום) שמודדים את מיקומן ב-<bdi>GNSS</bdi> מדויק. מעגנות את המודל למקום הנכון בעולם בדיוק של סנטימטרים. בלעדיהן, רחפן צרכני "זז" בכמה מטרים, וזה מורגש כשמניחים את המודל על מפה.</dd>
+    <dt><bdi>RTK / PPK</bdi></dt><dd><bdi>Real-Time Kinematic</bdi> ו-<bdi>Post-Processed Kinematic</bdi>: תיקון ה-<bdi>GPS</bdi> של הרחפן מול תחנת בסיס, בזמן אמת או אחרי הטיסה. נותן מיקום של 1 עד 3 ס"מ לכל תמונה ומפחית מאוד את הצורך בנקודות בקרה. קיים בדגמי <bdi>Enterprise</bdi>, לא במיני וב-<bdi>Air</bdi>. אחרי שיש מודל אחד מעוגן היטב, אפשר לעגן את הבאים אליו.</dd>
+  </dl>
+
+  <h3>LiDAR מרחפן</h3>
+  <p><bdi>LiDAR</bdi> (<bdi>Light Detection and Ranging</bdi>, מדידת מרחק בפולסי לייזר). החיישן יורה מאות אלפי פולסים בשנייה ומקבל כמה החזרים מכל פולס, ולכן חלק מהקרן עוברת בין העלים ומחזירה גם את הקרקע. זה היתרון היחיד שאין לשום שיטה אחרת: מודל גובה קרקע מתחת לחורשה, לפרדס או לעצי אקליפטוס. החיסרון: מחיר של עשרות אלפי דולרים, ובלי מצלמה טובה לצידו הוא נותן ענן נקודות בלי מראה צילומי.</p>
+
+  <h3>Gaussian Splatting ו-NeRF</h3>
+  <p><bdi>NeRF</bdi> (<bdi>Neural Radiance Fields</bdi>, שדות קרינה עצביים) ו-<bdi>3D Gaussian Splatting</bdi> (מריחת גאוסיאנים) מתחילים מאותן תמונות ומאותו חישוב מיקומי מצלמה, אבל לא בונים משטח. במקום זה הם לומדים איך המקום <em>נראה</em> מכל כיוון. ב-<bdi>Splatting</bdi> הסצנה היא מיליוני "כתמים" חצי-שקופים בצבעים שמשתנים לפי זווית, שמצוירים מהר מאוד בדפדפן. מאז 2024 <bdi>Splatting</bdi> החליף כמעט לגמרי את <bdi>NeRF</bdi> בשימוש מעשי.</p>
+  <ul class="tight">
+    <li><strong>טוב ב:</strong> עצים, שיחים, גדרות, חוטי חשמל, זכוכית והשתקפויות, ותחושת "הייתי שם". על עצים ההבדל לטובתו דרמטי.</li>
+    <li><strong>חלש ב:</strong> אין משטח אמיתי, אז אין התנגשויות ב-<bdi>Godot</bdi>, קשה למדוד, וקשה לערוך. מבט מזווית שלא צולמה מתפרק לעננים. קבצים גדולים יחסית.</li>
+    <li><strong>המצב בסוף 2026:</strong> <bdi>DJI Terra</bdi> מייצר <bdi>Splats</bdi> מגרסה 5.0 (יולי 2025), ו-<bdi>Cesium</bdi> תומך ב-<bdi>Splats</bdi> בתוך <bdi>3D Tiles</bdi> עם רמות פירוט מאז אפריל 2026. כלומר אפשר כבר להגיש שכונה שלמה כ-<bdi>Splat</bdi> זורם, לא רק אובייקט בודד.</li>
+  </ul>
+
+  <h3>טלפון כהשלמה זולה</h3>
+  <p>הרחפן רואה גגות וחזיתות; הוא לא רואה מתחת למרפסת, בתוך סמטה מקורה או בפנים. לשם הולכים עם טלפון: <bdi>RealityScan</bdi> לנייד, <bdi>Polycam</bdi> או <bdi>Scaniverse</bdi> (שמייצר <bdi>Splats</bdi> על המכשיר עצמו). באייפון עם חיישן <bdi>LiDAR</bdi> אפשר לסרוק חדר בכמה דקות. את התמונות מהטלפון אפשר גם להכניס לאותו פרויקט עם תמונות הרחפן, וכך לסגור חורים בגובה הרחוב.</p>
+
+  <div class="panel" aria-labelledby="cmp-title">
+    <h3 id="cmp-title">מה מתאים למה</h3>
+    <p class="small muted">בחר סוג מקום כדי לראות איך כל שיטה מתמודדת איתו.</p>
+    <div class="seg" role="group" aria-label="סוג המקום" id="cmp-seg">
+      <button type="button" data-k="bld" aria-pressed="true">מבנים</button>
+      <button type="button" data-k="tree" aria-pressed="false">עצים ופרדסים</button>
+      <button type="button" data-k="street" aria-pressed="false">רחובות</button>
+      <button type="button" data-k="indoor" aria-pressed="false">פנים מבנים</button>
+    </div>
+    <div class="scroll-x"><table id="cmp-table"><thead><tr><th>שיטה</th><th>התאמה</th><th>למה</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ PATTERNS ============ -->
+<section id="patterns" class="wide">
+  <div class="col">
+    <div class="eyebrow">דפוסי טיסה</div>
+    <h2>אנכי, רשת כפולה או מעגל</h2>
+    <p><strong>רשת אנכית</strong> (<bdi>nadir</bdi>, המצלמה מכוונת ישר למטה): הכי מהירה, מצוינת לאורתופוטו ולמפת גבהים, אבל חזיתות הבתים כמעט לא נראות והקירות במודל נמרחים. <strong>רשת כפולה</strong> (<bdi>double grid</bdi> או <bdi>crosshatch</bdi>): שתי רשתות בניצב, עם מצלמה מוטה בכ-60 עד 70 מעלות מהאופק, כך שכל קיר נראה מכמה כיוונים. זו ברירת המחדל לרחוב או לשכונה. <strong>מעגל</strong> (<bdi>orbit</bdi>): טיסה סביב מבנה אחד בשניים-שלושה גבהים ובזוויות שונות. הכי טוב לבניין בודד, כמו בית ראשונים או מגדל מים.</p>
+  </div>
+  <div class="panel">
+    <div class="seg" role="group" aria-label="דפוס טיסה" id="pat-seg">
+      <button type="button" data-p="nadir" aria-pressed="true">רשת אנכית</button>
+      <button type="button" data-p="double" aria-pressed="false">רשת כפולה</button>
+      <button type="button" data-p="orbit" aria-pressed="false">מעגל סביב מבנה</button>
+    </div>
+    <div class="diagram-grid">
+      <svg id="pat-svg" viewBox="0 0 400 300" role="img" aria-label="שרטוט דפוס הטיסה שנבחר"></svg>
+      <div>
+        <div class="ctrl">
+          <label for="ov-side">חפיפה צדדית <output id="ov-side-o" for="ov-side">70%</output></label>
+          <input type="range" id="ov-side" min="40" max="90" step="5" value="70">
+        </div>
+        <div class="ctrl">
+          <label for="ov-front">חפיפה קדמית <output id="ov-front-o" for="ov-front">75%</output></label>
+          <input type="range" id="ov-front" min="40" max="90" step="5" value="75">
+        </div>
+        <p class="small" id="pat-stats"></p>
+        <p class="small muted" id="pat-text"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HARDWARE ============ -->
+<section id="hardware" class="wide">
+  <div class="col">
+    <div class="eyebrow">ציוד</div>
+    <h2>ארבע מדרגות מחיר</h2>
+    <p>מחירים בדולר מחנויות בחו"ל, ובשקלים לפי מה שמצאתי אצל קמעונאים ישראליים או לפי 3.6 ₪ לדולר. בישראל משלמים בדרך כלל קצת יותר. <span class="chip warn">לבדוק לפני קנייה</span></p>
+  </div>
+  <div class="tiers">
+    <article class="tier pick">
+      <span class="chip ok tag">נקודת ההתחלה</span>
+      <h3>רחפן זעיר, עד 250 גרם</h3>
+      <div class="muted small"><bdi>DJI Mini 5 Pro</bdi> · <bdi>Mini 4 Pro</bdi></div>
+      <div class="price">‏<bdi>$800</bdi> עד <bdi>$1,100</bdi> · כ-4,300 עד 5,300 ₪ (ערכת <bdi>Fly More</bdi> בישראל)</div>
+      <ul>
+        <li>ב-<bdi>Mini 5 Pro</bdi> חיישן אינץ' אחד; טוב מאוד לפוטוגרמטריה של מבנה או רחוב.</li>
+        <li>ללא <bdi>RTK</bdi> ועם תריס אלקטרוני (<bdi>rolling shutter</bdi>), אז טסים לאט, בערך 4 עד 5 מטר בשנייה.</li>
+        <li>נקודות ציון (<bdi>waypoints</bdi>) מובנות באפליקציה <bdi>DJI Fly</bdi>; כלים כמו <bdi>WaypointMap</bdi> ו-<bdi>Pixpro</bdi> מייצרים קובץ משימה של רשת או מעגל ומעבירים אותו לשלט.</li>
+        <li>משקל: <bdi>DJI</bdi> מצהירה 249.9 גרם, אבל סוקרים מדווחים על סטייה של כמה גרמים בין יחידות. עם סוללה גדולה (<bdi>Plus</bdi>) כבר עוברים 250. בישראל הסף משפיע על רישום (ראה רגולציה).</li>
+      </ul>
+    </article>
+    <article class="tier">
+      <span class="chip warn tag">שדרוג סביר</span>
+      <h3>רחפן ביניים</h3>
+      <div class="muted small"><bdi>DJI Air 3S</bdi></div>
+      <div class="price">‏כ-<bdi>$1,100</bdi> עד <bdi>$1,600</bdi> · כ-4,000 עד 6,000 ₪ <span class="chip warn">לא אומת בישראל</span></div>
+      <ul>
+        <li>חיישן אינץ' אחד, סוללה ארוכה יותר ועמידות טובה יותר ברוח.</li>
+        <li>תמיד מעל 250 גרם, אז צריך רישום וסימון.</li>
+        <li>עדיין בלי <bdi>RTK</bdi> ובלי תריס מכני. היתרון האמיתי על המיני: זמן טיסה ויציבות, לא איכות המודל.</li>
+      </ul>
+    </article>
+    <article class="tier">
+      <span class="chip warn tag">כשנכנסים לסקר מדויק</span>
+      <h3>רחפן מיפוי מקצועי</h3>
+      <div class="muted small"><bdi>DJI Matrice 4E</bdi> · <bdi>Mavic 3 Enterprise</bdi> (יצא מייצור)</div>
+      <div class="price">‏כ-<bdi>$4,600</bdi> עד <bdi>$5,200</bdi> · כ-17,000 עד 19,000 ₪ לפי שער</div>
+      <ul>
+        <li>תריס מכני: אפשר לטוס מהר (12 מטר בשנייה ויותר) בלי מריחה. שטח גדול פי שניים עד שלושה לכל סוללה.</li>
+        <li><bdi>RTK</bdi> מובנה ב-<bdi>Matrice 4E</bdi>; ב-<bdi>Mavic 3E</bdi> מודול נפרד.</li>
+        <li>תוכנת <bdi>DJI Pilot 2</bdi> עם משימות מיפוי ואלכסון חכם (<bdi>Smart Oblique</bdi>), ו-<bdi>DJI Terra</bdi> לעיבוד.</li>
+        <li>הגיוני רק כשמגיעים לעשרות דונמים בכל טיסה, או כשצריך דיוק מדידה.</li>
+      </ul>
+    </article>
+    <article class="tier">
+      <span class="chip bad tag">לא בשלב הזה</span>
+      <h3>LiDAR מרחפן</h3>
+      <div class="muted small"><bdi>Zenmuse L2</bdi> (יצא מייצור) · <bdi>Zenmuse L3</bdi> · על <bdi>Matrice 350/400</bdi></div>
+      <div class="price">‏חיישן לבד <bdi>$12,000</bdi> עד <bdi>$17,000</bdi>; עם רחפן נושא, מעל <bdi>$25,000</bdi></div>
+      <ul>
+        <li>יש חיישנים סיניים זולים יותר על בסיס <bdi>Livox</bdi> (למשל של <bdi>CHCNAV</bdi> או <bdi>Geosun</bdi>), עדיין עשרות אלפי שקלים <span class="chip warn">מחיר לא אומת</span>.</li>
+        <li>הדרך החכמה: לשכור טיסה מחברת מיפוי לפרדס או לחורשה אחת, כשתהיה סיבה אמיתית.</li>
+        <li>אולי מפ"י כבר סרקה את האזור; כדאי לבדוק לפני (ראה מידע קיים).</li>
+      </ul>
+    </article>
+  </div>
+  <div class="col">
+    <div class="note">
+      <p><strong>אביזרים זולים שעושים הבדל:</strong> 6 עד 10 מטרות קרקע (אפשר להדפיס משבצת שחור-לבן על לוח פוליפרופילן, כ-50 ס"מ); סוללות נוספות ומטען מקביל; כרטיסי זיכרון מהירים. לעיגון מדויק בלי <bdi>RTK</bdi> ברחפן: מקלט <bdi>GNSS</bdi> עם <bdi>RTK</bdi> למדידת המטרות (סדר גודל של אלפי דולרים <span class="chip warn">לא אומת</span>), או השאלה ממודד.</p>
+      <p><strong><bdi>DJI</bdi> וארה"ב:</strong> ההגבלות האמריקאיות על דגמים חדשים של <bdi>DJI</bdi> לא חלות בישראל, והדגמים נמכרים כאן ברשתות רגילות. חלופות לא-סיניות כמו <bdi>Skydio</bdi>, <bdi>Parrot Anafi</bdi> או <bdi>Freefly</bdi> יקרות בהרבה ותמיכת התוכנה בהן לפוטוגרמטריה חלשה יותר, אז אין סיבה לשקול אותן כאן.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOFTWARE ============ -->
+<section id="software" class="wide">
+  <div class="col">
+    <div class="eyebrow">תוכנה</div>
+    <h2>מתכנון הטיסה ועד הדפדפן</h2>
+  </div>
+  <div class="scroll-x">
+    <table>
+      <thead><tr><th>שלב</th><th>כלי</th><th>מחיר</th><th>הערה</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="4">תכנון טיסה</td><td><bdi>DJI Fly</bdi> + <bdi>WaypointMap</bdi> / <bdi>Pixpro Waypoints</bdi></td><td>חינם עד עשרות דולרים</td><td>לסדרות מיני ו-<bdi>Air</bdi>. מייצרים קובץ <bdi>KMZ</bdi> ומחליפים בו משימה קיימת בשלט.</td></tr>
+        <tr><td><bdi>Litchi</bdi>, <bdi>Dronelink</bdi></td><td>חד-פעמי / מנוי</td><td>תלויים ב-<bdi>DJI SDK</bdi>; לפי מה שמצאתי, בחלק מהדגמים החדשים (<bdi>Mini 4/5 Pro</bdi>, <bdi>Air 3S</bdi>) אין תמיכה מלאה. <span class="chip warn">לבדוק לדגם הספציפי</span></td></tr>
+        <tr><td><bdi>DJI Pilot 2</bdi></td><td>מגיע עם הרחפן</td><td>רק לדגמי <bdi>Enterprise</bdi>. משימות מיפוי, אלכסון ומעגל מובנות.</td></tr>
+        <tr><td><bdi>Pix4Dcapture Pro</bdi></td><td>חינם</td><td>תומך בדגמים נבחרים בלבד; לבדוק תאימות.</td></tr>
+        <tr><td rowspan="5">עיבוד פוטוגרמטרי</td><td><bdi>RealityScan</bdi> (לשעבר <bdi>RealityCapture</bdi>)</td><td>חינם להכנסה מתחת ל-1 מיליון דולר בשנה</td><td>הכי מהיר; דורש כרטיס <bdi>NVIDIA</bdi> עם <bdi>CUDA</bdi>. ייצוא לרשת, ענן נקודות ואורתופוטו.</td></tr>
+        <tr><td><bdi>WebODM</bdi> / <bdi>OpenDroneMap</bdi></td><td>חינם, קוד פתוח</td><td>רץ ב-<bdi>Docker</bdi>, גם על לינוקס בלי <bdi>GPU</bdi> חזק. מצוין לאורתופוטו ולמודל גבהים, פחות חד בחזיתות. מתאים לצינור קהילתי.</td></tr>
+        <tr><td><bdi>Agisoft Metashape</bdi></td><td>מאות עד אלפי דולרים</td><td>סטנדרט מחקרי, יציב, סקריפטים בפייתון. <span class="chip warn">מחיר עדכני לא אומת</span></td></tr>
+        <tr><td><bdi>Pix4Dmatic</bdi> / <bdi>Pix4Dmapper</bdi></td><td>מנוי, יקר</td><td>מיועד למודדים. לא נחוץ בשלב הזה.</td></tr>
+        <tr><td><bdi>DJI Terra</bdi></td><td>רישיונות בתשלום</td><td>משולב עם רחפני <bdi>Enterprise</bdi>, כולל <bdi>Gaussian Splatting</bdi> ו-<bdi>LiDAR</bdi>.</td></tr>
+        <tr><td rowspan="3"><bdi>Gaussian Splatting</bdi></td><td><bdi>Postshot</bdi> (<bdi>Jawset</bdi>)</td><td>חינם לשימוש בסיסי, מנוי לייצוא מלא <span class="chip warn">לא אומת</span></td><td>הכי נוח על <bdi>Windows</bdi> עם <bdi>NVIDIA</bdi>.</td></tr>
+        <tr><td><bdi>nerfstudio</bdi> / <bdi>gsplat</bdi> / <bdi>Brush</bdi></td><td>חינם, קוד פתוח</td><td>לינוקס, שליטה מלאה, אפשר לשלב בצינור אוטומטי.</td></tr>
+        <tr><td><bdi>Polycam</bdi>, <bdi>Scaniverse</bdi>, <bdi>KIRI</bdi></td><td>חינם עד מנוי</td><td>מהטלפון. <bdi>Luma</bdi> התמקדה בשנים האחרונות בווידאו גנרטיבי; לא הייתי בונה עליה.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col">
+    <h3 style="margin-top:1.5rem">מחשב מקומי או ענן</h3>
+    <p>למבנה בודד (200 עד 600 תמונות) מחשב עם כרטיס כמו <bdi>RTX 4070</bdi> ו-32 עד 64 ג'יגה זיכרון מספיק בהחלט, והעיבוד לוקח פחות משעה עד כמה שעות. לשכונה שלמה (אלפי תמונות) צריך 64 ג'יגה ויותר, או שירות ענן: <bdi>WebODM Lightning</bdi>, <bdi>Pix4Dcloud</bdi>, <bdi>DroneDeploy</bdi>, או מכונת <bdi>GPU</bdi> שכורה לפי שעה שמריצה את אותו קוד פתוח. ענן מתאים במיוחד לצינור קהילתי, כי מתנדבים מעלים תמונות ולא צריכים מחשב חזק.</p>
+
+    <h3>פורמטים ואיך מציגים אותם</h3>
+    <dl class="terms">
+      <dt><bdi>3D Tiles</bdi></dt><dd>תקן <bdi>OGC</bdi> לזרימת מודלים גדולים ברמות פירוט, כמו אריחי מפה בתלת-ממד. מוצגים ב-<bdi>CesiumJS</bdi>, וב-<bdi>Three.js</bdi> דרך <bdi>3DTilesRendererJS</bdi>. <strong>זה הפורמט לחיבור לדרך קיצור:</strong> מצב הטיסה ב-<bdi>Three.js</bdi> יכול לטעון אותם ישירות.</dd>
+      <dt><bdi>glTF / GLB</bdi></dt><dd>"ה-<bdi>JPEG</bdi> של תלת-ממד". מבנה בודד, אחרי הקטנה (<bdi>gltf-transform</bdi> עם <bdi>Draco</bdi> או <bdi>meshopt</bdi>). נטען ב-<bdi>Godot</bdi> כמו שהוא, אז מתאים ל-<bdi>pardes3d</bdi>; ב-<bdi>Godot</bdi> אפשר גם לייצר ממנו גוף התנגשות.</dd>
+      <dt><bdi>LAS / LAZ</bdi></dt><dd>ענני נקודות (מ-<bdi>LiDAR</bdi> או מפוטוגרמטריה). מוצגים בדפדפן ב-<bdi>Potree</bdi>, או כ-<bdi>3D Tiles</bdi> של נקודות.</dd>
+      <dt><bdi>GeoTIFF</bdi></dt><dd>אורתופוטו ומודל גבהים (<bdi>DSM</bdi>, פני השטח כולל בתים ועצים; <bdi>DTM</bdi>, הקרקע החשופה). אפשר לחתוך לאריחים ולהציג כשכבה ב-<bdi>Leaflet</bdi> של דרך קיצור, או להעלות ל-<bdi>OpenAerialMap</bdi>.</dd>
+      <dt><bdi>PLY / SPZ</bdi></dt><dd><bdi>Gaussian Splats</bdi>. <bdi>PLY</bdi> הוא הפורמט הגולמי והגדול; <bdi>SPZ</bdi> הוא פורמט דחוס (בערך פי 10 קטן יותר) שנכנס גם להרחבת <bdi>glTF</bdi>. מציגים ב-<bdi>Spark</bdi> או ב-<bdi>GaussianSplats3D</bdi> בתוך <bdi>Three.js</bdi>, ב-<bdi>SuperSplat</bdi> (גם עורך) או ב-<bdi>CesiumJS</bdi>.</dd>
+    </dl>
+    <div class="note"><p><strong>לפרדספדיה:</strong> מדיה-ויקי לא מציג תלת-ממד בתוך הערך. הדרך הפשוטה: עמוד צופה סטטי לכל מודל (ב-<bdi>GitHub Pages</bdi> או <bdi>Cloudflare</bdi>), עם תמונת תצוגה מקדימה בערך וקישור "סיור תלת-ממדי".</p></div>
+  </div>
+</section>
+
+<!-- ============ LAW ============ -->
+<section id="law" class="col">
+  <div class="eyebrow">רגולציה</div>
+  <h2>מה החוק בישראל אומר</h2>
+  <p>מאוגוסט 2024 יש שתי מערכות תקנות: <strong>תקנות הטיס (הפעלת טיסן), תשפ"ד-2024</strong> לספורט ופנאי, ו<strong>תקנות הטיס (הפעלת מערכת כטב"ם קטן), תשפ"ד-2024</strong> לכל שימוש אחר, מסחרי או "כללי", עד 25 ק"ג. כל מה שכתוב כאן מבוסס על נוסח התקנות כפי שמצאתי אותו, לא על ייעוץ משפטי.</p>
+
+  <div class="verdict">
+    <p><strong>השאלה הראשונה: באיזה מסלול אתה?</strong> צילום לוויקי קהילתי ולאפליקציה ציבורית קשה להגדיר כ"ספורט ופנאי". ההנחה הבטוחה היא לעבוד לפי <strong>תקנות הכטב"ם הקטן</strong>: רישיון מטיס, רישום הכלי, ותקרה של 100 מטר. אם תפעל כ"טיסן" לפנאי, התקרה היא 50 מטר. <span class="chip warn">כדאי לשאול את רת"א בכתב</span></p>
+  </div>
+
+  <div class="scroll-x">
+    <table>
+      <thead><tr><th>נושא</th><th>טיסן (פנאי)</th><th>כטב"ם קטן (כללי/מסחרי)</th></tr></thead>
+      <tbody>
+        <tr><td>רישיון</td><td>חובה לכל טיסן, גם זעיר. גיל 12 ומעלה, מבחן עיוני מקוון. לטיסן זעיר יש רישיון ייעודי.</td><td>רישיון מטיס: גיל 16, אזרח או תושב, מבחן עיוני; ידע תעופתי מתחדש כל 24 חודשים.</td></tr>
+        <tr><td>רישום וסימון</td><td>חובה, <strong>חוץ מטיסן זעיר</strong> (עד 250 גרם במשקל המראה, כולל כל מה שמחובר).</td><td>חובה. תעודת רישום ל-4 שנים.</td></tr>
+        <tr><td>גובה מרבי</td><td>50 מטר מעל הקרקע</td><td>100 מטר (או 60 מטר איפה שפורסם כך)</td></tr>
+        <tr><td>מרחק מהמטיס</td><td>עד 500 מטר</td><td>קשר עין רציף; אפשר עם צופה</td></tr>
+        <tr><td>מעל אנשים</td><td colspan="2">אסור מעל מי שלא משתתף ישירות. מרחק אופקי מאדם כזה: הגדול מבין גובה הטיסה ו-50 מטר. בטיסן זעיר יש הקלה, רק אם אין לו חלקים נעים חשופים (כלומר עם מגיני מדחפים) והוא לא מרחף מעל אדם בשטח פתוח.</td></tr>
+        <tr><td>תשתיות</td><td colspan="2">מרחק 150 מטר מתשתית, אלא אם הבעלים מסכים. איך בדיוק מוגדרת "תשתית" (קווי חשמל? מבני ציבור?) כדאי לקרוא בסעיף ההגדרות.</td></tr>
+        <tr><td>שדות תעופה</td><td colspan="2">2 ק"מ ממסלול של שדה אזרחי, <strong>3 ק"מ ממסלול בבסיס צבאי</strong>, ואסור באזורי פיקוח (<bdi>CTR</bdi>) בלי אישור יחידת הפיקוח.</td></tr>
+        <tr><td>כמה כלים</td><td colspan="2">מטיס אחד מפעיל כלי אחד בכל רגע, ולא יכול לשמש צופה לכלי אחר. כמה כלים במקביל דורשים היתר מיוחד.</td></tr>
+        <tr><td>לילה</td><td colspan="2">בעיקרון אסור לטיסן; לכטב"ם קטן בתנאים (צופה, תאורה, עד 500 מטר). בדמדומים: אורות מהבהבים.</td></tr>
+        <tr><td>אגרות (2024)</td><td>רישיון טיסן כ-200 ₪</td><td>רישיון מטיס כ-730 ₪, מבחן כ-400 ₪, רישום כלי כ-30 ₪ <span class="chip warn">ייתכן שעודכן</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.5rem">פרדס חנה-כרכור ובסיס עין שמר</h3>
+  <p>שדה עין שמר הוא בסיס של חיל האוויר, ממזרח לכרכור. לפי הערכה מהמפה, המסלול נמצא כ-3 עד 5 ק"מ ממרכז כרכור, כך ש<strong>חלקים מכרכור, בעיקר המזרחיים ואלה שליד כביש 65, עלולים להיות בתוך רדיוס 3 הק"מ</strong>, ואולי גם בתוך אזור מוגבל שמוגדר ב-<bdi>AIP</bdi> (פרסום המידע התעופתי). <span class="chip bad">לא אומת</span> הבדיקה הנכונה: האפליקציה הרשמית של רת"א <bdi>DronesIL</bdi>, ופרק א' 17 ב-<bdi>AIP</bdi>. מעבר לגבולות הטיסה, אל תכניס את הבסיס לתמונות ובטח לא למודל שמתפרסם.</p>
+
+  <h3>מלחמה וזמני חירום</h3>
+  <p>בזמן המלחמה עם איראן (2026) רת"א הטילה איסור גורף על טיסות פנאי. ב-30 במרץ 2026 הודיעה שהאיסור הגורף הסתיים, עם מגבלות שנשארו: אזורי פיקוח סגורים סביב שדות, מרחק מגבולות (8 ק"מ מלבנון, 6 מסוריה, ירדן ועזה), בלי טיסות לילה, ולא לטוס איפה שיש התרעות. ב-2023 אושרו גם תקנות זיהוי מרחוק (<bdi>Remote ID</bdi>) שחלות בזמן מלחמה. המצב יכול להשתנות תוך שעות, אז בדיקת <bdi>NOTAM</bdi> (הודעה לטייסים) והאפליקציה לפני כל יום צילום היא חובה. <span class="chip warn">מצב נובמבר 2026 לא אומת</span></p>
+
+  <h3>פרטיות ופרסום</h3>
+  <p>התקנות עצמן לא עוסקות בצילום. <strong>חוק הגנת הפרטיות</strong> כן: צילום אדם ברשות היחיד ופרסום תמונה שבה הוא מזוהה עלולים להיות פגיעה בפרטיות. מודל תלת-ממדי של חצר עם בריכה הוא בדיוק מקרה כזה. כללים מעשיים: לצלם בשעות מוקדמות, לטשטש פנים ולוחיות רישוי ביוזמתך, לא לפרסם חצרות פרטיות בלי הסכמה, ולתת דרך פשוטה לבקש הסרה.</p>
+  <p><strong>צנזורה ואישורי ביטחון:</strong> בעבר צילום אוויר בישראל היה כפוף לאישורים ביטחוניים, ופרסום צילומי אוויר של מתקנים ביטחוניים אסור. לא מצאתי מקור רשמי עדכני שמחייב אישור צנזורה לפרסום מודל של מבנה אזרחי, ולא מצאתי "היתר צילום אוויר" נפרד שחל על רחפנים. מה שכן ברור: מתקנים ביטחוניים (וגם עין שמר) לא מצלמים ולא מפרסמים. <span class="chip bad">לא אומת</span> אם רוצים ודאות, שאלה כתובה לצנזורה הצבאית ולרת"א.</p>
+  <p><strong>מדידה רשמית:</strong> תוצר שמוצג כמדידה (למשל לתכנון או לרישום מקרקעין) כפוף לתקנות המודדים ולדרישות מפ"י, כולל מצלמה מאושרת. מודל קהילתי להמחשה לא טוען לזה, וכדאי לכתוב את זה במפורש בכל עמוד צופה.</p>
+
+  <div class="panel">
+    <h3>רשימת בדיקה לפני יום צילום</h3>
+    <div class="progress" id="chk-progress"></div>
+    <ul class="check" id="chk"></ul>
+  </div>
+</section>
+
+<!-- ============ FLEET ============ -->
+<section id="fleet" class="col">
+  <div class="eyebrow">צי רחפנים</div>
+  <h2>כמה רחפנים, וכמה אנשים</h2>
+  <p>החוק הישראלי קובע: <strong>מטיס אחד, כלי אחד</strong>. כלומר צי של שלושה רחפנים בלי היתר מיוחד הוא שלושה מטיסים מורשים, כל אחד עם קשר עין לכלי שלו. נחיל אוטומטי (<bdi>swarm</bdi>) שמנוהל ממחשב אחד, או תחנות עגינה כמו <bdi>DJI Dock 3</bdi> שממריאות לבד, דורשים היתר מיוחד מרת"א, ובדרך כלל גם טיסה מעבר לקו הראייה (<bdi>BVLOS</bdi>), שהיא תחום של חברות עם תיקי בטיחות.</p>
+  <div class="scroll-x">
+    <table>
+      <thead><tr><th>מודל עבודה</th><th>מתי זה שווה</th><th>מחיר</th></tr></thead>
+      <tbody>
+        <tr><td><strong>רחפן אחד, יותר סוללות</strong></td><td>כמעט תמיד בהתחלה. החלפת סוללה לוקחת דקה; העיבוד הוא צוואר הבקבוק, לא הטיסה.</td><td>כ-<bdi>$100</bdi> לסוללה נוספת</td></tr>
+        <tr><td><strong>2 עד 3 מטיסים במקביל</strong></td><td>כשרוצים לצלם שכונה שלמה באותו בוקר, באותו אור ובאותם צללים. מחלקים את השטח לפוליגונים עם חפיפה של רצועה אחת ביניהם.</td><td>רחפן לכל מטיס, ורישיון לכל אחד</td></tr>
+        <tr><td><strong>עגינה ונחיל</strong></td><td>סקר חוזר של אותו אזור כל שבוע, לאורך שנים. לא בשלב הזה.</td><td>עשרות אלפי דולרים והיתרים</td></tr>
+        <tr><td><strong>צי קהילתי</strong></td><td>מתנדבים עם רחפנים משלהם מצלמים לפי משימות מוכנות, ומעלים לצינור משותף.</td><td>כמעט אפס חומרה; עבודה בתיאום</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3 style="margin-top:1.25rem">איך צי קהילתי יכול לעבוד</h3>
+  <ul class="tight">
+    <li><strong>משימות מוכנות:</strong> אתה מגדיר פוליגון ומייצר קובץ <bdi>KMZ</bdi> לכל דגם נפוץ; המתנדב רק טוען וטס. כך החפיפה והגובה אחידים.</li>
+    <li><strong>קליטה:</strong> העלאה ל-<bdi>WebODM</bdi> (יש לו <bdi>API</bdi>), או לתיקייה משותפת שסקריפט מעבד בלילה. כדאי לבדוק אוטומטית נתוני <bdi>EXIF</bdi>: גובה, זווית מצלמה, חותמת זמן, ושהתמונות בתוך הפוליגון.</li>
+    <li><strong>פרסום פתוח:</strong> אורתופוטו ל-<bdi>OpenAerialMap</bdi> (רישיון <bdi>CC-BY 4.0</bdi>, וממנו עורכי <bdi>OpenStreetMap</bdi> יכולים לשרטט), ותמונות מגובה הרחוב ל-<bdi>Mapillary</bdi> (<bdi>CC-BY-SA</bdi>, וכבר משמש בדרך קיצור).</li>
+    <li><strong>אחריות:</strong> כל מתנדב טס על הרישיון שלו ובאחריותו. כדאי מסמך הנחיות קצר: גבהים, שעות, פרטיות, אזורים אסורים, ומה עושים עם תמונות של אנשים.</li>
+  </ul>
+</section>
+
+<!-- ============ CALCULATOR ============ -->
+<section id="calc" class="wide">
+  <div class="col">
+    <div class="eyebrow">מחשבון</div>
+    <h2>כמה תמונות, כמה סוללות, כמה זמן</h2>
+    <p>הערכה לשטח מלבני בקירוב. המספרים מבוססים על הנוסחה <bdi class="mono">GSD = גובה × רוחב חיישן ÷ (מוקד × פיקסלים)</bdi>, על מצב 12 מגה-פיקסל ברחפנים הצרכניים ו-20 בדגמי <bdi>Enterprise</bdi>, ועל זמן טיסה שימושי (לא הזמן בפרסומת). זמני עיבוד ועלויות ענן הם סדרי גודל.</p>
+  </div>
+  <div class="panel calc">
+    <form id="calc-form" onsubmit="return false">
+      <div class="field">
+        <label for="c-area">שטח (דונם)</label>
+        <input type="number" id="c-area" min="0.5" max="20000" step="0.5" value="40">
+        <span class="hint" id="c-area-hint"></span>
+      </div>
+      <div class="field">
+        <label for="c-gsd">רזולוציה רצויה (ס"מ לפיקסל)</label>
+        <input type="number" id="c-gsd" min="0.5" max="10" step="0.1" value="1.5">
+        <span class="hint">1 עד 2 לחזיתות ולפרטים, 3 עד 5 למפת שכונה.</span>
+      </div>
+      <div class="field">
+        <label for="c-pattern">דפוס טיסה</label>
+        <select id="c-pattern">
+          <option value="1">רשת אנכית (אורתופוטו)</option>
+          <option value="2" selected>רשת כפולה מוטה (מודל תלת-ממדי)</option>
+          <option value="4">אנכית + 4 כיווני אלכסון (מבנים מפורטים)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="c-drone">רחפן</label>
+        <select id="c-drone">
+          <option value="mini4">DJI Mini 4 Pro</option>
+          <option value="mini5" selected>DJI Mini 5 Pro</option>
+          <option value="air3s">DJI Air 3S</option>
+          <option value="m3e">DJI Mavic 3 Enterprise</option>
+          <option value="m4e">DJI Matrice 4E</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="c-regime">מסלול רגולטורי</label>
+        <select id="c-regime">
+          <option value="100" selected>כטב"ם קטן (עד 100 מטר)</option>
+          <option value="50">טיסן לפנאי (עד 50 מטר)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="c-veg">צמחייה צפופה</label>
+        <select id="c-veg">
+          <option value="0" selected>מעט (מבנים, רחובות)</option>
+          <option value="1">הרבה (פרדס, חורשה): חפיפה 85/80</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="c-proc">עיבוד</label>
+        <select id="c-proc">
+          <option value="local" selected>מחשב מקומי (RealityScan / WebODM)</option>
+          <option value="cloud">שירות ענן</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="c-fleet">מספר מטיסים במקביל</label>
+        <input type="number" id="c-fleet" min="1" max="6" step="1" value="1">
+      </div>
+    </form>
+    <div>
+      <div class="results" aria-live="polite">
+        <div class="res"><div class="k">גובה טיסה</div><div class="v" id="r-alt"></div></div>
+        <div class="res"><div class="k">רזולוציה בפועל</div><div class="v" id="r-gsd"></div></div>
+        <div class="res hl"><div class="k">מספר תמונות</div><div class="v" id="r-photos"></div></div>
+        <div class="res"><div class="k">נפח נתונים</div><div class="v" id="r-gb"></div></div>
+        <div class="res hl"><div class="k">זמן טיסה כולל</div><div class="v" id="r-time"></div></div>
+        <div class="res"><div class="k">סוללות (החלפות)</div><div class="v" id="r-bat"></div></div>
+        <div class="res"><div class="k">זמן בשטח, לכל מטיס</div><div class="v" id="r-field"></div></div>
+        <div class="res"><div class="k">זמן עיבוד משוער</div><div class="v" id="r-proc"></div></div>
+        <div class="res"><div class="k">עלות עיבוד</div><div class="v" id="r-proccost"></div></div>
+        <div class="res"><div class="k">ציוד (רחפן לכל מטיס)</div><div class="v" id="r-hw"></div></div>
+      </div>
+      <p class="calc-warn" id="r-warn"></p>
+      <p class="small muted" id="r-explain"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXISTING ============ -->
+<section id="existing" class="col">
+  <div class="eyebrow">מידע קיים</div>
+  <h2>מה כבר יש, ומה מותר לעשות בו</h2>
+  <dl class="terms">
+    <dt><bdi>Google Photorealistic 3D Tiles</bdi></dt><dd>מודל פוטוריאליסטי של ערים, נטען ב-<bdi>CesiumJS</bdi> וב-<bdi>3DTilesRendererJS</bdi> דרך <bdi>Map Tiles API</bdi>. <strong>לא הצלחתי לאמת</strong> אם פרדס חנה-כרכור מכוסה ברמת פירוט של מבנים; בודקים במפת הכיסוי של גוגל. רישיון: הצגה עם קרדיט של גוגל בלבד, אסור לחלץ, לשמור או לערוך את המודל. טוב כרקע בדרך קיצור, לא כחומר גלם לוויקי.</dd>
+    <dt>המרכז למיפוי ישראל (מפ"י)</dt><dd>אורתופוטו ארצי, מודלי גובה, ולפי פרסומים מקצועיים גם סקרי <bdi>LiDAR</bdi>. השימוש והפרסום כפופים לרישיון של מפ"י; יש מסלול לבקשת רישיון פרסום, חלק מהמוצרים בתמלוגים, ומסלול נפרד לסטודנטים ומרצים. <span class="chip warn">לא מצאתי הורדה חופשית של <bdi>LiDAR</bdi> או מודל תלת-ממדי</span></dd>
+    <dt><bdi>GovMap</bdi></dt><dd>הפורטל הממשלתי: אורתופוטו עדכני, גושים וחלקות, שכבות תכנון. מצוין לתכנון טיסות ולבדיקת גבולות, אבל להעתקה ופרסום צריך רישיון.</dd>
+    <dt>הארכיון הלאומי לתצלומי אוויר</dt><dd>תצלומים היסטוריים, אפשר להזמין. לפרדספדיה זה זהב: המושבה מהאוויר לפני 50 ו-70 שנה, לצד המודל של היום.</dd>
+    <dt><bdi>OpenStreetMap</bdi></dt><dd>קווי מתאר של בניינים, גבהים חלקיים, רישיון <bdi>ODbL</bdi>. כבר משמש ב-<bdi>pardes3d</bdi>. אפשר להחזיר אליו את מה שתצלם: אורתופוטו ב-<bdi>OpenAerialMap</bdi> מאפשר לשרטט מבנים שחסרים.</dd>
+  </dl>
+</section>
+
+<!-- ============ PATH ============ -->
+<section id="path" class="col">
+  <div class="eyebrow">מסלול מומלץ</div>
+  <h2>מבית אחד ועד מושבה</h2>
+  <ol class="road">
+    <li><div><span class="when">שבועות 1 עד 2 · כ-200 ₪ + שעות לימוד</span><h3>רישיון ובדיקת שטח</h3><p>מבחן רישיון מטיס, רישום חשבון באתר רת"א, התקנת <bdi>DronesIL</bdi>, ומיפוי אזורי האיסור סביב עין שמר על מפה של המושבה. עד שיש רישיון אפשר להתחיל בטלפון: סריקת חזית של מבנה היסטורי ב-<bdi>RealityScan</bdi> לנייד וניסיון ראשון של <bdi>Splatting</bdi>.</p></div></li>
+    <li><div><span class="when">חודש 1 · כ-5,000 ₪</span><h3>רחפן זעיר ומבנה ראשון</h3><p><bdi>Mini 5 Pro</bdi> עם שלוש סוללות. מבנה אחד בחלקה סגורה, עם אישור בעלים, בבוקר מעונן (אור רך, בלי צללים חדים). שלושה מעגלים בגבהים שונים ועוד רשת כפולה מעליו, כ-300 עד 500 תמונות. עיבוד ב-<bdi>RealityScan</bdi> ובמקביל <bdi>Splat</bdi> מאותן תמונות. מטרה: <bdi>GLB</bdi> שנכנס ל-<bdi>pardes3d</bdi>, ועמוד צופה עם קישור מהערך בפרדספדיה.</p></div></li>
+    <li><div><span class="when">חודשים 2 עד 3</span><h3>צינור עבודה קבוע</h3><p>תבנית משימה אחידה, נקודות בקרה מודפסות, <bdi>WebODM</bdi> בדוקר על המחשב, וסקריפט שממיר לפלט: <bdi>GLB</bdi> מוקטן, <bdi>3D Tiles</bdi>, אורתופוטו באריחים. חיבור ראשון למצב הטיסה של דרך קיצור דרך <bdi>3DTilesRendererJS</bdi>.</p></div></li>
+    <li><div><span class="when">חודשים 3 עד 6</span><h3>רחוב, ואז שכונה</h3><p>רחוב היסטורי אחד (כמה דונמים), בשעות שקטות, עם 2 עד 3 מתנדבים כמשקיפים. אחר כך שכונה, אולי עם שני מטיסים במקביל. אם עובדים מעל עשרות דונמים, זה הזמן לשקול <bdi>RTK</bdi> או רחפן עם תריס מכני.</p></div></li>
+    <li><div><span class="when">אחרי חצי שנה</span><h3>צי קהילתי ושכבת זמן</h3><p>מדריך למתנדבים, משימות מוכנות להורדה, העלאה אוטומטית, ופרסום פתוח ב-<bdi>OpenAerialMap</bdi>. רעיון שרק פרויקט מקומי יכול לעשות: לצלם את אותם מקומות שוב כל שנה, ולהציג בפרדספדיה איך המושבה משתנה.</p></div></li>
+  </ol>
+</section>
+
+<!-- ============ SOURCES ============ -->
+<section id="sources" class="wide">
+  <div class="col"><h2>מקורות</h2><p class="small muted">נבדקו בנובמבר 2026. מקורות מסחריים (חנויות, יועצים) מסומנים, ואת נוסח התקנות כדאי לקרוא בנבו או בוויקיטקסט.</p></div>
+  <ul class="sources">
+    <li><a href="https://he.wikisource.org/wiki/%D7%AA%D7%A7%D7%A0%D7%95%D7%AA_%D7%94%D7%98%D7%99%D7%A1_(%D7%94%D7%A4%D7%A2%D7%9C%D7%AA_%D7%98%D7%99%D7%A1%D7%9F)" target="_blank" rel="noopener">תקנות הטיס (הפעלת טיסן), תשפ"ד-2024, ויקיטקסט</a></li>
+    <li><a href="https://he.wikisource.org/wiki/%D7%AA%D7%A7%D7%A0%D7%95%D7%AA_%D7%94%D7%98%D7%99%D7%A1_(%D7%94%D7%A4%D7%A2%D7%9C%D7%AA_%D7%9E%D7%A2%D7%A8%D7%9B%D7%AA_%D7%9B%D7%98%D7%91%22%D7%9D_%D7%A7%D7%98%D7%9F)" target="_blank" rel="noopener">תקנות הטיס (הפעלת מערכת כטב"ם קטן), תשפ"ד-2024, ויקיטקסט</a></li>
+    <li><a href="https://www.nevo.co.il/law_html/law00/229445.htm" target="_blank" rel="noopener">תקנות הפעלת טיסן, נבו</a> · <a href="https://www.nevo.co.il/law_html/law00/229444.htm" target="_blank" rel="noopener">תקנות כטב"ם קטן, נבו</a></li>
+    <li><a href="https://www.gov.il/he/service/uav-license-registration" target="_blank" rel="noopener">gov.il: הוצאת רישיון מטיס ורישום כטב"ם קטן</a></li>
+    <li><a href="https://www.gov.il/he/service/request-for-a-permit-for-unmanned-air-vehicle-license" target="_blank" rel="noopener">gov.il: היתר מטיס כטב"מ</a></li>
+    <li><a href="https://www.gov.il/BlobFolder/guide/aip/he/%D7%90%27-17.pdf" target="_blank" rel="noopener">רת"א, AIP פרק א' 17: אזורים אסורים, מוגבלים ומסוכנים</a></li>
+    <li><a href="https://apps.apple.com/il/app/dronesil-caai/id6475662325" target="_blank" rel="noopener">DronesIL, האפליקציה של רת"א</a></li>
+    <li><a href="https://www.jdn.co.il/economy/2179489/" target="_blank" rel="noopener">JDN, אפריל 2024: ועדת הכלכלה אישרה את התקנות והאגרות</a></li>
+    <li><a href="https://takefpv.co.il/news-page/caai-drone-ban-lifted-march-2026" target="_blank" rel="noopener">TakeFPV, 30.3.2026: סיום האיסור הגורף (אתר קהילתי, מצטט את רת"א)</a></li>
+    <li><a href="https://www.mivzaklive.co.il/archives/745898" target="_blank" rel="noopener">מבזק לייב, נובמבר 2023: תקנות זיהוי מרחוק בזמן מלחמה</a></li>
+    <li><a href="https://meiri.co/blog/drone-privacy-law" target="_blank" rel="noopener">רחפנים ופרטיות (בלוג משפטי)</a></li>
+    <li><a href="https://www.gov.il/he/service/license-for-advertising-product-survey-of-israel" target="_blank" rel="noopener">מפ"י: בקשת רישיון לפרסם מוצר</a></li>
+    <li><a href="https://www.gov.il/he/service/ordering-aerial-photography-products-national-archives" target="_blank" rel="noopener">הארכיון הלאומי לתצלומי אוויר</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/RAF_Ein_Shemer" target="_blank" rel="noopener">Ein Shemer Airfield, ויקיפדיה</a></li>
+    <li><a href="https://www.dji.com/mini-5-pro/specs" target="_blank" rel="noopener">DJI Mini 5 Pro, מפרט</a> · <a href="https://www.t3.com/tech/drones/dji-mini-5-pro-review" target="_blank" rel="noopener">T3: סוגיית ה-250 גרם</a></li>
+    <li><a href="https://www.bug.co.il/brand/dji/mini/5/pro/fly/more/combo" target="_blank" rel="noopener">באג: Mini 5 Pro Fly More (מחיר בישראל)</a> · <a href="https://www.cwc.co.il/?p=1258320" target="_blank" rel="noopener">CWC</a></li>
+    <li><a href="https://www.waypointmap.com/drone/dji-mini-5-pro-automated-mission-flight-planning" target="_blank" rel="noopener">WaypointMap: משימות מיפוי ל-Mini 5 Pro</a> · <a href="https://www.pix-pro.com/blog/dji-mini-5-photogrammetry" target="_blank" rel="noopener">Pixpro</a></li>
+    <li><a href="https://www.heliguy.com/products/dji-matrice-4e/" target="_blank" rel="noopener">DJI Matrice 4E (Heliguy)</a> · <a href="https://www.dslrpros.com/dji-mavic-3-thermal-care-basic.html" target="_blank" rel="noopener">Mavic 3E, מלאי אחרון</a></li>
+    <li><a href="https://enterprise.dji.com/zenmuse-l2" target="_blank" rel="noopener">DJI Zenmuse L2</a> · <a href="https://globaldronehq.com/collections/drone-cameras-and-sensors/products/dji-zenmuse-l2-camera" target="_blank" rel="noopener">מחירי L2/L3 (חנות)</a></li>
+    <li><a href="https://www.realityscan.com/" target="_blank" rel="noopener">RealityScan</a> · <a href="https://radiancefields.com/realityscan-2-0-released" target="_blank" rel="noopener">RealityScan 2.0</a></li>
+    <li><a href="https://www.opendronemap.org/webodm/" target="_blank" rel="noopener">WebODM / OpenDroneMap</a></li>
+    <li><a href="https://www.pix-pro.com/blog/photogrammetry-software-prices-2026" target="_blank" rel="noopener">מחירי תוכנות פוטוגרמטריה 2026 (Pixpro)</a></li>
+    <li><a href="https://dronedj.com/2025/07/21/dji-terra-drone-gaussian-splatting/" target="_blank" rel="noopener">DJI Terra מוסיף Gaussian Splatting</a></li>
+    <li><a href="https://cesium.com/blog/2026/04/27/3d-gaussian-splats-lod/" target="_blank" rel="noopener">Cesium: Gaussian Splats עם רמות פירוט ב-3D Tiles</a></li>
+    <li><a href="https://github.com/NASA-AMMOS/3DTilesRendererJS" target="_blank" rel="noopener">3DTilesRendererJS (Three.js)</a> · <a href="https://github.com/potree/potree" target="_blank" rel="noopener">Potree</a></li>
+    <li><a href="https://sparkjs.dev/" target="_blank" rel="noopener">Spark, splats ב-Three.js</a> · <a href="https://superspl.at/editor" target="_blank" rel="noopener">SuperSplat</a> · <a href="https://docs.nerf.studio/" target="_blank" rel="noopener">nerfstudio</a></li>
+    <li><a href="https://developers.google.com/maps/documentation/tile/3d-tiles-overview" target="_blank" rel="noopener">Google Photorealistic 3D Tiles</a> · <a href="https://developers.google.com/maps/documentation/javascript/3d/coverage" target="_blank" rel="noopener">מפת כיסוי</a></li>
+    <li><a href="https://openaerialmap.org/" target="_blank" rel="noopener">OpenAerialMap</a> · <a href="https://www.mapillary.com/" target="_blank" rel="noopener">Mapillary</a></li>
+  </ul>
+</section>
+
+<footer class="col">
+  <p>זה לא ייעוץ משפטי. לפני טיסה בתוך יישוב, ובמיוחד ליד עין שמר, בדוק מול רת"א ובאפליקציה הרשמית.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+  document.documentElement.lang='he';
+  document.documentElement.dir='rtl';
+
+  /* ---------- Method comparison ---------- */
+  var methods=[
+    {n:'פוטוגרמטריה אנכית', s:{bld:1,tree:1,street:1,indoor:0}, w:{
+      bld:'גגות חדים, קירות נמרחים. טוב לאורתופוטו, לא לחזיתות.',
+      tree:'צמרות כגוש אחיד, בלי גזעים. מספיק למפה, לא למראה.',
+      street:'טוב לתכנית הרחוב ולמודל גבהים; חזיתות חסרות.',
+      indoor:'לא רלוונטי.'}},
+    {n:'פוטוגרמטריה אלכסונית / מעגל', s:{bld:3,tree:1,street:3,indoor:0}, w:{
+      bld:'הבחירה הטבעית: חזיתות, גגות, פרטים, ורשת שאפשר למדוד ולהכניס ל-Godot.',
+      tree:'עלים זזים ברוח והתוכנה מתבלבלת. יוצאים עצים "מומסים".',
+      street:'רשת כפולה מוטה נותנת חזיתות משני צדי הרחוב. מתחת לגגונים ולעצי רחוב יש חורים.',
+      indoor:'לא רלוונטי לרחפן בחוץ.'}},
+    {n:'LiDAR מרחפן', s:{bld:2,tree:3,street:2,indoor:0}, w:{
+      bld:'גאומטריה מדויקת, אבל צבע חלש בלי מצלמה. יקר מאוד למבנה בודד.',
+      tree:'היחיד שרואה את הקרקע מתחת לעלווה ואת מבנה העץ. לפרדסים ולחורשות.',
+      street:'מדויק לגבהים ולתשתיות; כמראה, פחות מפוטוגרמטריה.',
+      indoor:'לא רלוונטי.'}},
+    {n:'Gaussian Splatting', s:{bld:2,tree:3,street:3,indoor:3}, w:{
+      bld:'נראה מצוין, כולל זכוכית וגדרות. אבל אין משטח: קשה למדוד ואין התנגשות במשחק.',
+      tree:'כאן הוא בולט: עלווה, ענפים דקים ואור. הבחירה לפרדס כחוויה ויזואלית.',
+      street:'מעולה לסיור וירטואלי ברחוב, בתנאי שמצלמים גם מגובה הרחוב.',
+      indoor:'עובד יפה גם עם טלפון; מתאים לחדר מורשת או מוזיאון.'}},
+    {n:'טלפון (פוטוגרמטריה / LiDAR / Splat)', s:{bld:1,tree:1,street:2,indoor:3}, w:{
+      bld:'רק הקומה התחתונה והחזית. משלים את הרחפן, לא מחליף.',
+      tree:'גזעים ושיחים מקרוב; לא צמרות.',
+      street:'סוגר חורים מתחת לגגונים ובסמטאות.',
+      indoor:'הכלי הנכון לפנים: זול, מהיר, ואין צורך באישורי טיסה.'}}
+  ];
+  var cmpBody=document.querySelector('#cmp-table tbody');
+  function meter(v){var h='<span class="meter'+(v<=1?' lo':'')+'" aria-label="'+v+' מתוך 3">';for(var i=1;i<=3;i++)h+='<i class="'+(i<=v?'on':'')+'"></i>';return h+'</span>';}
+  function drawCmp(k){
+    var rows=methods.slice().sort(function(a,b){return b.s[k]-a.s[k];});
+    cmpBody.innerHTML=rows.map(function(m){return '<tr><td><strong>'+m.n+'</strong></td><td>'+(m.s[k]?meter(m.s[k]):'<span class="muted">לא מתאים</span>')+'</td><td>'+m.w[k]+'</td></tr>';}).join('');
+  }
+  function segInit(id,attr,cb){
+    var seg=document.getElementById(id);
+    seg.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b)return;
+      seg.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+      cb(b.dataset[attr]);
+    });
+  }
+  segInit('cmp-seg','k',drawCmp); drawCmp('bld');
+
+  /* ---------- Flight pattern diagram ---------- */
+  var NS='http://www.w3.org/2000/svg';
+  var svg=document.getElementById('pat-svg');
+  var pat='nadir';
+  var side=document.getElementById('ov-side'), front=document.getElementById('ov-front');
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  function drawPat(){
+    var so=+side.value/100, fo=+front.value/100;
+    document.getElementById('ov-side-o').textContent=side.value+'%';
+    document.getElementById('ov-front-o').textContent=front.value+'%';
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    var X0=40,Y0=40,W=320,H=220;
+    svg.appendChild(el('rect',{x:X0,y:Y0,width:W,height:H,fill:'var(--sheet)',stroke:'var(--rule)'}));
+    var stats=document.getElementById('pat-stats'), txt=document.getElementById('pat-text');
+    if(pat==='orbit'){
+      var cx=200,cy=150;
+      svg.appendChild(el('rect',{x:cx-34,y:cy-24,width:68,height:48,fill:'var(--target-soft)',stroke:'var(--target)'}));
+      svg.appendChild(el('path',{d:'M'+(cx-34)+' '+(cy-24)+' L'+cx+' '+(cy-44)+' L'+(cx+34)+' '+(cy-24),fill:'none',stroke:'var(--target)'}));
+      var n=Math.max(8,Math.round(360/((1-fo)*48)));
+      [70,100].forEach(function(r,ri){
+        svg.appendChild(el('circle',{cx:cx,cy:cy,r:r,fill:'none',stroke:'var(--line)','stroke-dasharray':'5 4','stroke-width':1.5}));
+        var m=ri?n:Math.round(n*0.75);
+        for(var i=0;i<m;i++){
+          var a=i/m*2*Math.PI, px=cx+r*Math.cos(a), py=cy+r*Math.sin(a);
+          var dx=(cx-px)/r*12, dy=(cy-py)/r*12;
+          svg.appendChild(el('line',{x1:px,y1:py,x2:px+dx,y2:py+dy,stroke:'var(--line)','stroke-width':1}));
+          svg.appendChild(el('circle',{cx:px,cy:py,r:2.4,fill:'var(--line)'}));
+        }
+      });
+      stats.innerHTML='<span class="num">'+(n+Math.round(n*0.75))+'</span> תמונות בשני מעגלים (בציור). במציאות מוסיפים מעגל שלישי נמוך ומעבר אנכי מעל הגג.';
+      txt.textContent='כל נקודה היא תמונה, והקו הקצר מראה לאן המצלמה מסתכלת. החפיפה הקדמית קובעת כמה תמונות בכל מעגל: בערך 10 עד 15 מעלות בין תמונות למבנה קטן.';
+      return;
+    }
+    // footprint in diagram units (landscape 4:3), camera long side across track
+    var fw=110, fh=82;
+    var lineSp=fw*(1-so), shotSp=fh*(1-fo);
+    function grid(vertical,color,opacity){
+      var cnt=0, lines=0;
+      if(!vertical){
+        for(var y=Y0+fh/2*0.6; y<=Y0+H+0.1; y+=lineSp){ lines++;
+          svg.appendChild(el('line',{x1:X0,y1:y,x2:X0+W,y2:y,stroke:color,'stroke-width':1.6,'stroke-dasharray':'6 4'}));
+          for(var x=X0; x<=X0+W+0.1; x+=shotSp){cnt++;
+            if(lines===2) svg.appendChild(el('rect',{x:x-fh/2,y:y-fw/2,width:fh,height:fw,fill:color,'fill-opacity':opacity,stroke:color,'stroke-opacity':.4}));
+            svg.appendChild(el('circle',{cx:x,cy:y,r:2.2,fill:color}));
+          }
+        }
+      } else {
+        for(var x2=X0+fh/2*0.6; x2<=X0+W+0.1; x2+=lineSp){ lines++;
+          svg.appendChild(el('line',{x1:x2,y1:Y0,x2:x2,y2:Y0+H,stroke:color,'stroke-width':1.6,'stroke-dasharray':'6 4'}));
+          for(var y2=Y0; y2<=Y0+H+0.1; y2+=shotSp){cnt++;
+            if(lines===2) svg.appendChild(el('rect',{x:x2-fw/2,y:y2-fh/2,width:fw,height:fh,fill:color,'fill-opacity':opacity,stroke:color,'stroke-opacity':.4}));
+            svg.appendChild(el('circle',{cx:x2,cy:y2,r:2.2,fill:color}));
+          }
+        }
+      }
+      return {cnt:cnt,lines:lines};
+    }
+    var g1=grid(false,'var(--line)',.07), total=g1.cnt, lines=g1.lines;
+    if(pat==='double'){var g2=grid(true,'var(--target)',.06); total+=g2.cnt; lines+=g2.lines;}
+    var times=1/((1-so)*(1-fo));
+    stats.innerHTML='<span class="num">'+total+'</span> תמונות, <span class="num">'+lines+'</span> קווי טיסה. כל נקודה בקרקע מופיעה בערך ב-<span class="num">'+times.toFixed(1)+'</span> תמונות.';
+    txt.textContent = pat==='double'
+      ? 'הרשת השנייה (כתום) טסה בניצב לראשונה, עם מצלמה מוטה. כך כל קיר נראה מארבעה כיוונים. המחיר: פי שניים תמונות וזמן טיסה.'
+      : 'המלבן המודגש הוא שטח תמונה אחת. הזז את החפיפה וראה איך המרווח בין הקווים משתנה. מתחת ל-60% התוכנה מתחילה להיכשל בחיבור תמונות; מעל 85% מקבלים הרבה תמונות בתועלת קטנה.';
+  }
+  side.addEventListener('input',drawPat); front.addEventListener('input',drawPat);
+  segInit('pat-seg','p',function(p){pat=p;drawPat();}); drawPat();
+
+  /* ---------- Checklist ---------- */
+  var items=[
+    ['רישיון מטיס בתוקף, והידע התעופתי עודכן ב-24 החודשים האחרונים','רישיון טיסן לפנאי, או רישיון מטיס לכטב"ם קטן. את הרישיון או העתק שלו נושאים בטיסה.','ok'],
+    ['הכלי רשום ומסומן (אם מעל 250 גרם, או במסלול כטב"ם קטן)','לשקול את הרחפן עם הסוללה והאביזרים שבאמת טסים איתם.','ok'],
+    ['בדיקת DronesIL ו-NOTAM לבוקר הצילום','אזורים מוגבלים, אזורי פיקוח ומגבלות חירום. ליד עין שמר: 3 ק"מ ממסלול צבאי.','ok'],
+    ['אין התרעות פעילות ואין פעילות צבאית באזור','לפי הנחיות רת"א מ-2026: לנחות ולהמתין אם רואים פעילות צבאית.','warn'],
+    ['תכנית שמונעת טיסה מעל אנשים שלא משתתפים','שעות מוקדמות, אנשי צוות שעוצרים את הטיסה כשמישהו נכנס. מרחק אופקי: הגדול מבין הגובה ו-50 מטר.','ok'],
+    ['הסכמת בעלי המבנה, ובעלי תשתית אם טסים בטווח 150 מטר ממנה','בכתב, גם במייל. לבית ראשונים פרטי: גם הסכמה לפרסום.','ok'],
+    ['קשר עין רציף, ראות 3 ק"מ, 150 מטר מתחת לעננים, גובה לפי המסלול','50 מטר לטיסן, 100 מטר לכטב"ם קטן.','ok'],
+    ['מדיניות פרטיות לפני פרסום','טשטוש פנים ולוחיות, בלי חצרות פרטיות ללא הסכמה, דרך לבקש הסרה.','warn'],
+    ['אין מתקנים ביטחוניים בתמונות או במודל','חיתוך לפני פרסום. אם יש ספק, שאלה לצנזורה.','warn'],
+    ['ביטוח צד שלישי','לא מצאתי חובה מפורשת בתקנות שקראתי, אבל לפעילות ציבורית בתוך יישוב זה נכון. לבדוק עם רת"א.','bad']
+  ];
+  var KEY='drone3d-checklist-v1', saved={};
+  try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){saved={};}
+  var ul=document.getElementById('chk');
+  var lbl={ok:'לפי התקנות',warn:'מומלץ',bad:'לא אומת'};
+  ul.innerHTML=items.map(function(it,i){
+    return '<li'+(saved[i]?' class="done"':'')+'><input type="checkbox" id="chk-'+i+'"'+(saved[i]?' checked':'')+'><label class="body" for="chk-'+i+'"><strong>'+it[0]+'</strong> <span class="chip '+it[2]+'">'+lbl[it[2]]+'</span><p>'+it[1]+'</p></label></li>';
+  }).join('');
+  function prog(){var c=ul.querySelectorAll('input:checked').length;document.getElementById('chk-progress').textContent=c+' / '+items.length+' סומנו';}
+  ul.addEventListener('change',function(e){
+    var i=e.target.id.split('-')[1]; saved[i]=e.target.checked;
+    e.target.closest('li').classList.toggle('done',e.target.checked);
+    try{localStorage.setItem(KEY,JSON.stringify(saved));}catch(err){}
+    prog();
+  });
+  prog();
+
+  /* ---------- Calculator ---------- */
+  // k: cm of GSD per metre altitude (12MP mode on consumer, 20MP on enterprise). Usable flight minutes, not brochure.
+  var D={
+    mini4:{k:0.0355,w:4032,h:3024,iv:2.5,vmax:4.5,bat:22,usd:1000,mb:6,name:'Mini 4 Pro'},
+    mini5:{k:0.0366,w:4096,h:3072,iv:2.5,vmax:5,bat:25,usd:1100,mb:6,name:'Mini 5 Pro'},
+    air3s:{k:0.0366,w:4096,h:3072,iv:2,vmax:6,bat:30,usd:1500,mb:7,name:'Air 3S'},
+    m3e:{k:0.0274,w:5280,h:3956,iv:0.7,vmax:12,bat:32,usd:4600,mb:11,name:'Mavic 3E'},
+    m4e:{k:0.0274,w:5280,h:3956,iv:0.5,vmax:15,bat:35,usd:5200,mb:11,name:'Matrice 4E'}
+  };
+  var RATE=3.6;
+  function $(id){return document.getElementById(id);}
+  function fmt(n,d){return n.toLocaleString('he-IL',{maximumFractionDigits:d||0,minimumFractionDigits:d||0});}
+  function hm(min){min=Math.round(min); if(min<60) return min+' דק\''; var h=Math.floor(min/60),m=min%60; return h+' ש\' '+(m?m+' דק\'':'');}
+  function calc(){
+    var dun=Math.max(0.5,+$('c-area').value||0), gsdT=Math.max(0.3,+$('c-gsd').value||1.5);
+    var mult=+$('c-pattern').value, d=D[$('c-drone').value], cap=+$('c-regime').value, veg=$('c-veg').value==='1';
+    var proc=$('c-proc').value, fleet=Math.max(1,Math.min(6,Math.round(+$('c-fleet').value||1)));
+    $('c-area-hint').textContent=fmt(dun/10,1)+' הקטאר · כ-'+fmt(Math.sqrt(dun*1000))+' × '+fmt(Math.sqrt(dun*1000))+' מטר אם ריבועי';
+    var fo=veg?0.85:0.75, so=veg?0.80:0.70;
+    var alt=gsdT/d.k, warn=[];
+    if(alt>cap){alt=cap; warn.push('הגובה הדרוש עולה על התקרה החוקית ('+cap+' מטר), אז טסים בתקרה ומקבלים רזולוציה טובה יותר עם יותר תמונות.');}
+    if(alt<20){alt=20; warn.push('גובה מתחת ל-20 מטר מסוכן בתוך יישוב (עצים, חוטים). המחשבון הגביל ל-20 מטר; לפרטים עדינים יותר מצלמים מעגל קרוב סביב המבנה.');}
+    var gsd=alt*d.k; // cm
+    var fw=d.w*gsd/100, fh=d.h*gsd/100; // m, long side across track
+    var lineSp=fw*(1-so), shotSp=fh*(1-fo);
+    var side=Math.sqrt(dun*1000);
+    var effW=side+fw, effH=side+fh; // buffer of one footprint
+    var nLines=Math.ceil(effW/lineSp)+1, perLine=Math.ceil(effH/shotSp)+1;
+    var photos1=nLines*perLine;
+    var photos=Math.round(photos1*mult);
+    var v=Math.min(d.vmax, shotSp/d.iv);
+    var path1=nLines*effH+effW; // lines + turns
+    var pathMult = mult===4 ? 3 : mult; // obliques flown at lower overlap in practice
+    var flightMin=(path1*pathMult/v)/60*1.15 + nLines*mult*0.08; // +15% & turn time
+    var bats=Math.max(1,Math.ceil(flightMin/d.bat));
+    var perPilot=flightMin/fleet + Math.ceil(bats/fleet)*3 + 30; // swaps + setup
+    var gb=photos*d.mb/1024;
+    // processing: hours per 1000 images (rough)
+    var hPerK = proc==='local' ? (d.mb>8?2.2:1.6) : 1.2;
+    var procH=Math.max(0.3,photos/1000*hPerK*(photos>3000?1.3:1));
+    var cost = proc==='local' ? 0 : photos/100*2; // ~ $2 per 100 images, rough
+    $('r-alt').textContent=fmt(alt)+' מ\'';
+    $('r-gsd').textContent=fmt(gsd,2)+' ס"מ';
+    $('r-photos').textContent=fmt(photos);
+    $('r-gb').textContent=fmt(gb,1)+' GB';
+    $('r-time').textContent=hm(flightMin);
+    $('r-bat').textContent=fmt(bats);
+    $('r-field').textContent=hm(perPilot);
+    $('r-proc').textContent=procH<1?Math.round(procH*60)+' דק\'':fmt(procH,1)+' ש\'';
+    $('r-proccost').textContent= proc==='local' ? 'חשמל בלבד' : '~$'+fmt(cost)+' (כ-'+fmt(cost*RATE)+' ₪)';
+    $('r-hw').textContent='~$'+fmt(d.usd*fleet)+' (כ-'+fmt(d.usd*fleet*RATE)+' ₪)';
+    if(photos>2500 && proc==='local') warn.push('מעל 2,500 תמונות כדאי 64 ג\'יגה זיכרון ויותר, או לחלק לבלוקים ולעבד כל אחד בנפרד.');
+    if(bats>6 && d.k>0.03) warn.push('יותר משש החלפות סוללה. רחפן עם תריס מכני יטוס מהר פי שניים עד שלושה בשטח כזה.');
+    if(dun>300) warn.push('שטח גדול: כדאי לחלק לכמה ימים או לכמה מטיסים, כל אחד עם פוליגון משלו וחפיפה של רצועה אחת ביניהם.');
+    $('r-warn').innerHTML=warn.map(function(w){return '<span class="chip warn">שים לב</span> '+w;}).join('<br>');
+    $('r-explain').textContent='שטח תמונה אחת: '+fmt(fw)+'×'+fmt(fh)+' מ\'. מרווח בין קווים '+fmt(lineSp,1)+' מ\', בין תמונות '+fmt(shotSp,1)+' מ\'. מהירות '+fmt(v,1)+' מ\'/ש\' (מוגבלת ע"י קצב הצילום והתריס). עלות ענן לפי כ-2 דולר ל-100 תמונות ושער של '+RATE+' ₪ לדולר: הערכה בלבד.';
+  }
+  document.getElementById('calc-form').addEventListener('input',calc);
+  document.getElementById('calc-form').addEventListener('change',calc);
+  calc();
+})();
+</script>
+
+</body>
+</html>

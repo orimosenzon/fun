@@ -527,6 +527,8 @@ SKIP = EXCLUDED | {
     "unlisted",
     # כלי עבודה ליורם (4.10.2026): ציבורי רק כדי שיהיה לו לינק, לא פרויקט לתצוגה
     "clipper",
+    # דף הסבר על מיפוי תלת-ממדי ברחפן (21.11.2026), לשיתוף בקבוצת הוואטסאפ, לא כרטיס
+    "drones3d",
     # symlinks into jetbikes/ (4.10.2026) so old shared links keep working;
     # only fable and jetbike_game have cards, and they link to jetbikes/
     "fable", "opus5", "jetbike_film", "jetbike_game",
