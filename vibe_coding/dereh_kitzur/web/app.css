@@ -4481,3 +4481,9 @@ body.flying.asking-plan::before { display: none; }
   line-clamp: 2;
   overflow: hidden;
 }
+
+/* Sharing the open item, at the far end of the detail header. */
+.detail-head .tip { flex: 1; min-width: 0; }
+.detail-share { flex: none; margin-inline-start: auto; }
+.detail-share svg { transform: none; width: 17px; height: 17px; }
+@media (max-width: 719px) { .detail-head .tip { visibility: hidden; } }

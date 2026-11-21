@@ -3086,6 +3086,9 @@ const Layers = (() => {
       return layer.landuseGroups.map((g) => ({
         name: g.name, color: g.color, stripe: g.stripe, area: true }));
     }
+    // Every neighbourhood has its name written across it on the map, and one
+    // grey row called "שכונות" explained none of the sixteen colours.
+    if (layer.id === HOODS_ID) return [];
     const placed = layer.waypoints.filter((p) => !p.unplaced && !p.hidden);
     // Segments as well as places, because trips are sorted into groups too -
     // by how hard they are - and they are lines.

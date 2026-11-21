@@ -418,6 +418,7 @@ let here = null;          // {lat, lng} once geolocation succeeds
 let hereMarker = null;
 let selectedId = null;
 let sortMode = 'length';
+let sortChosen = false;   // the person picked a sort themselves; nearMeQuietly leaves it alone
 let wpMarkers = [];       // waypoint pins, rebuilt when layers are toggled
 let selMarker = null;     // the ring around the selected point, see markSelection
 
@@ -2976,6 +2977,32 @@ function drawMe() {
   hereMarker.setLngLat([here.lng, here.lat]).addTo(map);
 }
 
+/* What is common should be easy: somebody who opens the app outdoors wants
+ * what is near them, and the list opened sorted by length. Where the location
+ * permission has already been given, the list sorts by distance on its own:
+ * no prompt, no camera move, and never over a sort the person chose. Where it
+ * has not been given nothing happens, and "הקרובים" asks as before. */
+function nearMeQuietly() {
+  if (!navigator.geolocation || !navigator.permissions || !navigator.permissions.query) return;
+  navigator.permissions.query({ name: 'geolocation' }).then((st) => {
+    if (st.state !== 'granted') return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      if (here || sortChosen) return;
+      // Only around the moshava: from Tel Aviv every row would read "40 ק"מ
+      // ממך", and the longest-first order says more.
+      const dLat = (pos.coords.latitude - 32.472) * 111;
+      const dLng = (pos.coords.longitude - 34.975) * 94;
+      if (Math.hypot(dLat, dLng) > 12) return;
+      here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      drawMe();
+      sortMode = 'near';
+      document.querySelectorAll('.sort').forEach((b) =>
+        b.classList.toggle('on', b.dataset.sort === 'near'));
+      if (!selectedId) renderList();
+    }, () => {}, { maximumAge: 120000, timeout: 8000 });
+  }).catch(() => {});
+}
+
 function locate() {
   if (!navigator.geolocation) {
     alert('הדפדפן לא תומך באיתור מיקום.');
@@ -3905,6 +3932,7 @@ async function boot() {
   Store.statVisit();
   Drafts.init();
   wireControls();
+  nearMeQuietly();
   // After the panel is up and wired, and before the network is waited on: the
   // invitation is about what this app is for, and that does not depend on the
   // worker being reachable.
@@ -4585,8 +4613,11 @@ function wireControls() {
     el('tilt').hidden = el('basemap').hidden = true;
   }
 
+  el('detail-share').addEventListener('click', () => Share.open());
+
   document.querySelectorAll('.sort').forEach((btn) => {
     btn.addEventListener('click', () => {
+      sortChosen = true;
       if (btn.dataset.sort === 'near' && !here) { locate(); return; }
       sortMode = btn.dataset.sort;
       document.querySelectorAll('.sort').forEach((b) => b.classList.toggle('on', b === btn));
