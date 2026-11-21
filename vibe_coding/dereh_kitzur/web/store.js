@@ -343,8 +343,10 @@ const Store = (() => {
     //
     // The tree survey is the same kind of thing: build_trees.py reads it off
     // pardespedia and writes it next to the app, and nothing here edits it.
-    const [canopy, trees] = await Promise.all([
-      bundled('data/canopy.json'), bundled('data/trees.json')]);
+    // And the neighbourhoods, which build_hoods.py writes off pardespedia's
+    // division of the moshava (21/11/2026).
+    const [canopy, trees, hoods] = await Promise.all([
+      bundled('data/canopy.json'), bundled('data/trees.json'), bundled('data/hoods.json')]);
     return {
       trails: absolutise(trails),
       network,
@@ -361,6 +363,7 @@ const Store = (() => {
       media: absolutise(media || { items: {} }),
       canopy,
       trees,
+      hoods,
       offline: state.offline
     };
   }

@@ -587,6 +587,9 @@ function markSelection(item) {
   if (selMarker) { selMarker.remove(); selMarker = null; }
   paintPhotoPins();   // the selected trail's own photos come and go with it
   if (!map || !item || item.path || item.lat == null || item.lng == null) return;
+  // A neighbourhood is selected by its own outline and deeper colour; a ring
+  // on the point its name is written at would read as a place inside it.
+  if (item.hood) return;
   const node = document.createElement('div');
   node.className = 'sel-ring';
   selMarker = new maplibregl.Marker({ element: node })
@@ -670,6 +673,11 @@ function select(id, fit = true) {
       const b = new maplibregl.LngLatBounds();
       item.path.forEach(([lat, lng]) => b.extend([lng, lat]));
       map.fitBounds(b, { padding: 60, maxZoom: 18, duration: 700 });
+    } else if (item.hood && item.shape) {
+      // A neighbourhood is its whole outline, so it is framed like a trail.
+      const b = new maplibregl.LngLatBounds();
+      item.shape[0].forEach((pt) => b.extend(pt));
+      map.fitBounds(b, { padding: 40, maxZoom: 16.5, duration: 700 });
     } else if (item.lat != null) {
       // Never zoom *out* to arrive. Somebody who has already zoomed to a
       // street knows where they are, and dropping them back to 18 undoes that
@@ -1010,8 +1018,73 @@ function mediaActs(it, layer) {
     <p class="src">נשמר בנפרד מהשכבה עצמה, כדי שבנייה מחדש שלה לא תמחק אותו.</p>`;
 }
 
+/* ---------- a neighbourhood ----------
+ *
+ * What somebody who tapped a neighbourhood wants next is to go somewhere from
+ * it: next door, or onto a path through it. So its pane is two lists of
+ * buttons, the neighbourhoods it borders (from pardespedia's file) and the
+ * shortcuts that run through it (worked out here, against the shortcuts as
+ * they are now, so a new one shows up without a rebuild), and then the wiki. */
+
+/** Whether [lng, lat] is inside a ring of [lng, lat]; even-odd ray casting,
+ *  which is exact enough for a few hundred metres of neighbourhood. */
+function inRing(pt, ring) {
+  const [x, y] = pt;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** The shortcuts with any of their length in this neighbourhood, those mostly
+ *  inside it first. */
+function shortcutsIn(it) {
+  const ring = it.shape && it.shape[0];
+  const trails = Layers.byId(Layers.TRAILS_ID);
+  if (!ring || !trails) return [];
+  return trails.segments.filter((s) => s.path && s.path.length > 1).map((s) => {
+    const n = s.path.filter(([lat, lng]) => inRing([lng, lat], ring)).length;
+    return { s, share: n / s.path.length };
+  }).filter((x) => x.share > 0)
+    .sort((a, b) => b.share - a.share || (b.s.length || 0) - (a.s.length || 0))
+    .map((x) => x.s);
+}
+
+function hoodBlock(it) {
+  const hoods = Layers.byId(Layers.HOODS_ID);
+  const byName = new Map(((hoods && hoods.waypoints) || []).map((h) => [h.name, h]));
+  const next = (it.neighbours || []).map((n) => byName.get(n)).filter(Boolean);
+  const paths = shortcutsIn(it);
+  const SHOW = 12;
+  const area = it.area_km2 >= 1
+    ? `${it.area_km2.toFixed(2)} קמ"ר`
+    : `${Math.round(it.area_km2 * 1000)} דונם`;
+  const btn = (x, extra = '') => `<li><button class="chain-link" data-goto="${escapeHtml(x.id)}"${
+    extra}>${escapeHtml(x.name)}</button></li>`;
+  return `
+    <p class="addr">${area}${
+      it.parts && it.parts.length ? ` · מאחדת את ${it.parts.map(escapeHtml).join(' ואת ')}` : ''}</p>
+    ${next.length ? `
+      <h3>שכונות גובלות</h3>
+      <ol class="trip-chain hood-next">
+        ${next.map((h) => btn(h, ` style="--c:${h.color}"`)).join('')}
+      </ol>` : ''}
+    <h3>${paths.length ? `דרכי קיצור בשכונה (${paths.length})` : 'דרכי קיצור בשכונה'}</h3>
+    ${paths.length ? `
+      <ol class="trip-chain">
+        ${paths.slice(0, SHOW).map((s) => btn(s)).join('')}
+      </ol>
+      ${paths.length > SHOW ? `<p class="addr">ועוד ${paths.length - SHOW}.</p>` : ''}`
+      : '<p class="addr">עוד אין כאן דרך קיצור. אולי אתה מכיר אחת?</p>'}
+    ${linksBlock(it)}`;
+}
+
 function placeBody(it) {
   const layer = Layers.layerOf(it.id) || {};
+  if (it.hood) return hoodBlock(it);
 
   if (it.unplaced) {
     return `

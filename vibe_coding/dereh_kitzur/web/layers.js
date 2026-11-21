@@ -50,6 +50,7 @@ const Layers = (() => {
   const MAKOM_ID = 'makom-shamur';
   const PLANS_ID = 'plans';
   const BLOCKS_ID = 'blocks';
+  const HOODS_ID = 'hoods';
   const PARCELS_ID = 'parcels';
   const PUBLIC_ID = 'public-land';
   const LANDUSE_ID = 'landuse';
@@ -322,7 +323,9 @@ const Layers = (() => {
       // that does not - the cadastral blocks are all the same kind of thing -
       // takes the layer's own colour, and the purple is the last resort for a
       // place whose group is not in the document's list at all.
-      color: colours[raw.group] || fallback || '#6a1b9a'
+      // A place with a colour of its own keeps it: each neighbourhood has one
+      // (the wiki's), while its group is only its district.
+      color: raw.color || colours[raw.group] || fallback || '#6a1b9a'
     };
   }
 
@@ -642,7 +645,7 @@ const Layers = (() => {
 
   function init(data) {
     const { trails, network, places, art, shimur, makom, plans, blocks,
-            publicLand, houten, curitiba, hanadiv, canopy, trees } = data;
+            publicLand, houten, curitiba, hanadiv, canopy, trees, hoods } = data;
     setMedia(data.media);
     const prefs = loadPrefs();
     const link = urlPrefs();
@@ -921,6 +924,34 @@ const Layers = (() => {
       linkTitle: 'govmap',
       pinnable: false,                     // the boundary comes off the cadastre
       on: isOn(BLOCKS_ID, false)
+    });
+
+    // The neighbourhoods (Ori, 21/11/2026): the division Irit Rotem drew and
+    // pardespedia adopted the same day, in the colours of the wiki's map so
+    // the two read as one. build_hoods.py writes it from pardespedia's own
+    // file. Unlike the plans, these tile the town and do not overlap, so they
+    // are drawn as `area`: a fill strong enough to tell them apart and the
+    // name written large across each, the way a map of districts looks. A tap
+    // anywhere inside opens it: its neighbours and the shortcuts in it, as
+    // buttons to go on to (hoodBlock in app.js).
+    addPlaceLayer(HOODS_ID, hoods, {
+      name: 'שכונות',
+      category: 'places',
+      short: 'שכונה',
+      unit: 'שכונות',
+      color: '#5d574b',
+      area: true,
+      dots: false,
+      note: 'החלוקה החדשה של המושבה ל-16 שכונות, תשע בפרדס חנה ושבע בכרכור, '
+        + 'כפי ששורטטה בנובמבר 2026 ונכנסה לפרדספדיה, באותם צבעים כמו המפה שם. '
+        + 'לחיצה על שכונה מראה את השכונות הגובלות בה ואת דרכי הקיצור שעוברות בה, '
+        + 'ומקשרת לערך שלה בפרדספדיה.',
+      credit: 'פרדספדיה · חלוקת השכונות של עירית רותם',
+      sourceName: 'פרדספדיה',
+      sourceLine: 'הערך בפרדספדיה',
+      linkTitle: 'פרדספדיה',
+      pinnable: false,
+      on: isOn(HOODS_ID, false)
     });
 
     // The parcels inside those blocks: all 9,126 of them, tiling the moshava.
@@ -1204,6 +1235,10 @@ const Layers = (() => {
     : l.id === OWNERSHIP_ID ? 0.07
     : l.id === PUBLIC_ID ? 0.1
     : l.id === CANOPY_ID ? 0.15
+    // The neighbourhoods tint the ground like the land uses, and over them:
+    // they are the coarser of the two and the one somebody turns on to find
+    // their way, but still under every line and dot standing on the ground.
+    : l.id === HOODS_ID ? 0.2
     : l.id === BLOCKS_ID ? 0.25
     // Parcels sit just inside their blocks: the block outline has to stay
     // readable over the finer grid, not under it.
@@ -1530,13 +1565,28 @@ const Layers = (() => {
     // outlines at z13 are a brown smear that hides the town.
     const near = layer.minzoom ? { minzoom: layer.minzoom } : {};
 
+    // An `area` layer tiles the town without overlaps - the neighbourhoods -
+    // so it can afford colour: the wiki's pastels at half strength still let
+    // the streets show through, and a white seam between neighbours reads as
+    // a border the way it does on the wiki's map. Selected, one deepens and
+    // gets a dark outline; the rest step back. Fainter when zoomed in, where
+    // what matters is the street under the finger and not the district.
+    const area = !!layer.area;
+    // MapLibre takes ['zoom'] only at the top of an expression, so the
+    // selection cases go inside each stop rather than around the ramp.
+    const areaFill = ['interpolate', ['linear'], ['zoom'],
+      13, ['case', sel, 0.7, dim, 0.18, 0.5],
+      17, ['case', sel, 0.55, dim, 0.12, 0.3]];
+
     map.addLayer(Object.assign({
       id: fillId(layer.id),
       type: 'fill',
       source: src,
       paint: {
         'fill-color': ['get', 'color'],
-        'fill-opacity': grid
+        'fill-opacity': area
+          ? areaFill
+          : grid
           ? ['case', sel, 0.14, 0]
           : ['case', sel, 0.32, dim, 0.05, 0.14]
       }
@@ -1546,7 +1596,12 @@ const Layers = (() => {
       id: edgeId(layer.id),
       type: 'line',
       source: src,
-      paint: Object.assign({
+      layout: { 'line-join': 'round' },
+      paint: area ? {
+        'line-color': ['case', sel, '#3b3a36', '#ffffff'],
+        'line-width': ['case', sel, 3.5, 2.2],
+        'line-opacity': ['case', sel, 1, 0.9]
+      } : Object.assign({
         'line-color': ['get', 'color'],
         'line-width': ['case', sel, 3.5, grid ? 1 : 1.6],
         'line-opacity': ['case', sel, 1, dim, 0.25, grid ? 0.5 : 0.8]
@@ -1610,7 +1665,35 @@ const Layers = (() => {
     // and forty of them across the middle of the moshava bury the streets under
     // text that is nearly the same on every one. The outline says where, the
     // colour says which stage, and a tap says the rest.
-    if (layer.labels !== false) map.addLayer({
+    // A district's name is the point of drawing it, and it goes large in the
+    // middle of it (build_hoods.py puts the point where the shape is widest)
+    // from the zoom that shows the whole moshava. It grows with the zoom, and
+    // never yields to a dot: a neighbourhood with no name on it is a patch of
+    // colour. Bold, with a wide white halo, so it reads over any of the
+    // pastels and over the satellite picture alike.
+    if (layer.labels !== false && layer.area) map.addLayer({
+      id: labelId(layer.id),
+      type: 'symbol',
+      source: src,
+      minzoom: 12,
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['Noto Sans Bold'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 12, 13, 14, 19, 16, 28],
+        'text-anchor': 'center',
+        'text-max-width': 7,
+        'text-padding': 2,
+        'text-allow-overlap': false,
+        'symbol-sort-key': 0
+      },
+      paint: {
+        'text-color': ['case', ['boolean', ['feature-state', 'sel'], false], '#000000', '#2f2d28'],
+        'text-halo-color': 'rgba(255,255,255,0.92)',
+        'text-halo-width': 2.4,
+        'text-opacity': ['case', ['boolean', ['feature-state', 'dim'], false], 0.45, 1]
+      }
+    });
+    else if (layer.labels !== false) map.addLayer({
       id: labelId(layer.id),
       type: 'symbol',
       source: src,
@@ -3400,7 +3483,7 @@ const Layers = (() => {
     legendIsOpen, setLegendOpen,
     openSheet, closeSheet, render, clearAll, setOnly, onIds,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, OWNERSHIP_ID, CANOPY_ID, HANADIV_ID, TREES_ID, MARKED_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, HOODS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, OWNERSHIP_ID, CANOPY_ID, HANADIV_ID, TREES_ID, MARKED_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     SOVEV_ID,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing, setObjections, objectionsNow,
