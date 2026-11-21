@@ -1454,3 +1454,44 @@ dialog { color: var(--text); font: inherit; }
   .update-row, .row-thumb img, .face-ring, .ring-chevron, .ring-peek { transition: none; }
   .update-ring[open] .ring-body, .status-form { animation: none; }
 }
+
+/* A picture drawn from the member's first name, until they choose one of their own. */
+.name-art { width: 100%; height: 100%; fill: #fff; font-weight: 700; letter-spacing: -0.01em; }
+.name-art .name-initial { display: none; }
+.peek-faces .name-art .name-full { display: none; }
+.peek-faces .name-art .name-initial { display: inline; }
+
+.motto { margin: 0 0 14px; padding-inline-start: 16px; border-inline-start: 4px solid var(--accent); font-size: 25px; font-weight: 750; line-height: 1.3; color: var(--brand); }
+
+.welcome { text-align: center; padding: 28px 22px; }
+.welcome h1 { font-size: 30px; }
+.welcome .welcome-face { margin: 18px 0 6px; }
+.welcome .picture-edit.avatar-edit { margin: 0 auto; }
+.welcome .welcome-google { margin: 14px 0 4px; display: grid; justify-items: center; }
+.welcome .field { display: grid; gap: 6px; max-width: 22em; margin: 18px auto 0; text-align: start; font-size: 15px; color: var(--muted); }
+.welcome .row { justify-content: center; }
+
+.rename { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rename input { width: 14em; }
+
+.invite-lines { width: 100%; min-height: 84px; }
+.invite-letter { margin-top: 14px; padding: 12px 14px; background: var(--field); border: 1px solid var(--line); border-radius: 14px; }
+.invite-letter .row { margin-top: 0; flex-wrap: wrap; }
+.letter-text { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14.5px; color: var(--muted); }
+.invite-letter a.send { display: inline-flex; align-items: center; padding: 6px 18px; font-size: 15px; font-weight: 550; color: var(--on-brand); background: var(--brand); border-radius: 999px; text-decoration: none; }
+.invite-letter a.send:hover { filter: brightness(1.07); }
+.invite-letter a.other { font-size: 15px; color: var(--muted); }
+
+.film { margin: 0 0 18px; background: #0f2a38; border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); }
+.film video { display: block; width: 100%; aspect-ratio: 16 / 9; }
+
+/* Between a phone and a full window there is no room for seven named items, so only the page
+   you are on keeps its name. The names stay there for a screen reader. */
+@media (min-width: 641px) and (max-width: 960px) {
+  #nav a:not(.active) .label, #nav button.plain .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #nav a, #nav button.plain { padding: 7px 10px; }
+}
+
+.transcript summary { cursor: pointer; font-weight: 600; color: var(--brand); }
+.transcript p { margin: 12px 0 0; }
+.invite-letter .muted { margin-inline-start: 8px; }

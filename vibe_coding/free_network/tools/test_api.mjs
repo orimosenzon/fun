@@ -18,6 +18,7 @@ const YOUTUBE_PORT = BASE;
 const VIDEO_ID = 'abcdefghijk';
 const youtubeRequests = [];
 const digestRequests = [];
+const pictureRequests = [];
 
 // Stands in for YouTube, and records what the worker sends it.
 const fakeYoutube = createServer((request, response) => {
@@ -26,9 +27,12 @@ const fakeYoutube = createServer((request, response) => {
     request.on('data', (part) => { body += part; });
     request.on('end', () => {
       // A code like "google-x" is a person with no address; "google-x:a@b.com" has one, "!" unverified.
-      const [code, email] = new URLSearchParams(body).get('code').split(':');
+      // A third part is the picture of the account: "photo" is a real one, "letter" is the letter
+      // Google draws when there is none, and "elsewhere" points outside Google.
+      const [code, email, picture] = new URLSearchParams(body).get('code').split(':');
       const claims = { iss: 'https://accounts.google.com', aud: code === 'wrong-audience' ? 'other' : 'test-client', sub: code };
-      if (email) Object.assign(claims, { email: email.replace('!', ''), email_verified: !email.includes('!') });
+      if (email) Object.assign(claims, { email: email.replace('!', ''), email_verified: !email.includes('!'), name: 'שם מגוגל' });
+      if (picture) claims.picture = picture === 'elsewhere' ? 'http://127.0.0.1:1/a-/photo=s96-c' : `http://localhost:${YOUTUBE_PORT}/a-/${picture}=s96-c`;
       const encoded = Buffer.from(JSON.stringify(claims)).toString('base64url');
       response.setHeader('Content-Type', 'application/json');
       response.end(JSON.stringify({ id_token: `x.${encoded}.y` }));
@@ -87,6 +91,12 @@ ${card('מאוחר יותר באותו יום')}
           : { parse: { text: '<div><ul><li><a href="/wiki/%D7%92%D7%A9%D7%9D" title="גשם">גשם</a> <small>(בתמונה)</small> ירד &amp; ירד ב<a href="/wiki/X">צפון</a> (<a rel="nofollow" class="external text" href="https://news.example/1">אתר</a>)</li>\n<li>ידיעה שנייה</li></ul></div>' } };
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(body));
+    return;
+  }
+  if (request.url.startsWith('/a-/')) {
+    pictureRequests.push(request.url);
+    if (request.url.startsWith('/a-/photo')) response.end(phoneJpeg());
+    else response.end(Buffer.from('\x89PNG letter'));
     return;
   }
   youtubeRequests.push(request);
@@ -735,31 +745,92 @@ test('one Google account belongs to one person, and it can be unlinked', async (
   assert.equal((await googleFlow('google-maya')).result, 'unknown');
 });
 
-test('an invited Google address joins linked, as a friend, and the invitation is used up', async () => {
+test('an email invitation carries the name, works once, and makes a friend of the admin', async () => {
   const boss = await theBoss();
-  assert.equal((await boss.call('POST', '/admin/google-invites', { email: 'New.Friend@Gmail.com' })).data.email, 'newfriend@gmail.com');
-  assert.equal((await boss.call('GET', '/admin/overview')).data.googleInvites.length, 1);
-  const joined = await googleFlow('google-new:newfriend@gmail.com');
+  const { status, data } = await boss.call('POST', '/admin/email-invites', { email: 'Dana.Cohen@Gmail.com', name: 'דנה כהן' });
+  assert.equal(status, 201);
+  assert.equal(data.email, 'danacohen@gmail.com');
+  assert.deepEqual((await boss.call('GET', '/admin/overview')).data.emailInvites.map((item) => [item.email, item.name]), [['danacohen@gmail.com', 'דנה כהן']]);
+  const dana = await openInvite(data.link);
+  assert.equal(dana.verified.data.joined, true);
+  const me = (await dana.call('GET', '/me')).data.user;
+  assert.equal(me.name, 'דנה כהן');
+  assert.deepEqual((await dana.call('GET', '/friends')).data.friends.map((user) => user.name), ['boss']);
+  assert.equal((await boss.call('GET', '/admin/overview')).data.emailInvites.length, 0);
+  assert.equal((await openInvite(data.link)).verified.status, 400);
+  assert.equal((await boss.call('POST', '/admin/email-invites', { email: 'dana.cohen@gmail.com' })).status, 409);
+});
+
+test('inviting an address again replaces the link that was waiting', async () => {
+  const boss = await theBoss();
+  const first = (await boss.call('POST', '/admin/email-invites', { email: 'twice@example.org', name: 'פעמיים' })).data;
+  const second = (await boss.call('POST', '/admin/email-invites', { email: 'twice@example.org' })).data;
+  assert.equal((await boss.call('GET', '/admin/overview')).data.emailInvites.length, 1);
+  assert.equal((await openInvite(first.link)).verified.status, 400);
+  const member = await openInvite(second.link);
+  assert.equal(member.verified.status, 200);
+  assert.equal((await member.call('GET', '/me')).data.user.name, '');
+});
+
+test('someone invited by email joins with Google at that address, with the picture of the account', async () => {
+  const boss = await theBoss();
+  await boss.call('POST', '/admin/email-invites', { email: 'New.Friend@Gmail.com', name: 'חבר חדש' });
+  const joined = await googleFlow('google-new:newfriend@gmail.com:photo');
   assert.equal(joined.result, 'joined');
   const headers = { Cookie: joined.cookie };
   const me = await (await fetch(`http://localhost:${PILOT_PORT}/api/me`, { headers })).json();
   assert.equal(me.user.googleLinked, true);
-  assert.equal(me.user.name, '');
+  assert.equal(me.user.name, 'חבר חדש');
+  const picture = await fetch(`http://localhost:${PILOT_PORT}/api/images/${me.user.avatar}`);
+  assert.equal(picture.status, 200);
+  const stored = Buffer.from(await picture.arrayBuffer());
+  assert.ok(!stored.includes('GPS'));
+  assert.deepEqual(pictureRequests, ['/a-/photo=s400-c']);
   const friends = await (await fetch(`http://localhost:${PILOT_PORT}/api/friends`, { headers })).json();
   assert.deepEqual(friends.friends.map((user) => user.name), ['boss']);
-  assert.equal((await boss.call('GET', '/admin/overview')).data.googleInvites.length, 0);
+  assert.equal((await boss.call('GET', '/admin/overview')).data.emailInvites.length, 0);
   assert.equal((await googleFlow('google-new:newfriend@gmail.com')).result, 'login');
   assert.equal((await googleFlow('google-other:newfriend@gmail.com')).result, 'unknown');
 });
 
-test('a Google invitation needs a verified address, and only the admin can send or cancel one', async () => {
+test('a member who came in by the emailed link returns with Google at the same address', async () => {
   const boss = await theBoss();
-  await boss.call('POST', '/admin/google-invites', { email: 'careful@gmail.com' });
+  const { link } = (await boss.call('POST', '/admin/email-invites', { email: 'back@gmail.com', name: 'חוזרת' })).data;
+  const member = await openInvite(link);
+  const { id } = (await member.call('GET', '/me')).data.user;
+  const back = await googleFlow('google-back:back@gmail.com:letter');
+  assert.equal(back.result, 'login');
+  const me = await (await fetch(`http://localhost:${PILOT_PORT}/api/me`, { headers: { Cookie: back.cookie } })).json();
+  assert.equal(me.user.id, id);
+  assert.equal(me.user.googleLinked, true);
+  // Google's drawn letter is not a photo, so the member keeps the picture made of their name.
+  assert.equal(me.user.avatar, null);
+});
+
+test('linking Google brings its picture only to someone who has none', async () => {
+  const noPicture = await signUp('pictureless', PILOT_PORT);
+  assert.equal((await googleFlow('google-pictureless:p@gmail.com:photo', { user: noPicture, link: true })).result, 'linked');
+  assert.ok((await noPicture.call('GET', '/me')).data.user.avatar);
+  const chosen = await signUp('chosen', PILOT_PORT);
+  const own = (await upload(chosen, phoneJpeg())).data.id;
+  await chosen.call('PUT', '/me/images', { kind: 'avatar', imageId: own });
+  await googleFlow('google-chosen:c@gmail.com:photo', { user: chosen, link: true });
+  assert.equal((await chosen.call('GET', '/me')).data.user.avatar, own);
+  const elsewhere = await signUp('elsewhere', PILOT_PORT);
+  await googleFlow('google-elsewhere:e@gmail.com:elsewhere', { user: elsewhere, link: true });
+  assert.equal((await elsewhere.call('GET', '/me')).data.user.avatar, null);
+});
+
+test('an email invitation needs a verified address, and only the admin can send or cancel one', async () => {
+  const boss = await theBoss();
+  await boss.call('POST', '/admin/email-invites', { email: 'careful@gmail.com' });
   assert.equal((await googleFlow('google-careful:careful@gmail.com!')).result, 'unknown');
   const stranger = await signUp('stranger', PILOT_PORT);
-  assert.equal((await stranger.call('POST', '/admin/google-invites', { email: 'x@gmail.com' })).status, 403);
-  assert.equal((await boss.call('POST', '/admin/google-invites', { email: 'not an address' })).status, 400);
-  await boss.call('DELETE', '/admin/google-invites/careful%40gmail.com');
+  assert.equal((await stranger.call('POST', '/admin/email-invites', { email: 'x@gmail.com' })).status, 403);
+  assert.equal((await stranger.call('DELETE', '/admin/email-invites/careful%40gmail.com')).status, 403);
+  assert.equal((await boss.call('POST', '/admin/email-invites', { email: 'not an address' })).status, 400);
+  assert.equal((await boss.call('POST', '/admin/email-invites', { email: 'x@invite.invalid' })).status, 400);
+  await boss.call('DELETE', '/admin/email-invites/careful%40gmail.com');
   assert.equal((await googleFlow('google-careful:careful@gmail.com')).result, 'unknown');
 });
 
@@ -792,10 +863,11 @@ test('only the admin reaches the admin screen', async () => {
 
 test('the admin screen reports usage against the limits', async () => {
   const boss = await theBoss();
+  const before = (await boss.call('GET', '/admin/overview')).data.usage;
   await upload(boss, phoneJpeg());
   const { usage, users } = (await boss.call('GET', '/admin/overview')).data;
-  assert.equal(usage.today, 1);
-  assert.equal(usage.bytes, 23);
+  assert.equal(usage.today, before.today + 1);
+  assert.equal(usage.bytes, before.bytes + 23);
   assert.equal(usage.storageLimit, 8 * 1024 ** 3);
   assert.equal(usage.uploadLimit, 2000);
   assert.ok(users >= 3);
@@ -850,6 +922,15 @@ test('the demo serves /why without the unreviewed claims, and demo login exists 
   assert.equal((await client(PROD_PORT)('POST', '/auth/demo')).status, 404);
 });
 
+test('the motto and the film page are public, in the network and in the demo', async () => {
+  for (const port of [PORT, DEMO_PORT]) {
+    assert.match(await (await fetch(`http://localhost:${port}/why`)).text(), /לבחור באופן דמוקרטי את העריץ שלך/);
+    const film = await fetch(`http://localhost:${port}/intro`);
+    assert.equal(film.status, 200);
+    assert.match(await film.text(), /<video[^>]+src="\/video\/intro\.mp4"/);
+  }
+});
+
 test('without DEV_LOGIN a login link is never returned', async () => {
   const { status, data } = await client(PROD_PORT)('POST', '/auth/request', { email: 'y@example.com' });
   assert.equal(status, 503);
@@ -886,7 +967,7 @@ try {
   startServer(UPLOADS_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'UPLOADS_PER_DAY:2']);
   startServer(PILOT_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'INVITE_ONLY:1', '--var', 'ADMIN_EMAIL:boss@example.com',
     '--var', 'GOOGLE_CLIENT_ID:test-client', '--var', 'GOOGLE_CLIENT_SECRET:test-secret',
-    '--var', `GOOGLE_TOKEN_URL:http://localhost:${YOUTUBE_PORT}/token`]);
+    '--var', `GOOGLE_TOKEN_URL:http://localhost:${YOUTUBE_PORT}/token`, '--var', `GOOGLE_PICTURE_ORIGIN:http://localhost:${YOUTUBE_PORT}`]);
   await Promise.all([PORT, PROD_PORT, DEMO_PORT, STORAGE_PORT, UPLOADS_PORT, PILOT_PORT].map(waitFor));
   for (const [name, fn] of tests) {
     try {

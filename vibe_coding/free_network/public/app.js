@@ -44,7 +44,9 @@ let inviteOnly = false;
 let googleLogin = false;
 const GOOGLE_MESSAGES = {
   linked: 'חשבון הגוגל חובר. מעכשיו אפשר להיכנס איתו מכל מכשיר.',
-  unknown: 'חשבון הגוגל הזה לא מחובר לאף משתמש. נכנסים פעם אחת עם קישור ההזמנה, ואז מחברים את גוגל מהדף האישי.',
+  login: null,
+  joined: null,
+  unknown: 'חשבון הגוגל הזה לא מוכר כאן. נכנסים עם חשבון Google של הכתובת שאליה נשלחה ההזמנה, או עם הקישור האישי שבמייל.',
   taken: 'חשבון הגוגל הזה כבר מחובר למשתמש אחר.',
   failed: 'הכניסה עם גוגל לא הצליחה, נסו שוב.',
 };
@@ -53,6 +55,8 @@ history.scrollRestoration = 'manual';
 let movedInside = false;
 let shownPath = null;
 let seenUpTo;
+// Someone who has just joined sees the welcome page once, until they press on into the network.
+const WELCOME_KEY = 'welcome';
 
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
@@ -295,9 +299,36 @@ function gallery(ids) {
   }, el('img', { src: `/api/images/${id}`, alt: 'תמונה מהפוסט', loading: 'lazy' }))));
 }
 
+function svg(tag, attributes = {}, ...children) {
+  const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+  node.append(...children);
+  return node;
+}
+
+// Until a member picks a picture, theirs is drawn from their first name: the whole name when it
+// is short, and broken into two rows when it is long. Tiny pictures keep only the first letter.
+function nameArt(name) {
+  const letters = [...(name.trim().split(/\s+/)[0] ?? '')].slice(0, 10);
+  if (!letters.length) letters.push('?');
+  const rows = letters.length <= 4 ? [letters] : [letters.slice(0, Math.ceil(letters.length / 2)), letters.slice(Math.ceil(letters.length / 2))];
+  const widest = Math.max(...rows.map((row) => row.length));
+  const size = Math.min(rows.length === 1 ? 52 : 34, 80 / (0.62 * widest));
+  const line = (row, index) => svg('text', {
+    x: 50,
+    y: 50 + (index - (rows.length - 1) / 2) * size * 1.08,
+    'font-size': size.toFixed(1),
+    'text-anchor': 'middle',
+    'dominant-baseline': 'central',
+  }, row.join(''));
+  return svg('svg', { viewBox: '0 0 100 100', class: 'name-art' },
+    svg('g', { class: 'name-full' }, ...rows.map(line)),
+    svg('text', { class: 'name-initial', x: 50, y: 50, 'font-size': 52, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, letters[0]));
+}
+
 function avatar(user, { small = false, large = false } = {}) {
   const size = small ? ' small' : large ? ' large' : '';
-  const content = user.avatar ? el('img', { src: `/api/images/${user.avatar}`, alt: '' }) : [...user.name][0] ?? '?';
+  const content = user.avatar ? el('img', { src: `/api/images/${user.avatar}`, alt: '' }) : nameArt(user.name ?? '');
   return el('span', { className: `avatar c${(user.id - 1) % 6}${size}`, ariaHidden: 'true' }, content);
 }
 
@@ -818,6 +849,28 @@ async function profilePage(id) {
     ...(mine ? editablePicture('avatar', 'החלפת תמונת הפרופיל', face, error) : [face]),
     el('h1', { dir: 'auto' }, user.name));
   if (mine) {
+    const rename = el('button', {
+      className: 'plain',
+      type: 'button',
+      onclick: () => {
+        const field = el('input', { type: 'text', required: true, maxLength: 60, value: me.name, dir: 'auto', ariaLabel: 'השם שיוצג לאחרים' });
+        rename.replaceWith(el('form', {
+          className: 'rename',
+          onsubmit: async (e) => {
+            e.preventDefault();
+            try {
+              await api('/me', { method: 'PUT', body: { name: field.value } });
+              await refreshMe();
+              route();
+            } catch (err) {
+              error.textContent = err.message;
+              error.hidden = false;
+            }
+          },
+        }, field, el('button', { className: 'small', type: 'submit' }, 'שמירה'), el('button', { className: 'plain', type: 'button', onclick: route }, 'ביטול')));
+        field.focus();
+      },
+    }, 'שינוי שם');
     const remove = (kind, label) => el('button', {
       className: 'plain danger',
       type: 'button',
@@ -835,11 +888,14 @@ async function profilePage(id) {
         },
       }, 'ניתוק'))
       : el('div', { className: 'row' }, googleButton('/api/auth/google?link=1', 'חיבור חשבון Google'));
+    const lettered = user.avatar ? null : el('p', { className: 'note' }, 'התמונה שלך מצוירת בינתיים מהשם הפרטי. אפשר להעלות תמונה, או לחבר חשבון Google ולקבל את התמונה שלו.');
     body.append(...[
       error,
       google,
+      lettered,
       el('p', { className: 'note' }, 'לחיצה על תמונה מחליפה אותה. התמונות האלה גלויות כמו השם שלך, גם למי שקורא פוסט ציבורי בלי להתחבר.'),
       el('div', { className: 'row' },
+        rename,
         user.avatar ? remove('avatar', 'הסרת תמונת הפרופיל') : null,
         user.cover ? remove('cover', 'הסרת תמונת הכותרת') : null,
         el('button', { className: 'plain phone-only', type: 'button', onclick: logout }, 'יציאה מהחשבון'))].filter(Boolean));
@@ -864,7 +920,7 @@ function meter(label, value, max, text) {
 }
 
 async function adminPage() {
-  const { usage, users, posts, comments, members, googleInvites } = await api('/admin/overview');
+  const { usage, users, posts, comments, members, emailInvites } = await api('/admin/overview');
   const gb = (bytes) => (bytes / 1024 ** 3).toFixed(2);
   const result = el('div');
 
@@ -878,46 +934,104 @@ async function adminPage() {
       el('div', { className: 'row' }, copy));
   }
 
-  const gmail = el('input', { type: 'email', placeholder: 'name@gmail.com', dir: 'ltr', required: true });
-  const gmailResult = el('div');
-  const gmailForm = el('form', {
+  // The invitation goes out from the admin's own mailbox, so it arrives as a letter from a
+  // friend. Each line of the box is one person: a name, a comma, an address.
+  const people = el('textarea', { className: 'invite-lines', placeholder: 'דנה כהן, dana@gmail.com', dir: 'auto', rows: 3, required: true, ariaLabel: 'מוזמנים: שם, פסיק, כתובת מייל. שורה לכל אחד' });
+  const sent = el('div', { className: 'invite-results' });
+  const pendingBox = el('div');
+  const firstName = (name) => (name ?? '').trim().split(/\s+/)[0] ?? '';
+
+  // The letter goes to the address as it was typed. Gmail ignores the dots, but people do not.
+  function letter({ name, email, typed = email, link: url, expiresAt }) {
+    const until = format({ day: 'numeric', month: 'long' }).format(expiresAt);
+    const subject = 'הזמנה אישית לרשת החופשית';
+    const body = [
+      `היי${firstName(name) ? ` ${firstName(name)}` : ''},`,
+      '',
+      'אני בונה רשת חברתית חדשה. אין בה פרסומות, ואין בה אלגוריתם שמחליט בשבילנו מה נראה. היא עדיין קטנה ונמצאת בניסוי בין חברים, ואשמח לראות אותך בין הראשונים.',
+      '',
+      'סרטון קצר שמסביר מה זה ולמה:',
+      `${location.origin}/intro`,
+      '',
+      `הקישור האישי שלך לכניסה (עובד פעם אחת, עד ${until}):`,
+      url,
+      '',
+      'אשמח לשמוע מה חסר ומה מפריע. בשביל זה הניסוי.',
+      firstName(me.name),
+    ].join('\n');
+    const query = (pairs) => new URLSearchParams(pairs).toString().replace(/\+/g, '%20');
+    const copy = el('button', { className: 'plain', type: 'button' }, 'העתקת המכתב');
+    copy.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(body);
+      copy.textContent = 'הועתק';
+    });
+    return el('div', { className: 'invite-letter' },
+      el('div', { className: 'row spread' },
+        el('span', {}, el('strong', { dir: 'auto' }, name || typed), name ? el('span', { className: 'muted', dir: 'ltr' }, ` ${typed}`) : null),
+        el('span', { className: 'row' },
+          el('a', { className: 'send', target: '_blank', rel: 'noopener', href: `https://mail.google.com/mail/?${query({ view: 'cm', fs: '1', to: typed, su: subject, body })}` }, 'פתיחה ב-Gmail'),
+          el('a', { className: 'other', href: `mailto:${encodeURIComponent(typed)}?${query({ subject, body })}` }, 'תוכנת מייל אחרת'),
+          copy)),
+      el('pre', { className: 'letter-text', dir: 'auto' }, body));
+  }
+
+  async function inviteByEmail(line) {
+    const parts = line.split(/[,\t;<>]+/).map((part) => part.trim()).filter(Boolean);
+    const email = parts.find((part) => part.includes('@'));
+    if (!email) throw new Error(`בשורה "${line}" אין כתובת מייל`);
+    const invite = await api('/admin/email-invites', { method: 'POST', body: { email, name: parts.filter((part) => part !== email).join(' ') } });
+    return { ...invite, typed: email };
+  }
+
+  const emailForm = el('form', {
     onsubmit: async (e) => {
       e.preventDefault();
-      try {
-        const { email } = await api('/admin/google-invites', { method: 'POST', body: { email: gmail.value } });
-        const text = `הזמנתי אותך לרשת החופשית. נכנסים כאן עם חשבון ה-Google שלך (${email}): ${location.origin}`;
-        const send = el('button', { type: 'button' }, navigator.share ? 'שליחת ההזמנה' : 'העתקת ההזמנה');
-        send.addEventListener('click', async () => {
-          if (navigator.share) {
-            await navigator.share({ text }).catch(() => {});
-          } else {
-            await navigator.clipboard.writeText(text);
-            send.textContent = 'הועתק';
-          }
-        });
-        gmailResult.replaceChildren(el('p', { className: 'note' }, `${email} יכול עכשיו להיכנס עם Google, וייפתח לו חשבון שמחובר אליך כחבר.`),
-          el('div', { className: 'row' }, send));
-        gmail.value = '';
-        showPending((await api('/admin/overview')).googleInvites);
-      } catch (err) {
-        gmailResult.replaceChildren(el('p', { className: 'error' }, err.message));
+      sent.replaceChildren();
+      const left = [];
+      for (const line of people.value.split('\n').map((text) => text.trim()).filter(Boolean)) {
+        try {
+          sent.append(letter(await inviteByEmail(line)));
+        } catch (err) {
+          left.push(line);
+          sent.append(el('p', { className: 'error' }, `${line}: ${err.message}`));
+        }
       }
+      people.value = left.join('\n');
+      if (sent.querySelector('.invite-letter')) {
+        sent.prepend(el('p', { className: 'note' }, 'ההזמנות מוכנות. לחיצה על "פתיחה ב-Gmail" פותחת מכתב מוכן, ונשאר רק לשלוח. את הקישור אי אפשר להציג שוב אחר כך, רק ליצור חדש.'));
+      }
+      showPending((await api('/admin/overview')).emailInvites);
     },
-  }, gmail, el('div', { className: 'row' }, el('button', { type: 'submit' }, 'הזמנה')));
-  const pendingBox = el('div');
+  }, people, el('div', { className: 'row' }, el('button', { type: 'submit' }, 'יצירת הזמנות')));
+
   function showPending(list) {
-    pendingBox.replaceChildren(...(list.length ? [el('h2', {}, 'ממתינים לכניסה')] : []), ...list.map((item) => el('div', { className: 'person' },
-      el('span', { dir: 'ltr' }, item.email),
-      el('button', {
-        className: 'plain danger',
-        type: 'button',
-        onclick: async () => {
-          await api(`/admin/google-invites/${encodeURIComponent(item.email)}`, { method: 'DELETE' });
-          showPending(list.filter((other) => other !== item));
-        },
-      }, 'ביטול'))));
+    pendingBox.replaceChildren(...(list.length ? [el('h2', {}, `הוזמנו ועוד לא נכנסו (${list.length})`)] : []), ...list.map((item) => el('div', { className: 'person' },
+      el('span', {}, item.name ? el('span', { dir: 'auto' }, `${item.name} · `) : null, el('span', { dir: 'ltr' }, item.email)),
+      el('div', { className: 'row' },
+        el('button', {
+          className: 'plain',
+          type: 'button',
+          title: 'יוצר קישור חדש ומבטל את הקודם',
+          onclick: async () => {
+            try {
+              sent.replaceChildren(letter(await api('/admin/email-invites', { method: 'POST', body: { email: item.email, name: item.name ?? '' } })));
+              sent.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } catch (err) {
+              tell(err.message);
+            }
+          },
+        }, 'מכתב חדש'),
+        el('button', {
+          className: 'plain danger',
+          type: 'button',
+          onclick: async () => {
+            if (!await ask(`לבטל את ההזמנה של ${item.name || item.email}? הקישור שנשלח יפסיק לעבוד.`, 'ביטול ההזמנה')) return;
+            await api(`/admin/email-invites/${encodeURIComponent(item.email)}`, { method: 'DELETE' });
+            showPending(list.filter((other) => other !== item));
+          },
+        }, 'ביטול')))));
   }
-  showPending(googleInvites);
+  showPending(emailInvites);
 
   app.replaceChildren(
     el('section', { className: 'card' },
@@ -925,13 +1039,13 @@ async function adminPage() {
       el('p', { className: 'muted' }, `${users} משתמשים · ${posts} פוסטים · ${comments} תגובות`),
       meter('אחסון תמונות', usage.bytes, usage.storageLimit, `${gb(usage.bytes)} מתוך ${gb(usage.storageLimit)}GB`),
       meter('העלאות ב-24 השעות האחרונות', usage.today, usage.uploadLimit, `${usage.today} מתוך ${usage.uploadLimit}`)),
-    googleLogin ? el('section', { className: 'card' },
-      el('h2', {}, 'הזמנה לפי חשבון Google'),
-      el('p', { className: 'muted' }, 'החבר נכנס עם Google בעצמו, ומקבל חשבון שמחובר לגוגל ואליך. כל עוד האפליקציה בגוגל במצב בדיקה, צריך להוסיף את הכתובת גם ל-',
-        el('a', { href: 'https://console.cloud.google.com/auth/audience?project=free-network-514020', target: '_blank', rel: 'noopener' }, 'Test users'), '.'),
-      gmailForm, gmailResult, pendingBox) : null,
     el('section', { className: 'card' },
-      el('h2', {}, 'הזמנה בקישור'),
+      el('h2', {}, 'הזמנה במייל'),
+      el('p', { className: 'muted' }, 'שורה לכל מוזמן: שם, פסיק, כתובת מייל. לכל אחד נוצר קישור אישי ומכתב מוכן עם הקישור ועם סרטון ההסבר, ושולחים אותו מהמייל שלך. מי שהוזמן בכתובת של Google יכול גם להיכנס ישר עם Google, והתמונה שלו מגיעה משם.'),
+      emailForm, sent, pendingBox),
+    el('section', { className: 'card' },
+      el('h2', {}, 'הזמנה בקישור, בלי מייל'),
+      el('p', { className: 'muted' }, 'למי שמעדיפים וואטסאפ. בלי כתובת אי אפשר להיכנס עם Google עד שמחברים אותו מהדף האישי.'),
       el('div', { className: 'row' }, el('button', { type: 'button', onclick: () => invite() }, 'יצירת קישור הזמנה')),
       result,
       el('h2', {}, 'חברי הרשת'),
@@ -950,7 +1064,7 @@ function loginPage() {
   const email = el('input', { type: 'email', required: true, placeholder: 'כתובת מייל', dir: 'ltr' });
   const message = el('p', { className: 'muted' });
   const inviteNote = el('div', { className: 'card' },
-    el('p', { className: 'flush' }, 'הרשת נמצאת בניסוי סגור. נכנסים רק עם קישור אישי ממי שהזמין אתכם.'));
+    el('p', { className: 'flush' }, 'הרשת נמצאת בניסוי סגור. נכנסים עם הקישור האישי שבמייל ההזמנה, או עם חשבון Google של הכתובת שאליה היא נשלחה.'));
   const demoEntry = el('div', { className: 'card' },
     el('p', { style: 'margin-top: 0' }, 'כאן אפשר להציץ בממשק עם אנשים ופוסטים בדויים.'),
     el('div', { className: 'row' }, el('button', {
@@ -965,7 +1079,7 @@ function loginPage() {
     el('img', { src: '/favicon.svg', alt: '' }),
     el('h1', {}, 'השכונה שלך, בלי הרעש'),
     el('p', {}, 'הרשת החופשית של פרדס חנה-כרכור. מקום לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
-  googleLogin ? el('div', { className: 'card' }, el('p', { className: 'flush' }, 'כבר חיברת חשבון גוגל?'),
+  googleLogin ? el('div', { className: 'card' }, el('p', { className: 'flush' }, 'הוזמנת בכתובת של Google, או כבר חיברת חשבון?'),
     el('div', { className: 'row' }, googleButton('/api/auth/google', 'כניסה עם Google'))) : '',
   demo ? demoEntry : inviteOnly ? inviteNote : el('form', {
     className: 'card',
@@ -987,25 +1101,53 @@ function loginPage() {
     promise('eye', 'החברים שלך באמת יראו', 'כל פוסט מגיע לפיד של כל החברים, בלי סינון.'),
     promise('comment', 'כל התגובות, לפי הסדר', 'בלי "הרלוונטיות ביותר" ובלי תגובות שנעלמות.'),
     promise('leaf', 'בלי פרסומות', 'פרויקט ללא מטרות רווח, שיעבור לעמותה. אין מי שמרוויח מהזמן שלך.')),
-  el('p', { className: 'feed-rule' }, el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
+  el('p', { className: 'feed-rule' }, el('a', { href: '/intro' }, 'סרטון קצר: מה זה ולמה'), ' · ', el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
 }
 
-function namePage() {
-  const name = el('input', { type: 'text', required: true, maxLength: 60, placeholder: 'השם שיוצג לאחרים', dir: 'auto' });
+function welcomeFlag(value) {
+  try {
+    if (value === true) sessionStorage.setItem(WELCOME_KEY, '1');
+    if (value === false) sessionStorage.removeItem(WELCOME_KEY);
+    return sessionStorage.getItem(WELCOME_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+// The first screen of a new member: the name they will go by, their picture, and where to
+// learn what this place is. Whoever was invited by name only has to confirm it.
+function welcomePage() {
+  const name = el('input', { type: 'text', required: true, maxLength: 60, placeholder: 'השם שיוצג לאחרים', value: me.name ?? '', dir: 'auto' });
   const error = el('p', { className: 'error', hidden: true });
+  const first = (me.name ?? '').trim().split(/\s+/)[0];
+  const face = avatar(me, { large: true });
+  const google = googleLogin && !me.googleLinked
+    ? el('div', { className: 'welcome-google' },
+      googleButton('/api/auth/google?link=1', me.avatar ? 'חיבור חשבון Google' : 'להביא את התמונה מ-Google'),
+      el('p', { className: 'note' }, 'חיבור החשבון מאפשר גם להיכנס מכל מכשיר בלחיצה. אנחנו מקבלים מגוגל רק שם, כתובת ותמונה.'))
+    : null;
   app.replaceChildren(el('form', {
-    className: 'card',
+    className: 'card welcome',
     onsubmit: async (e) => {
       e.preventDefault();
       try {
-        await api('/me', { method: 'PUT', body: { name: name.value } });
+        if (name.value.trim() !== me.name) await api('/me', { method: 'PUT', body: { name: name.value } });
+        welcomeFlag(false);
         await start();
       } catch (err) {
         error.textContent = err.message;
         error.hidden = false;
       }
     },
-  }, el('h1', {}, 'ברוכים הבאים'), name, el('div', { className: 'row' }, el('button', { type: 'submit' }, 'המשך')), error));
+  },
+  el('h1', { dir: 'auto' }, first ? `ברוכים הבאים, ${first}` : 'ברוכים הבאים'),
+  el('p', { className: 'muted' }, 'הרשת החופשית היא רשת חברתית בלי פרסומות ובלי בעלים שמרוויחים ממנה. ',
+    el('a', { href: '/intro', target: '_blank' }, 'סרטון קצר מסביר מה זה ולמה.')),
+  me.name ? el('div', { className: 'welcome-face' }, ...editablePicture('avatar', 'בחירת תמונת פרופיל', face, error),
+    el('p', { className: 'note' }, me.avatar ? 'זו התמונה שלך. לחיצה עליה מחליפה אותה.' : 'בינתיים התמונה שלך מצוירת מהשם הפרטי. לחיצה עליה מעלה תמונה אחרת.')) : null,
+  me.name ? google : null,
+  el('label', { className: 'field' }, el('span', {}, 'השם שיוצג לאחרים'), name),
+  el('div', { className: 'row' }, el('button', { type: 'submit' }, 'כניסה לרשת')), error));
 }
 
 async function logout() {
@@ -1077,7 +1219,7 @@ async function route() {
 async function show(post, profile) {
   if (post) await postPage(post[1]);
   else if (!me) loginPage();
-  else if (!me.name) namePage();
+  else if (!me.name || welcomeFlag()) welcomePage();
   else if (profile) await profilePage(profile[1]);
   else if (location.pathname === '/friends') await friendsPage();
   else if (location.pathname === '/globe') await globePage();
@@ -1092,7 +1234,7 @@ async function start() {
   if (token) {
     history.replaceState(null, '', '/');
     try {
-      await api('/auth/verify', { method: 'POST', body: { token } });
+      if ((await api('/auth/verify', { method: 'POST', body: { token } })).joined) welcomeFlag(true);
     } catch {
       linkFailed = true;
     }
@@ -1102,6 +1244,7 @@ async function start() {
   const google = new URLSearchParams(location.search).get('google');
   if (google) {
     history.replaceState(null, '', location.pathname);
+    if (google === 'joined') welcomeFlag(true);
     if (GOOGLE_MESSAGES[google]) tell(GOOGLE_MESSAGES[google]);
   }
   if (linkFailed && !me) tell('הקישור הזה כבר נוצל או שפג תוקפו. בקשו קישור כניסה חדש ממי שהזמין אתכם.');

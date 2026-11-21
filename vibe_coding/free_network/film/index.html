@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>הרשת החופשית · סרטון ההסבר</title>
+  <link rel="stylesheet" href="film.css">
+</head>
+<body>
+  <!-- The film is a page: film.js draws any moment of it, and film/render.py photographs the
+       moments one by one. Opened in a browser it simply plays, with the narration. -->
+  <div id="stage"></div>
+  <div id="controls" hidden>
+    <button id="play" type="button">נגן</button>
+    <input id="scrub" type="range" min="0" max="1000" value="0">
+    <span id="clock"></span>
+  </div>
+  <script type="module" src="film.js"></script>
+</body>
+</html>

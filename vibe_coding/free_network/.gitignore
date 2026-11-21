@@ -2,3 +2,11 @@ node_modules/
 logs/
 .wrangler/
 .dev.vars
+
+# the film: local stage, recordings and frames are rebuilt by film/*.py
+film/.state/
+film/.stage.json
+film/audio/
+film/shots/
+film/frames/
+film/out/

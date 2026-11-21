@@ -7,6 +7,9 @@ const SESSION_COOKIE = 'session';
 const SESSION_MS = 90 * 24 * 60 * 60 * 1000;
 const LOGIN_TOKEN_MS = 15 * 60 * 1000;
 const INVITE_MS = 7 * 24 * 60 * 60 * 1000;
+// A link sent by email waits in a private inbox, so it may wait longer.
+const EMAIL_INVITE_MS = 30 * 24 * 60 * 60 * 1000;
+const NO_MAILBOX = '@invite.invalid';
 const LOGIN_REQUESTS_PER_HOUR = 5;
 const PAGE_SIZE = 30;
 const MAX_POST = 5000;
@@ -174,8 +177,9 @@ export function normalizeGoogleEmail(value) {
   return ['gmail.com', 'googlemail.com'].includes(domain) ? `${name.split('+')[0].replace(/\./g, '')}@gmail.com` : email;
 }
 
-// Trades the code from Google's redirect for Google's id of this person. The token arrives
-// straight from Google over TLS, so its claims are checked but its signature need not be.
+// Trades the code from Google's redirect for Google's id of this person, with the verified
+// address, name and picture of the account. The token arrives straight from Google over TLS,
+// so its claims are checked but its signature need not be.
 async function googleSubject(c, code) {
   const response = await fetch(c.env.GOOGLE_TOKEN_URL ?? 'https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -190,13 +194,49 @@ async function googleSubject(c, code) {
   const tokens = response?.ok ? await response.json().catch(() => null) : null;
   try {
     const payload = tokens.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const claims = JSON.parse(atob(payload));
+    const claims = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(payload), (ch) => ch.charCodeAt(0))));
     const fromGoogle = ['https://accounts.google.com', 'accounts.google.com'].includes(claims.iss);
     if (!fromGoogle || claims.aud !== c.env.GOOGLE_CLIENT_ID || typeof claims.sub !== 'string') return null;
     const verified = claims.email_verified === true || claims.email_verified === 'true';
-    return { sub: claims.sub, email: verified && claims.email ? normalizeGoogleEmail(claims.email) : null };
+    return {
+      sub: claims.sub,
+      email: verified && claims.email ? normalizeGoogleEmail(claims.email) : null,
+      name: cleanText(claims.name, MAX_NAME),
+      picture: typeof claims.picture === 'string' ? claims.picture : null,
+    };
   } catch {
     return null;
+  }
+}
+
+// A member's first picture is the one on their Google account, if they have one and have not
+// chosen a picture here. Google's server is asked by ours, once. Anything unexpected is skipped
+// quietly, and the member keeps the picture drawn from their name.
+async function importGooglePicture(c, userId, picture) {
+  try {
+    const origin = c.env.GOOGLE_PICTURE_ORIGIN ?? 'https://lh3.googleusercontent.com';
+    const url = new URL(picture);
+    if (url.origin !== origin) return;
+    const user = await c.env.DB.prepare('SELECT avatar_id FROM users WHERE id = ?').bind(userId).first();
+    if (!user || user.avatar_id) return;
+    // Google ends the address with the size it serves, like "=s96-c".
+    url.pathname = url.pathname.replace(/=s\d+(-c)?$/, '=s400-c');
+    const response = await fetch(url);
+    if (!response.ok) return;
+    const data = new Uint8Array(await response.arrayBuffer());
+    // The letter Google draws for an account without a photo is not a JPEG, so it stops here too.
+    const clean = data.length <= MAX_IMAGE_BYTES ? stripJpegMetadata(data) : null;
+    if (!clean) return;
+    const usage = await imageUsage(c);
+    if (usage.bytes + clean.length > usage.storageLimit || usage.today >= usage.uploadLimit) return;
+    const id = randomToken();
+    await c.env.IMAGES.put(id, clean, { httpMetadata: { contentType: 'image/jpeg' } });
+    await c.env.DB.batch([
+      c.env.DB.prepare('INSERT INTO images (id, owner_id, created_at, bytes) VALUES (?, ?, ?, ?)').bind(id, userId, Date.now(), clean.length),
+      c.env.DB.prepare('UPDATE users SET avatar_id = ? WHERE id = ? AND avatar_id IS NULL').bind(id, userId),
+    ]);
+  } catch {
+    // No picture from Google this time.
   }
 }
 
@@ -246,6 +286,15 @@ async function areFriends(db, a, b) {
     .bind(a, b)
     .first();
   return !!row;
+}
+
+// Whoever joins by invitation starts as a friend of the person who invited them.
+async function befriend(db, inviter, joined, now) {
+  await db
+    .prepare(`INSERT INTO friendships (requester_id, addressee_id, status, created_at)
+      VALUES (?, ?, 'accepted', ?) ON CONFLICT DO NOTHING`)
+    .bind(inviter, joined, now)
+    .run();
 }
 
 async function loadVisiblePost(c, id) {
@@ -382,30 +431,25 @@ app.post('/api/auth/verify', async (c) => {
   const now = Date.now();
   const used = await c.env.DB
     .prepare(`UPDATE login_tokens SET used_at = ?1
-      WHERE token_hash = ?2 AND used_at IS NULL AND expires_at > ?1 RETURNING email, invited_by`)
+      WHERE token_hash = ?2 AND used_at IS NULL AND expires_at > ?1 RETURNING email, invited_by, name`)
     .bind(now, await sha256(token))
     .first();
   if (!used) return c.json({ error: 'הקישור פג או שכבר השתמשו בו' }, 400);
 
-  await c.env.DB
-    .prepare('INSERT INTO users (email, created_at) VALUES (?, ?) ON CONFLICT (email) DO NOTHING')
-    .bind(used.email, now)
+  const created = await c.env.DB
+    .prepare('INSERT INTO users (email, name, created_at) VALUES (?, ?, ?) ON CONFLICT (email) DO NOTHING')
+    .bind(used.email, used.name ?? '', now)
     .run();
   const user = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(used.email).first();
-  if (used.invited_by) {
-    await c.env.DB
-      .prepare(`INSERT INTO friendships (requester_id, addressee_id, status, created_at)
-        VALUES (?, ?, 'accepted', ?) ON CONFLICT DO NOTHING`)
-      .bind(used.invited_by, user.id, now)
-      .run();
-  }
+  if (used.invited_by) await befriend(c.env.DB, used.invited_by, user.id, now);
 
   await createSession(c, user.id);
-  return c.json({ ok: true });
+  return c.json({ ok: true, joined: !!created.meta.changes });
 });
 
-// Google only ever signs in someone who already linked it from their page, so the network stays
-// invitation-only. The state cookie proves the redirect back belongs to this browser.
+// Google signs in only someone who linked it from their page, or whose invitation was sent to
+// the address Google vouches for, so the network stays invitation-only. The state cookie proves
+// the redirect back belongs to this browser.
 app.get('/api/auth/google', (c) => {
   if (!c.env.GOOGLE_CLIENT_ID) return c.json({ error: 'לא נמצא' }, 404);
   const mode = c.req.query('link') === '1' ? 'link' : 'login';
@@ -424,7 +468,7 @@ app.get('/api/auth/google', (c) => {
     client_id: c.env.GOOGLE_CLIENT_ID,
     redirect_uri: googleRedirectUri(c),
     response_type: 'code',
-    scope: 'openid email',
+    scope: 'openid email profile',
     prompt: 'select_account',
     state,
   });
@@ -443,34 +487,47 @@ app.get('/api/auth/google/callback', async (c) => {
   if (!google) return finish('failed');
   const subject = google.sub;
 
-  const owner = await c.env.DB.prepare('SELECT id FROM users WHERE google_sub = ?').bind(subject).first();
+  const db = c.env.DB;
+  const owner = await db.prepare('SELECT id FROM users WHERE google_sub = ?').bind(subject).first();
   if (mode === 'link') {
     const user = c.get('user');
     if (!user) return finish('failed');
     if (owner && owner.id !== user.id) return finish('taken');
-    await c.env.DB.prepare('UPDATE users SET google_sub = ? WHERE id = ?').bind(subject, user.id).run();
+    await db.prepare('UPDATE users SET google_sub = ? WHERE id = ?').bind(subject, user.id).run();
+    await importGooglePicture(c, user.id, google.picture);
     return finish('linked');
   }
   if (owner) {
     await createSession(c, owner.id);
     return finish('login');
   }
+  if (!google.email) return finish('unknown');
 
-  // Someone new signs in with the address they were invited by: their account starts linked.
-  const invite = google.email && await c.env.DB
-    .prepare('DELETE FROM google_invites WHERE email = ? RETURNING invited_by')
-    .bind(google.email)
+  // A member who was invited at this address: Google vouches that it is theirs, so the account
+  // is linked from now on.
+  const member = await db.prepare('SELECT id FROM users WHERE email = ? AND google_sub IS NULL').bind(google.email).first();
+  if (member) {
+    await db.prepare('UPDATE users SET google_sub = ? WHERE id = ?').bind(subject, member.id).run();
+    await importGooglePicture(c, member.id, google.picture);
+    await createSession(c, member.id);
+    return finish('login');
+  }
+
+  // Someone new whose invitation still waits: signing in with that address takes it.
+  const now = Date.now();
+  const invite = await db
+    .prepare(`UPDATE login_tokens SET used_at = ?1 WHERE token_hash = (SELECT token_hash FROM login_tokens
+        WHERE email = ?2 AND invited_by IS NOT NULL AND used_at IS NULL AND expires_at > ?1 ORDER BY created_at DESC LIMIT 1)
+      RETURNING invited_by, name`)
+    .bind(now, google.email)
     .first();
   if (!invite) return finish('unknown');
-  const now = Date.now();
-  const user = await c.env.DB
-    .prepare('INSERT INTO users (email, google_sub, created_at) VALUES (?, ?, ?) RETURNING id')
-    .bind(`member-${randomToken().slice(0, 16).toLowerCase()}@invite.invalid`, subject, now)
+  const user = await db
+    .prepare('INSERT INTO users (email, name, google_sub, created_at) VALUES (?, ?, ?, ?) RETURNING id')
+    .bind(google.email, invite.name ?? google.name ?? '', subject, now)
     .first();
-  await c.env.DB
-    .prepare(`INSERT INTO friendships (requester_id, addressee_id, status, created_at) VALUES (?, ?, 'accepted', ?)`)
-    .bind(invite.invited_by, user.id, now)
-    .run();
+  await befriend(db, invite.invited_by, user.id, now);
+  await importGooglePicture(c, user.id, google.picture);
   await createSession(c, user.id);
   return finish('joined');
 });
@@ -1000,26 +1057,45 @@ app.get('/api/admin/overview', requireAdmin, async (c) => {
       (SELECT COUNT(*) FROM comments WHERE removed_by IS NULL) AS comments`),
     db.prepare('SELECT id, name, avatar_id AS avatar, created_at AS joinedAt FROM users ORDER BY id'),
   ]);
-  const { results: googleInvites } = await db
-    .prepare('SELECT email, created_at AS createdAt FROM google_invites ORDER BY created_at DESC')
+  const { results: emailInvites } = await db
+    .prepare(`SELECT email, name, MAX(created_at) AS createdAt, MAX(expires_at) AS expiresAt FROM login_tokens
+      WHERE invited_by IS NOT NULL AND used_at IS NULL AND expires_at > ? AND email NOT LIKE ?
+      GROUP BY email ORDER BY createdAt DESC`)
+    .bind(Date.now(), `%${NO_MAILBOX}`)
     .all();
-  return c.json({ usage: await imageUsage(c), ...counts.results[0], members: members.results, googleInvites });
+  return c.json({ usage: await imageUsage(c), ...counts.results[0], members: members.results, emailInvites });
 });
 
-app.post('/api/admin/google-invites', requireAdmin, async (c) => {
-  const raw = (await readJson(c)).email;
+// An invitation to an email address. The admin sends the link from their own mailbox, and the
+// address stays on the account: it is how the member comes back with Google. Inviting the same
+// address again replaces the link that was waiting.
+app.post('/api/admin/email-invites', requireAdmin, async (c) => {
+  const input = await readJson(c);
+  const raw = input.email;
   const email = typeof raw === 'string' && raw.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim())
     ? normalizeGoogleEmail(raw) : null;
-  if (!email) return c.json({ error: 'כתובת לא תקינה' }, 400);
-  await c.env.DB
-    .prepare('INSERT INTO google_invites (email, invited_by, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING')
-    .bind(email, c.get('user').id, Date.now())
-    .run();
-  return c.json({ email }, 201);
+  if (!email || email.endsWith(NO_MAILBOX)) return c.json({ error: 'כתובת לא תקינה' }, 400);
+  const name = input.name === undefined || input.name === '' ? null : cleanText(input.name, MAX_NAME);
+  if (input.name && !name) return c.json({ error: 'השם ארוך מדי, עד 60 תווים' }, 400);
+
+  const db = c.env.DB;
+  const member = await db.prepare('SELECT 1 FROM users WHERE email = ?').bind(email).first();
+  if (member) return c.json({ error: 'הכתובת הזו כבר שייכת לחבר ברשת' }, 409);
+  const token = randomToken();
+  const now = Date.now();
+  await db.batch([
+    db.prepare('DELETE FROM login_tokens WHERE email = ? AND invited_by IS NOT NULL AND used_at IS NULL').bind(email),
+    db.prepare('INSERT INTO login_tokens (token_hash, email, created_at, expires_at, invited_by, name) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(await sha256(token), email, now, now + EMAIL_INVITE_MS, c.get('user').id, name),
+  ]);
+  return c.json({ email, name, link: `${new URL(c.req.url).origin}/login#token=${token}`, expiresAt: now + EMAIL_INVITE_MS }, 201);
 });
 
-app.delete('/api/admin/google-invites/:email', requireAdmin, async (c) => {
-  await c.env.DB.prepare('DELETE FROM google_invites WHERE email = ?').bind(c.req.param('email')).run();
+app.delete('/api/admin/email-invites/:email', requireAdmin, async (c) => {
+  await c.env.DB
+    .prepare('DELETE FROM login_tokens WHERE email = ? AND invited_by IS NOT NULL AND used_at IS NULL')
+    .bind(c.req.param('email'))
+    .run();
   return c.json({ ok: true });
 });
 
@@ -1027,7 +1103,7 @@ app.delete('/api/admin/google-invites/:email', requireAdmin, async (c) => {
 // someone who lost their session. The link works once. Members get an address nobody can mail.
 app.post('/api/admin/invites', requireAdmin, async (c) => {
   const { userId } = await readJson(c);
-  let email = `member-${randomToken().slice(0, 16).toLowerCase()}@invite.invalid`;
+  let email = `member-${randomToken().slice(0, 16).toLowerCase()}${NO_MAILBOX}`;
   let invitedBy = c.get('user').id;
   if (userId !== undefined) {
     const user = await c.env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first();
