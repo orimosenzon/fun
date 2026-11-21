@@ -20,6 +20,9 @@ dry_run_main_page.txt
 archive_bot_talk_cron.log
 committees_cron.log
 protocol_cache/
-hood_maps/
+hood_maps/*
+!hood_maps/hoods.json
+!hood_maps/roads.json
 drive_scan_cron.log
 cron_alert_state.json
+hood_maps/out/
