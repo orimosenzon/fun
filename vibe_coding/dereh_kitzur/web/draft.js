@@ -160,12 +160,25 @@ const Drafts = (() => {
 
   /* ---------- geometry ---------- */
 
+  /* A walk's path only grows, and the bar asks for its length on every paint,
+   * so the sum so far is remembered and only the new points are added. Kept
+   * per array, and checked against the last point it counted, so a path that
+   * was cut back (an undo) is summed afresh. */
+  const lengthSoFar = new WeakMap();
+
   function pathLength(path) {
+    const seen = lengthSoFar.get(path);
     let sum = 0;
-    for (let i = 1; i < path.length; i++) {
+    let from = 1;
+    if (seen && seen.n <= path.length && path[seen.n - 1] === seen.last) {
+      sum = seen.sum;
+      from = seen.n;
+    }
+    for (let i = from; i < path.length; i++) {
       sum += distance({ lat: path[i - 1][0], lng: path[i - 1][1] },
                       { lat: path[i][0], lng: path[i][1] });
     }
+    if (path.length) lengthSoFar.set(path, { n: path.length, last: path[path.length - 1], sum });
     return Math.round(sum);
   }
 
@@ -461,11 +474,18 @@ const Drafts = (() => {
 
   function editorGeoJSON() {
     const line = ed.path.map(([lat, lng]) => [lng, lat]);
+    // A walk gets a point every few metres, thousands of them by the end, and
+    // a dot on each is a smear along the line that costs the map a feature
+    // apiece. It shows its two ends only; a drawn line keeps a dot per tap,
+    // because those are the handles the drawer placed.
+    const n = ed.path.length;
+    const dotted = ed.mode !== 'walk' ? ed.path
+      : n > 1 ? [ed.path[0], ed.path[n - 1]] : ed.path;
     return {
       type: 'FeatureCollection',
       features: [
         { type: 'Feature', geometry: { type: 'LineString', coordinates: line }, properties: {} },
-        ...ed.path.map(([lat, lng], i) => ({
+        ...dotted.map(([lat, lng], i) => ({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [lng, lat] },
           properties: { end: i === 0 || i === ed.path.length - 1 ? 1 : 0 }
@@ -644,17 +664,36 @@ const Drafts = (() => {
 
   /* Inside the app every line also goes to the app's own log file (see
    * Native.log), marked P for page; the app's own lines there are marked N. */
+  /* The lines are kept in memory and written out together, at most every two
+   * seconds and whenever the page may be about to go. Until 21/11/2026 every
+   * line parsed and rewrote the whole stored log, up to 3000 lines, and a walk
+   * logs a line per GPS fix: after a long walk with the screen off, the fixes
+   * that had waited for the page arrived together and each paid that price,
+   * and the app stood still for minutes (tests/test_walk_backlog.py). */
+  let glogBuf = null;               // the stored lines, once read, plus new ones
+  let glogTimer = 0;
+
   function glog(...parts) {
     const t = new Date().toLocaleTimeString('en-GB', { hour12: false });
     const line = `${t} P ${parts.join(' ')}`;
     Native.log(line);
     try {
-      const lines = JSON.parse(localStorage.getItem(GPS_LOG) || '[]');
-      lines.push(line);
-      localStorage.setItem(GPS_LOG, JSON.stringify(lines.slice(-GPS_LOG_MAX)));
+      if (!glogBuf) glogBuf = JSON.parse(localStorage.getItem(GPS_LOG) || '[]');
+      glogBuf.push(line);
+      if (glogBuf.length > GPS_LOG_MAX + 500) glogBuf = glogBuf.slice(-GPS_LOG_MAX);
+      if (!glogTimer) glogTimer = setTimeout(glogFlush, 2000);
     } catch (err) {
       /* a log is never allowed to be why the recording fails */
     }
+  }
+
+  function glogFlush() {
+    clearTimeout(glogTimer);
+    glogTimer = 0;
+    if (!glogBuf) return;
+    try {
+      localStorage.setItem(GPS_LOG, JSON.stringify(glogBuf.slice(-GPS_LOG_MAX)));
+    } catch (err) { /* as above */ }
   }
 
   /* What happens to the page itself, logged in the app always (it is the
@@ -668,6 +707,9 @@ const Drafts = (() => {
     }
     const note = (what) => () => {
       if (Native.isApp || (ed && ed.mode === 'walk')) glog(what, `visibility=${document.visibilityState}`);
+      // The page may not get another chance: what is buffered goes out now.
+      glogFlush();
+      if (ed && ed.mode === 'walk') saveLive();
     };
     document.addEventListener('freeze', note('page freeze'));
     document.addEventListener('resume', note('page resume'));
@@ -675,10 +717,15 @@ const Drafts = (() => {
     window.addEventListener('pageshow', note('pageshow'));
     document.addEventListener('visibilitychange', () => {
       if (Native.isApp && !(ed && ed.mode === 'walk')) glog('visibility', document.visibilityState);
+      if (document.hidden) {
+        glogFlush();
+        if (ed && ed.mode === 'walk') saveLive();
+      }
     });
   }
 
   async function showGpsLog() {
+    glogFlush();
     let lines = [];
     try { lines = JSON.parse(localStorage.getItem(GPS_LOG) || '[]'); } catch (err) { /* empty */ }
     const file = await Native.readLog();
@@ -699,6 +746,9 @@ const Drafts = (() => {
       const a = e.target.dataset && e.target.dataset.a;
       if (a === 'close') box.remove();
       if (a === 'clear' && confirm('למחוק את הלוג?')) {
+        glogBuf = null;
+        clearTimeout(glogTimer);
+        glogTimer = 0;
         try { localStorage.removeItem(GPS_LOG); } catch (err) { /* nothing to drop */ }
         await Native.clearLog();
         box.remove();
@@ -923,6 +973,43 @@ const Drafts = (() => {
       const since = mine.lastFixAt ? `${Math.round((Date.now() - mine.lastFixAt) / 1000)}s ago` : 'never';
       glog('js beat', `pts=${mine.path.length}`, `lastFix=${since}`, `visibility=${document.visibilityState}`);
     }, 30000);
+    /* A fix does only what it must: decide, keep the point, write a log line.
+     * Painting (the dot, the camera, the line, the bar) and the live mirror
+     * wait for a quiet moment, so fixes that arrive together, as they do when
+     * the phone wakes after a long time with the screen off, are painted once
+     * and not once each. Before 21/11/2026 every fix repainted the whole walk
+     * and rewrote it to storage, and a pile of fixes after a long walk froze
+     * the app for minutes (tests/test_walk_backlog.py). */
+    let paintSoon = 0;
+    let savedAt = 0;
+    const walkPaint = () => {
+      paintSoon = 0;
+      if (ed !== mine) return;
+      saveLive();
+      savedAt = Date.now();
+      // A hidden page draws nothing anyway; the map catches up when it shows.
+      if (map && here && !document.hidden) {
+        drawMe();
+        if (ed.path.length < 2) map.easeTo({ center: [here.lng, here.lat], zoom: 18, duration: 500 });
+        // Past the first points the map is the walker's to pan, so it only
+        // follows once they have walked off the edge of it.
+        else if (!map.getBounds().contains([here.lng, here.lat])) {
+          map.easeTo({ center: [here.lng, here.lat], duration: 500 });
+        }
+        paintEditor();
+      } else {
+        paintBar();
+      }
+    };
+    const walkSoon = () => {
+      // The mirror is the rescue if the page is killed, so a steady stream of
+      // fixes may not keep pushing it back for ever.
+      if (Date.now() - savedAt > 5000) { saveLive(); savedAt = Date.now(); }
+      if (!paintSoon) paintSoon = setTimeout(walkPaint, 250);
+    };
+    ed.walkShown = () => { if (ed === mine && !document.hidden) walkSoon(); };
+    document.addEventListener('visibilitychange', ed.walkShown);
+
     const onFix = (pos) => {
       if (ed !== mine) return;        // a native fix still on its way after stop
       ed.lastFixAt = Date.now();
@@ -931,11 +1018,6 @@ const Drafts = (() => {
       const note = (verdict) => glog('fix', `acc=${Math.round(acc)}`,
         `${lat.toFixed(5)},${lng.toFixed(5)}`, `age=${age}ms`, verdict);
       here = { lat, lng };
-      drawMe();
-      if (map && ed.path.length < 2) map.easeTo({ center: [lng, lat], zoom: 18, duration: 500 });
-      // Past the first points the map is the walker's to pan, so it only
-      // follows once they have walked off the edge of it.
-      else if (map && !map.getBounds().contains([lng, lat])) map.easeTo({ center: [lng, lat], duration: 500 });
 
       // A vague fix is worse than no fix: it bends the trail sideways by more
       // than the trail is wide, and that error is then stored for good.
@@ -946,17 +1028,17 @@ const Drafts = (() => {
         glog('coarse location');
         tellCoarse(acc);
       }
-      if (ed.paused || ed.weak) { note(ed.paused ? 'paused' : 'weak'); paintBar(); return; }
+      if (ed.paused || ed.weak) { note(ed.paused ? 'paused' : 'weak'); walkSoon(); return; }
 
       const last = ed.path[ed.path.length - 1];
       if (last && distance({ lat: last[0], lng: last[1] }, { lat, lng }) < MIN_STEP_M) {
         note('still');
-        paintBar();
+        walkSoon();
         return;                       // standing still, not walking
       }
       ed.path.push([+lat.toFixed(6), +lng.toFixed(6)]);
       note(`push #${ed.path.length}`);
-      paintEditor();
+      walkSoon();
     };
     const onError = (err) => {
       if (ed !== mine) return;
@@ -990,8 +1072,9 @@ const Drafts = (() => {
   }
 
   function stopEditor(quiet) {
-    if (ed && ed.mode === 'walk') glog('---- walk stop', `${ed.path.length}pts`);
+    if (ed && ed.mode === 'walk') { glog('---- walk stop', `${ed.path.length}pts`); glogFlush(); }
     document.removeEventListener('visibilitychange', onVisibility);
+    if (ed && ed.walkShown) document.removeEventListener('visibilitychange', ed.walkShown);
     if (ed && ed.beat) clearInterval(ed.beat);
     if (ed && ed.lock) { const lock = ed.lock; ed.lock = null; lock.release().catch(() => {}); }
     if (ed && ed.watch != null) navigator.geolocation.clearWatch(ed.watch);

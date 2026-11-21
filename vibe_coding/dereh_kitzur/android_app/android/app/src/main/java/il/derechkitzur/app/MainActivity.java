@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle saved) {
         DkLog.start(this);
+        StillAlarm.start(this);
         registerPlugin(DkLogPlugin.class);
         super.onCreate(saved);
         DkLog.w("activity create", saved != null ? "restored-from-state" : "fresh");

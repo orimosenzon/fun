@@ -38,7 +38,10 @@ try:
                             user_agent=ANDROID_UA, has_touch=True,
                             permissions=['geolocation'],
                             geolocation={'latitude': 32.475, 'longitude': 34.97, 'accuracy': 2000})
+        # The "keep the screen on" note (browser only, once) is told as already
+        # given: it sits over the precise-location note this test clicks.
         ctx.add_init_script("try { localStorage.setItem('dk.welcome.v1', '1');"
+                            " localStorage.setItem('dk.toldScreen.v1', '1');"
                             " localStorage.removeItem('dk.editor.v1');"
                             # once per tab, or the ?gpslog load would wipe it
                             " if (!sessionStorage.getItem('t')) { sessionStorage.setItem('t', 1);"
