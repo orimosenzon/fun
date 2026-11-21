@@ -869,7 +869,7 @@ const Drafts = (() => {
         : '<p style="margin:0 0 14px">בינתיים: להשאיר את המסך דלוק עד סוף ההליכה.</p>')
       + '<div style="display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap">'
       + (android ? '<button data-a="app" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#6a1b9a;color:#fff">התקנת האפליקציה</button>' : '')
-      + '<button data-a="close" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#eee;color:#333">הבנתי</button></div></div>';
+      + '<button data-a="close" style="border:0;border-radius:12px;padding:12px 22px;font:inherit;font-size:15px;font-weight:700;background:#1b5e20;color:#fff">הבנתי</button></div></div>';
     box.addEventListener('click', (e) => {
       const a = e.target.dataset && e.target.dataset.a;
       if (a === 'app') { glog('open setup apk'); window.open(SETUP_APK, '_blank'); }

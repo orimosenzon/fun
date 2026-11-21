@@ -815,6 +815,7 @@ body.craft-bike #craft .craft-bal { display: block; }
 .row .txt { flex: 1; min-width: 0; }
 
 .row .nm {
+  display: block;                   /* a span: without this the ellipsis never applied */
   font-size: 14.5px;
   font-weight: 600;
   /* The row is in its layer's colour, and the gold of the shortcuts is too
@@ -827,6 +828,7 @@ body.craft-bike #craft .craft-bal { display: block; }
 }
 
 .row .sub {
+  display: block;
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
@@ -978,11 +980,18 @@ body.craft-bike #craft .craft-bal { display: block; }
   text-decoration: none;
   color: inherit;
   background: #fff;
+  /* One card, three elements: a link, a button and a label around a file
+   * input all use this, and each brings its own default (a button centres its
+   * text and sizes to it, a link starts at the edge). Until 21/11/2026 the
+   * same list mixed centred and edge-aligned captions for that reason. */
+  width: 100%;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
 }
+span.act { cursor: default; }
 
 .act:hover { background: #f6faf8; }
-/* "הוספת תמונות" היא label (עוטפת input של קובץ), ו-label לא ממרכז טקסט כמו button */
-label.act { text-align: center; }
 
 /* The primary action: navigate without leaving the app. */
 .act-nav {
@@ -994,6 +1003,7 @@ label.act { text-align: center; }
 
 .act-sub { padding: 8px 12px; }
 .act-sub .lbl { font-weight: 500; font-size: 13px; color: var(--muted); }
+.act-sub svg { fill: #8a9690; }
 
 /* Access points far from any road, where Google may have no panorama. */
 .act.weak { border-style: dashed; }
@@ -1728,8 +1738,11 @@ label.act { text-align: center; }
 /* Two text fields side by side stop being fillable somewhere around here. */
 @media (max-width: 420px) {
   .link-row { grid-template-columns: 1fr auto; }
-  .link-row .l-title { grid-column: 1; }
-  .link-row .link-x { grid-row: 1 / span 2; }
+  /* Every cell placed by hand: left to itself the × took the first column
+   * and pushed the address into the narrow one beside it. */
+  .link-row .l-url { grid-column: 1; grid-row: 1; }
+  .link-row .l-title { grid-column: 1; grid-row: 2; }
+  .link-row .link-x { grid-column: 2; grid-row: 1 / span 2; }
 }
 
 /* ---------- colour picker and radio picks ---------- */
@@ -4422,4 +4435,49 @@ body.flying .m3d-ctl { display: none !important; }
   .m3d-exit { left: calc(50% - var(--panel-w) / 2); }
   .m3d-hint { right: calc(var(--panel-w) + 16px); }
   .panel-anim .m3d-ctl { transition: all .22s ease; }
+}
+
+
+/* ---------- the UX pass of 21/11/2026 ---------- */
+
+/* On a phone the zoom buttons repeat what two fingers do, and the share
+ * button repeats the ☰ menu. Together they filled the corner the flight
+ * button rises into when the list is half open, and the balloon sat on top of
+ * them. The compass stays: it is the only way back to north. */
+@media (pointer: coarse) and (max-width: 719px) {
+  .maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out, .share-ctrl { display: none !important; }
+}
+
+/* "מה מתוכנן כאן?" armed: the top bar steps aside, and until now nothing took
+ * its place, so the screen did not say that the next tap is the question. */
+body.asking-plan::before {
+  content: "לחץ על נקודה במפה כדי לראות מה מתוכנן בה";
+  position: fixed;
+  z-index: 900;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  inset-inline: 14px 56px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+  pointer-events: none;
+}
+@media (min-width: 720px) {
+  body.asking-plan::before { inset-inline: calc(var(--panel-w) + 70px) auto; max-width: 340px; }
+}
+body.flying.asking-plan::before { display: none; }
+
+/* A layer that is off shows two lines of its description; switching it on
+ * shows all of it. The sheet is a list of switches first, and with every
+ * paragraph open the ten trail layers ran to five screens. */
+.lay:not(.on) .lay-note {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }

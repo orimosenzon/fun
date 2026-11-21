@@ -470,6 +470,8 @@ function icon(path) {
 
 const I_PANO = 'M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z';
 const I_ROUTE = 'M6.5 3a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM17.5 12a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM6 13.5v1.5a3 3 0 003 3h3v-2H9a1 1 0 01-1-1v-1.5zm6-7.5v2h3a1 1 0 011 1v1h2V9a3 3 0 00-3-3z';
+const I_OUT = 'M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z';
+const I_PHONE = 'M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25c1.1.37 2.3.57 3.6.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02z';
 const I_WALK ='M13.5 5.5a2 2 0 100-4 2 2 0 000 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3A7 7 0 0019 13v-2a5 5 0 01-4.2-2.4l-1-1.6c-.4-.6-1-1-1.8-1-.3 0-.5 0-.8.2L6 8.3V13h2V9.6l1.8-.7z';
 
 /* ---------- map layers ---------- */
@@ -779,7 +781,7 @@ function subtitle(it) {
     const d = nearestMetres(it);
     if (isFinite(d)) bits.push(d < 1000 ? `${Math.round(d)} מ׳ ממך` : `${(d / 1000).toFixed(1)} ק"מ ממך`);
   }
-  if (it.photos && it.photos.length) bits.push(`${it.photos.length} תמונות`);
+  if (it.photos && it.photos.length) bits.push(it.photos.length === 1 ? 'תמונה אחת' : `${it.photos.length} תמונות`);
   if (it.kind) bits.push(it.kind);
   if (it.note) bits.push(it.note);
   return bits.join(' · ');
@@ -899,6 +901,7 @@ function navActs(it, hint) {
         <span class="hint">${escapeHtml(hint)}</span></span>
     </button>
     <a class="act act-sub" href="${walkUrl(first.lat, first.lng)}" target="_blank" rel="noopener">
+      ${icon(I_OUT)}
       <span class="lbl">פתח בגוגל מפות
         <span class="hint">מנווט עד השכונה, לא דרך השביל</span></span>
     </a>`;
@@ -925,6 +928,7 @@ function linksBlock(it) {
     <div class="acts">
       ${links.map((l) => `<a class="act act-link${l.lead ? ' act-nav' : ''}"
           href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">
+        ${icon(I_OUT)}
         <span class="lbl">${escapeHtml(l.title)}
           <span class="hint">${escapeHtml(hostOf(l.url))}</span></span>
       </a>`).join('')}
@@ -1128,6 +1132,7 @@ function contactBlock(it) {
   const rows = [];
   if (it.phone) {
     rows.push(`<a class="act act-link" href="tel:${escapeHtml(it.phone.replace(/[^\d+]/g, ''))}">
+      ${icon(I_PHONE)}
       <span class="lbl">${escapeHtml(it.phone)}<span class="hint">חיוג</span></span></a>`);
   }
   if (it.access) {
@@ -3796,7 +3801,7 @@ function paintStats() {
   if (s.segments) bits.push(`${s.segments} מקטעים`, metres(s.length));
   if (s.waypoints) bits.push(`${s.waypoints} נקודות ציון`);
   if (s.places) bits.push(`${s.places} מקומות`);
-  if (s.photos) bits.push(`${s.photos} תמונות`);
+  if (s.photos) bits.push(s.photos === 1 ? 'תמונה אחת' : `${s.photos} תמונות`);
   if (s.waiting) bits.push(plural(s.waiting, 'שביל אחד ממתין לאישור', 'שבילים ממתינים לאישור'));
   if (!bits.length) bits.push('אין שכבה דלוקה');
   if (Store.offline) bits.push('לא מחובר, מציג עותק שמור');
@@ -4234,7 +4239,7 @@ function welcome() {
     <button class="big-act primary" data-act="add"><b>להוסיף דרך קיצור</b>
       <span>בלי הרשמה, בלי חשבון ובלי סיסמה. רק שם שייכתב לידה</span></button>
     <button class="big-act ghost" data-act="close"><b>אחר כך</b>
-      <span>הכפתור נשאר בראש הרשימה</span></button>`);
+      <span>הכפתור "הוסף קיצור" נשאר בראש המפה</span></button>`);
 }
 
 /* ---------- edit mode ----------
@@ -4295,7 +4300,7 @@ function editorSheet() {
     <button class="big-act" data-act="out"><b>כבה מצב עריכה</b>
       <span>הכפתורים ייעלמו מהמסך והסיסמה תישכח במכשיר. הטיוטות שלך נשארות.</span></button>` : `${head}
     <p class="sheet-lead">כדי להוסיף שביל למפה לא צריך שום דבר מכאן: לוחצים על
-      "הוסף דרך קיצור" בראש הרשימה, הולכים בשביל, ושולחים. מצב עריכה הוא משהו
+      "הוסף קיצור" בראש המפה, הולכים בשביל, ושולחים. מצב עריכה הוא משהו
       אחר, והוא מיועד למי שמאשר מה נכנס למפה.</p>
     <label class="fld"><span>איך לקרוא לך</span>
       <input id="ed-name" type="text" maxlength="40" value="${escapeHtml(Store.named())}"
