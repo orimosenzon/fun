@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { outsideNews, israelNews, PICTURE_HOSTS } from './digest.js';
 import { writeLog } from './log.js';
+import { DEFAULT_NOTE, MAX_NOTE, SEND_SCOPE, inviteLetter, seal, sendFromGmail, unseal } from './mail.js';
 
 const SESSION_COOKIE = 'session';
 const SESSION_MS = 90 * 24 * 60 * 60 * 1000;
@@ -201,6 +202,9 @@ async function googleSubject(c, code) {
     return {
       sub: claims.sub,
       email: verified && claims.email ? normalizeGoogleEmail(claims.email) : null,
+      address: verified && claims.email ? String(claims.email) : null,
+      refreshToken: typeof tokens.refresh_token === 'string' ? tokens.refresh_token : null,
+      scopes: typeof tokens.scope === 'string' ? tokens.scope.split(' ') : [],
       name: cleanText(claims.name, MAX_NAME),
       picture: typeof claims.picture === 'string' ? claims.picture : null,
     };
@@ -452,8 +456,9 @@ app.post('/api/auth/verify', async (c) => {
 // the redirect back belongs to this browser.
 app.get('/api/auth/google', (c) => {
   if (!c.env.GOOGLE_CLIENT_ID) return c.json({ error: 'לא נמצא' }, 404);
-  const mode = c.req.query('link') === '1' ? 'link' : 'login';
+  const mode = c.req.query('mail') === '1' ? 'mail' : c.req.query('link') === '1' ? 'link' : 'login';
   if (mode === 'link' && !c.get('user')) return c.redirect('/login');
+  if (mode === 'mail' && !isAdmin(c)) return c.redirect('/');
 
   const state = randomToken();
   setCookie(c, GOOGLE_STATE_COOKIE, `${mode}.${state}`, {
@@ -468,8 +473,10 @@ app.get('/api/auth/google', (c) => {
     client_id: c.env.GOOGLE_CLIENT_ID,
     redirect_uri: googleRedirectUri(c),
     response_type: 'code',
-    scope: 'openid email profile',
-    prompt: 'select_account',
+    // To send invitations, Google is asked for one more thing only: sending. Not reading.
+    scope: mode === 'mail' ? `openid email ${SEND_SCOPE}` : 'openid email profile',
+    prompt: mode === 'mail' ? 'consent' : 'select_account',
+    ...(mode === 'mail' ? { access_type: 'offline' } : {}),
     state,
   });
   return c.redirect(url.href);
@@ -488,6 +495,17 @@ app.get('/api/auth/google/callback', async (c) => {
   const subject = google.sub;
 
   const db = c.env.DB;
+  if (mode === 'mail') {
+    const back = (result) => c.redirect(`/admin?google=${result}`);
+    if (!isAdmin(c)) return finish('failed');
+    if (!google.refreshToken || !google.address || !google.scopes.includes(SEND_SCOPE)) return back('mail-refused');
+    await db
+      .prepare(`INSERT INTO mailers (user_id, address, refresh_token, created_at) VALUES (?1, ?2, ?3, ?4)
+        ON CONFLICT (user_id) DO UPDATE SET address = ?2, refresh_token = ?3, created_at = ?4`)
+      .bind(c.get('user').id, google.address, await seal(c.env.GOOGLE_CLIENT_SECRET, google.refreshToken), Date.now())
+      .run();
+    return back('mail');
+  }
   const owner = await db.prepare('SELECT id FROM users WHERE google_sub = ?').bind(subject).first();
   if (mode === 'link') {
     const user = c.get('user');
@@ -1063,12 +1081,26 @@ app.get('/api/admin/overview', requireAdmin, async (c) => {
       GROUP BY email ORDER BY createdAt DESC`)
     .bind(Date.now(), `%${NO_MAILBOX}`)
     .all();
-  return c.json({ usage: await imageUsage(c), ...counts.results[0], members: members.results, emailInvites });
+  const mailer = await db.prepare('SELECT address FROM mailers WHERE user_id = ?').bind(c.get('user').id).first();
+  return c.json({ usage: await imageUsage(c), ...counts.results[0], members: members.results, emailInvites, mailer, defaultNote: DEFAULT_NOTE });
 });
 
-// An invitation to an email address. The admin sends the link from their own mailbox, and the
-// address stays on the account: it is how the member comes back with Google. Inviting the same
-// address again replaces the link that was waiting.
+// Stops the sending: the key is erased here, and Google is told to stop honouring it.
+app.delete('/api/admin/mailer', requireAdmin, async (c) => {
+  const row = await c.env.DB.prepare('DELETE FROM mailers WHERE user_id = ? RETURNING refresh_token').bind(c.get('user').id).first();
+  if (row) {
+    const token = await unseal(c.env.GOOGLE_CLIENT_SECRET, row.refresh_token).catch(() => null);
+    if (token) {
+      await fetch(c.env.GOOGLE_REVOKE_URL ?? 'https://oauth2.googleapis.com/revoke', { method: 'POST', body: new URLSearchParams({ token }) }).catch(() => null);
+    }
+  }
+  return c.json({ ok: true });
+});
+
+// An invitation to an email address. The letter goes out from the admin's own Gmail if they
+// connected it, and otherwise comes back for them to send by hand. The address stays on the
+// account: it is how the member comes back with Google. Inviting the same address again
+// replaces the link that was waiting.
 app.post('/api/admin/email-invites', requireAdmin, async (c) => {
   const input = await readJson(c);
   const raw = input.email;
@@ -1077,6 +1109,8 @@ app.post('/api/admin/email-invites', requireAdmin, async (c) => {
   if (!email || email.endsWith(NO_MAILBOX)) return c.json({ error: 'כתובת לא תקינה' }, 400);
   const name = input.name === undefined || input.name === '' ? null : cleanText(input.name, MAX_NAME);
   if (input.name && !name) return c.json({ error: 'השם ארוך מדי, עד 60 תווים' }, 400);
+  const note = input.note === undefined || input.note === '' ? null : cleanText(input.note, MAX_NOTE);
+  if (input.note && !note) return c.json({ error: `המכתב ארוך מדי, עד ${MAX_NOTE} תווים` }, 400);
 
   const db = c.env.DB;
   const member = await db.prepare('SELECT 1 FROM users WHERE email = ?').bind(email).first();
@@ -1088,7 +1122,15 @@ app.post('/api/admin/email-invites', requireAdmin, async (c) => {
     db.prepare('INSERT INTO login_tokens (token_hash, email, created_at, expires_at, invited_by, name) VALUES (?, ?, ?, ?, ?, ?)')
       .bind(await sha256(token), email, now, now + EMAIL_INVITE_MS, c.get('user').id, name),
   ]);
-  return c.json({ email, name, link: `${new URL(c.req.url).origin}/login#token=${token}`, expiresAt: now + EMAIL_INVITE_MS }, 201);
+  const site = new URL(c.req.url).origin;
+  const expiresAt = now + EMAIL_INVITE_MS;
+  const letter = inviteLetter({ name, sender: c.get('user').name, note, link: `${site}/login#token=${token}`, site, expiresAt });
+
+  // The letter is addressed as the admin typed it. Gmail ignores the dots, but people do not.
+  const mailer = input.send === false ? null : await db.prepare('SELECT refresh_token FROM mailers WHERE user_id = ?').bind(c.get('user').id).first();
+  const outcome = mailer ? await sendFromGmail(c.env, mailer.refresh_token, { to: raw.trim(), ...letter }) : null;
+  if (outcome === 'expired') await db.prepare('DELETE FROM mailers WHERE user_id = ?').bind(c.get('user').id).run();
+  return c.json({ email, name, link: `${site}/login#token=${token}`, expiresAt, subject: letter.subject, text: letter.text, sent: outcome === 'sent', sendProblem: outcome === 'sent' ? null : outcome }, 201);
 });
 
 app.delete('/api/admin/email-invites/:email', requireAdmin, async (c) => {

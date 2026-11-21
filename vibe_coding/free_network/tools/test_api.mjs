@@ -19,6 +19,8 @@ const VIDEO_ID = 'abcdefghijk';
 const youtubeRequests = [];
 const digestRequests = [];
 const pictureRequests = [];
+const mailSent = [];
+const revoked = [];
 
 // Stands in for YouTube, and records what the worker sends it.
 const fakeYoutube = createServer((request, response) => {
@@ -29,13 +31,24 @@ const fakeYoutube = createServer((request, response) => {
       // A code like "google-x" is a person with no address; "google-x:a@b.com" has one, "!" unverified.
       // A third part is the picture of the account: "photo" is a real one, "letter" is the letter
       // Google draws when there is none, and "elsewhere" points outside Google.
-      const [code, email, picture] = new URLSearchParams(body).get('code').split(':');
+      const form = new URLSearchParams(body);
+      // The key that lets the network send mail is traded for a pass, unless Google withdrew it.
+      if (form.get('grant_type') === 'refresh_token') {
+        const gone = form.get('refresh_token').includes('withdrawn');
+        response.statusCode = gone ? 400 : 200;
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify(gone ? { error: 'invalid_grant' } : { access_token: `pass-for-${form.get('refresh_token')}` }));
+        return;
+      }
+      const [code, email, picture] = form.get('code').split(':');
       const claims = { iss: 'https://accounts.google.com', aud: code === 'wrong-audience' ? 'other' : 'test-client', sub: code };
       if (email) Object.assign(claims, { email: email.replace('!', ''), email_verified: !email.includes('!'), name: 'שם מגוגל' });
       if (picture) claims.picture = picture === 'elsewhere' ? 'http://127.0.0.1:1/a-/photo=s96-c' : `http://localhost:${YOUTUBE_PORT}/a-/${picture}=s96-c`;
       const encoded = Buffer.from(JSON.stringify(claims)).toString('base64url');
       response.setHeader('Content-Type', 'application/json');
-      response.end(JSON.stringify({ id_token: `x.${encoded}.y` }));
+      // Google hands a lasting key only when asked for one, and the scopes the person agreed to.
+      const scope = `openid email${code.includes('unticked') ? '' : ' https://www.googleapis.com/auth/gmail.send'}`;
+      response.end(JSON.stringify({ id_token: `x.${encoded}.y`, refresh_token: `key-of-${code}`, scope }));
     });
     return;
   }
@@ -91,6 +104,17 @@ ${card('מאוחר יותר באותו יום')}
           : { parse: { text: '<div><ul><li><a href="/wiki/%D7%92%D7%A9%D7%9D" title="גשם">גשם</a> <small>(בתמונה)</small> ירד &amp; ירד ב<a href="/wiki/X">צפון</a> (<a rel="nofollow" class="external text" href="https://news.example/1">אתר</a>)</li>\n<li>ידיעה שנייה</li></ul></div>' } };
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(body));
+    return;
+  }
+  if (request.url === '/gmail/v1/users/me/messages/send' || request.url === '/revoke') {
+    let body = '';
+    request.on('data', (part) => { body += part; });
+    request.on('end', () => {
+      if (request.url === '/revoke') revoked.push(new URLSearchParams(body).get('token'));
+      else mailSent.push({ pass: request.headers.authorization, message: Buffer.from(JSON.parse(body).raw, 'base64url').toString() });
+      response.setHeader('Content-Type', 'application/json');
+      response.end('{}');
+    });
     return;
   }
   if (request.url.startsWith('/a-/')) {
@@ -700,18 +724,20 @@ test('the waiting friend requests are counted, for the addressee only', async ()
 });
 
 // Plays both redirects of a Google sign-in, with `code` standing for who chose to sign in.
-async function googleFlow(code, { user, link = false, forgedState = false } = {}) {
+async function googleFlow(code, { user, link = false, mail = false, forgedState = false } = {}) {
   const base = `http://localhost:${PILOT_PORT}/api/auth/google`;
   const session = user?.call.cookie() ?? '';
-  const start = await fetch(`${base}${link ? '?link=1' : ''}`, { redirect: 'manual', headers: { Cookie: session } });
-  const state = new URL(start.headers.get('location'), base).searchParams.get('state');
+  const start = await fetch(`${base}${link ? '?link=1' : mail ? '?mail=1' : ''}`, { redirect: 'manual', headers: { Cookie: session } });
+  const asked = new URL(start.headers.get('location'), base);
+  const state = asked.searchParams.get('state');
+  if (!state) return { result: null, asked };
   const stateCookie = start.headers.get('set-cookie')?.split(';')[0] ?? '';
   const back = await fetch(`${base}/callback?code=${code}&state=${forgedState ? 'forged' : state}`, {
     redirect: 'manual',
     headers: { Cookie: [session, stateCookie].filter(Boolean).join('; ') },
   });
   const cookie = back.headers.getSetCookie().find((line) => line.startsWith('session='))?.split(';')[0];
-  return { result: new URL(back.headers.get('location'), base).searchParams.get('google'), cookie };
+  return { result: new URL(back.headers.get('location'), base).searchParams.get('google'), cookie, asked };
 }
 
 test('a linked Google account opens the same account on another device', async () => {
@@ -832,6 +858,80 @@ test('an email invitation needs a verified address, and only the admin can send 
   assert.equal((await boss.call('POST', '/admin/email-invites', { email: 'x@invite.invalid' })).status, 400);
   await boss.call('DELETE', '/admin/email-invites/careful%40gmail.com');
   assert.equal((await googleFlow('google-careful:careful@gmail.com')).result, 'unknown');
+});
+
+// The parts of a letter as the recipient's mail program would show them.
+function readLetter(message) {
+  const [head, ...parts] = message.split(/\r\n--part-[\w-]+(?:--)?(?:\r\n)?/);
+  const decode = (part) => Buffer.from(part.split('\r\n\r\n')[1].replace(/\r\n/g, ''), 'base64').toString();
+  const subject = Buffer.from(head.match(/Subject: =\?UTF-8\?B\?(.+)\?=/)[1], 'base64').toString();
+  return { to: head.match(/^To: (.+)$/m)[1], subject, text: decode(parts[0]), html: decode(parts[1]) };
+}
+
+test('until the admin connects a Gmail, an invitation comes back as a letter to send by hand', async () => {
+  const boss = await theBoss();
+  const { data } = await boss.call('POST', '/admin/email-invites', { email: 'by.hand@example.org', name: 'ביד רמה' });
+  assert.equal(data.sent, false);
+  assert.equal(data.sendProblem, null);
+  assert.equal(data.subject, 'הזמנה אישית לרשת החופשית');
+  assert.ok(data.text.startsWith('היי ביד,'));
+  assert.ok(data.text.includes(data.link) && data.text.includes('/intro'));
+  assert.equal((await boss.call('GET', '/admin/overview')).data.mailer, null);
+});
+
+test('only the admin connects a Gmail, and only for sending', async () => {
+  const boss = await theBoss();
+  const stranger = await signUp('nosy', PILOT_PORT);
+  assert.equal((await googleFlow('google-nosy:nosy@gmail.com', { user: stranger, mail: true })).result, null);
+  const unticked = await googleFlow('google-boss-unticked:boss@gmail.com', { user: boss, mail: true });
+  assert.equal(unticked.result, 'mail-refused');
+  assert.equal((await boss.call('GET', '/admin/overview')).data.mailer, null);
+  const connected = await googleFlow('google-boss:The.Boss@gmail.com', { user: boss, mail: true });
+  assert.equal(connected.result, 'mail');
+  assert.equal(connected.asked.searchParams.get('scope'), 'openid email https://www.googleapis.com/auth/gmail.send');
+  assert.equal(connected.asked.searchParams.get('access_type'), 'offline');
+  assert.deepEqual((await boss.call('GET', '/admin/overview')).data.mailer, { address: 'The.Boss@gmail.com' });
+  // Connecting for sending is not signing in: no account was linked or created by it.
+  assert.equal((await boss.call('GET', '/me')).data.user.googleLinked, false);
+});
+
+test('with a Gmail connected the invitation is sent, right to left, to the address as typed', async () => {
+  const boss = await theBoss();
+  const { data } = await boss.call('POST', '/admin/email-invites', { email: 'Sarig.Test@gmail.com', name: 'שריג <b>', note: 'שורה ראשונה\n\nשורה & שנייה' });
+  assert.equal(data.sent, true);
+  const sent = mailSent.at(-1);
+  assert.equal(sent.pass, 'Bearer pass-for-key-of-google-boss');
+  const letter = readLetter(sent.message);
+  assert.equal(letter.to, 'Sarig.Test@gmail.com');
+  assert.equal(letter.subject, 'הזמנה אישית לרשת החופשית');
+  assert.equal(letter.text, data.text);
+  assert.ok(letter.text.includes('שורה & שנייה') && letter.text.includes(data.link));
+  assert.match(letter.html, /^<div dir="rtl"[^>]*text-align:right/);
+  assert.ok(letter.html.includes('שורה &amp; שנייה') && letter.html.includes('היי שריג,'));
+  assert.ok(letter.html.includes(`href="${data.link}"`) && letter.html.includes('/video/intro.jpg'));
+  assert.ok(!letter.html.includes('<b>'));
+  // Asking not to send leaves the letter with the admin.
+  const before = mailSent.length;
+  assert.equal((await boss.call('POST', '/admin/email-invites', { email: 'quiet@example.org', send: false })).data.sent, false);
+  assert.equal(mailSent.length, before);
+  assert.equal((await boss.call('POST', '/admin/email-invites', { email: 'long@example.org', note: 'א'.repeat(1501) })).status, 400);
+});
+
+test('disconnecting erases the key and tells Google, and a withdrawn key is forgotten', async () => {
+  const boss = await theBoss();
+  assert.equal((await boss.call('DELETE', '/admin/mailer')).status, 200);
+  assert.deepEqual(revoked, ['key-of-google-boss']);
+  assert.equal((await boss.call('GET', '/admin/overview')).data.mailer, null);
+  assert.equal((await googleFlow('google-boss-withdrawn:boss@gmail.com', { user: boss, mail: true })).result, 'mail');
+  const before = mailSent.length;
+  const { data } = await boss.call('POST', '/admin/email-invites', { email: 'late@example.org' });
+  assert.equal(data.sent, false);
+  assert.equal(data.sendProblem, 'expired');
+  assert.ok(data.text.includes(data.link));
+  assert.equal(mailSent.length, before);
+  assert.equal((await boss.call('GET', '/admin/overview')).data.mailer, null);
+  const stranger = await signUp('nosy2', PILOT_PORT);
+  assert.equal((await stranger.call('DELETE', '/admin/mailer')).status, 403);
 });
 
 test('without Google settings the routes do not exist', async () => {
@@ -967,7 +1067,8 @@ try {
   startServer(UPLOADS_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'UPLOADS_PER_DAY:2']);
   startServer(PILOT_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'INVITE_ONLY:1', '--var', 'ADMIN_EMAIL:boss@example.com',
     '--var', 'GOOGLE_CLIENT_ID:test-client', '--var', 'GOOGLE_CLIENT_SECRET:test-secret',
-    '--var', `GOOGLE_TOKEN_URL:http://localhost:${YOUTUBE_PORT}/token`, '--var', `GOOGLE_PICTURE_ORIGIN:http://localhost:${YOUTUBE_PORT}`]);
+    '--var', `GOOGLE_TOKEN_URL:http://localhost:${YOUTUBE_PORT}/token`, '--var', `GOOGLE_PICTURE_ORIGIN:http://localhost:${YOUTUBE_PORT}`,
+    '--var', `GMAIL_ORIGIN:http://localhost:${YOUTUBE_PORT}`, '--var', `GOOGLE_REVOKE_URL:http://localhost:${YOUTUBE_PORT}/revoke`]);
   await Promise.all([PORT, PROD_PORT, DEMO_PORT, STORAGE_PORT, UPLOADS_PORT, PILOT_PORT].map(waitFor));
   for (const [name, fn] of tests) {
     try {

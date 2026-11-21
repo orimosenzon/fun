@@ -44,6 +44,8 @@ let inviteOnly = false;
 let googleLogin = false;
 const GOOGLE_MESSAGES = {
   linked: 'חשבון הגוגל חובר. מעכשיו אפשר להיכנס איתו מכל מכשיר.',
+  mail: 'ה-Gmail חובר. מעכשיו ההזמנות נשלחות ישר מהכתובת שלך.',
+  'mail-refused': 'גוגל לא נתן רשות לשלוח, אז שום דבר לא חובר. בחיבור צריך לסמן את ההרשאה "שליחת אימייל בשמך".',
   login: null,
   joined: null,
   unknown: 'חשבון הגוגל הזה לא מוכר כאן. נכנסים עם חשבון Google של הכתובת שאליה נשלחה ההזמנה, או עם הקישור האישי שבמייל.',
@@ -920,7 +922,7 @@ function meter(label, value, max, text) {
 }
 
 async function adminPage() {
-  const { usage, users, posts, comments, members, emailInvites } = await api('/admin/overview');
+  const { usage, users, posts, comments, members, emailInvites, mailer, defaultNote } = await api('/admin/overview');
   const gb = (bytes) => (bytes / 1024 ** 3).toFixed(2);
   const result = el('div');
 
@@ -934,75 +936,110 @@ async function adminPage() {
       el('div', { className: 'row' }, copy));
   }
 
-  // The invitation goes out from the admin's own mailbox, so it arrives as a letter from a
-  // friend. Each line of the box is one person: a name, a comma, an address.
-  const people = el('textarea', { className: 'invite-lines', placeholder: 'דנה כהן, dana@gmail.com', dir: 'auto', rows: 3, required: true, ariaLabel: 'מוזמנים: שם, פסיק, כתובת מייל. שורה לכל אחד' });
+  // An invitation is a letter from a friend, so it leaves from the admin's own Gmail: by
+  // itself once they connected it for sending, and otherwise by their hand. Each line of the
+  // box is one person: a name, a comma, an address.
+  const people = el('textarea', { className: 'invite-lines', placeholder: 'דנה כהן, dana@gmail.com', dir: 'rtl', rows: 3, required: true, ariaLabel: 'מוזמנים: שם, פסיק, כתובת מייל. שורה לכל אחד' });
+  const note = el('textarea', { className: 'invite-note', dir: 'rtl', rows: 4, maxLength: 1500, ariaLabel: 'מה לכתוב במכתב' });
+  const NOTE_KEY = 'invite-note';
+  try {
+    note.value = localStorage.getItem(NOTE_KEY) || defaultNote;
+  } catch {
+    note.value = defaultNote;
+  }
   const sent = el('div', { className: 'invite-results' });
   const pendingBox = el('div');
-  const firstName = (name) => (name ?? '').trim().split(/\s+/)[0] ?? '';
+  let sending = !!mailer;
 
-  // The letter goes to the address as it was typed. Gmail ignores the dots, but people do not.
-  function letter({ name, email, typed = email, link: url, expiresAt }) {
-    const until = format({ day: 'numeric', month: 'long' }).format(expiresAt);
-    const subject = 'הזמנה אישית לרשת החופשית';
-    const body = [
-      `היי${firstName(name) ? ` ${firstName(name)}` : ''},`,
-      '',
-      'אני בונה רשת חברתית חדשה. אין בה פרסומות, ואין בה אלגוריתם שמחליט בשבילנו מה נראה. היא עדיין קטנה ונמצאת בניסוי בין חברים, ואשמח לראות אותך בין הראשונים.',
-      '',
-      'סרטון קצר שמסביר מה זה ולמה:',
-      `${location.origin}/intro`,
-      '',
-      `הקישור האישי שלך לכניסה (עובד פעם אחת, עד ${until}):`,
-      url,
-      '',
-      'אשמח לשמוע מה חסר ומה מפריע. בשביל זה הניסוי.',
-      firstName(me.name),
-    ].join('\n');
+  function letter({ name, email, typed = email, subject, text, sent: went, sendProblem }) {
     const query = (pairs) => new URLSearchParams(pairs).toString().replace(/\+/g, '%20');
     const copy = el('button', { className: 'plain', type: 'button' }, 'העתקת המכתב');
     copy.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(body);
+      await navigator.clipboard.writeText(text);
       copy.textContent = 'הועתק';
     });
-    return el('div', { className: 'invite-letter' },
+    const byHand = el('span', { className: 'row' },
+      el('a', { className: 'send', target: '_blank', rel: 'noopener', href: `https://mail.google.com/mail/?${query({ view: 'cm', fs: '1', to: typed, su: subject, body: text })}` }, 'פתיחה ב-Gmail'),
+      el('a', { className: 'other', href: `mailto:${encodeURIComponent(typed)}?${query({ subject, body: text })}` }, 'תוכנת מייל אחרת'),
+      copy);
+    const problem = sendProblem === 'expired' ? 'גוגל כבר לא מכבד את החיבור לשליחה, אז המכתב לא נשלח. חברו את ה-Gmail מחדש, או שלחו ביד:'
+      : sendProblem ? 'השליחה נכשלה. אפשר לנסות שוב ב"מכתב חדש", או לשלוח ביד:' : null;
+    return el('div', { className: `invite-letter${went ? ' went' : ''}` },
       el('div', { className: 'row spread' },
         el('span', {}, el('strong', { dir: 'auto' }, name || typed), name ? el('span', { className: 'muted', dir: 'ltr' }, ` ${typed}`) : null),
-        el('span', { className: 'row' },
-          el('a', { className: 'send', target: '_blank', rel: 'noopener', href: `https://mail.google.com/mail/?${query({ view: 'cm', fs: '1', to: typed, su: subject, body })}` }, 'פתיחה ב-Gmail'),
-          el('a', { className: 'other', href: `mailto:${encodeURIComponent(typed)}?${query({ subject, body })}` }, 'תוכנת מייל אחרת'),
-          copy)),
-      el('pre', { className: 'letter-text', dir: 'auto' }, body));
+        went ? el('span', { className: 'chip friends' }, icon('check'), 'נשלח') : problem ? null : byHand),
+      problem ? el('p', { className: 'error' }, problem) : null,
+      problem ? byHand : null,
+      went ? null : el('pre', { className: 'letter-text', dir: 'rtl' }, text));
   }
 
   async function inviteByEmail(line) {
     const parts = line.split(/[,\t;<>]+/).map((part) => part.trim()).filter(Boolean);
     const email = parts.find((part) => part.includes('@'));
     if (!email) throw new Error(`בשורה "${line}" אין כתובת מייל`);
-    const invite = await api('/admin/email-invites', { method: 'POST', body: { email, name: parts.filter((part) => part !== email).join(' ') } });
+    const invite = await api('/admin/email-invites', { method: 'POST', body: { email, name: parts.filter((part) => part !== email).join(' '), note: note.value.trim() } });
     return { ...invite, typed: email };
   }
 
+  function outcome(results) {
+    const went = results.filter((invite) => invite.sent).length;
+    const waiting = results.some((invite) => !invite.sent);
+    const lines = [];
+    if (went) lines.push(went === 1 ? `המכתב נשלח מ-${mailer.address}.` : `${went} מכתבים נשלחו מ-${mailer.address}.`);
+    if (waiting) lines.push('לחיצה על "פתיחה ב-Gmail" פותחת מכתב מוכן, ונשאר רק לשלוח. את הקישור אי אפשר להציג שוב אחר כך, רק ליצור חדש.');
+    if (results.some((invite) => invite.sendProblem === 'expired')) sending = false;
+    return lines.length ? el('p', { className: 'note' }, lines.join(' ')) : null;
+  }
+
+  const submit = el('button', { type: 'submit' }, sending ? 'שליחת ההזמנות' : 'יצירת הזמנות');
   const emailForm = el('form', {
     onsubmit: async (e) => {
       e.preventDefault();
+      submit.disabled = true;
+      try {
+        localStorage.setItem(NOTE_KEY, note.value.trim() === defaultNote ? '' : note.value.trim());
+      } catch {
+        // The letter is simply not remembered on this device.
+      }
       sent.replaceChildren();
       const left = [];
+      const results = [];
       for (const line of people.value.split('\n').map((text) => text.trim()).filter(Boolean)) {
         try {
-          sent.append(letter(await inviteByEmail(line)));
+          results.push(await inviteByEmail(line));
+          sent.append(letter(results.at(-1)));
         } catch (err) {
           left.push(line);
           sent.append(el('p', { className: 'error' }, `${line}: ${err.message}`));
         }
       }
       people.value = left.join('\n');
-      if (sent.querySelector('.invite-letter')) {
-        sent.prepend(el('p', { className: 'note' }, 'ההזמנות מוכנות. לחיצה על "פתיחה ב-Gmail" פותחת מכתב מוכן, ונשאר רק לשלוח. את הקישור אי אפשר להציג שוב אחר כך, רק ליצור חדש.'));
-      }
+      const summary = outcome(results);
+      if (summary) sent.prepend(summary);
+      submit.disabled = false;
+      if (!sending && mailer) return route();
       showPending((await api('/admin/overview')).emailInvites);
     },
-  }, people, el('div', { className: 'row' }, el('button', { type: 'submit' }, 'יצירת הזמנות')));
+  }, el('label', { className: 'field' }, el('span', {}, 'מוזמנים: שם, פסיק, כתובת. שורה לכל אחד'), people),
+  el('label', { className: 'field' }, el('span', {}, 'מה לכתוב להם. הפנייה בשם, הסרטון, הקישור האישי והחתימה נוספים לבד'), note),
+  el('div', { className: 'row' }, submit));
+
+  // Sending in the admin's name needs their permission, once. Only sending is asked for.
+  const connection = !googleLogin ? null : mailer
+    ? el('div', { className: 'row mailer' }, el('span', { className: 'chip friends' }, icon('check'), 'שליחה אוטומטית'),
+      el('span', { className: 'muted' }, 'המכתבים יוצאים מ-', el('span', { dir: 'ltr' }, mailer.address), '.'),
+      el('button', {
+        className: 'plain',
+        type: 'button',
+        onclick: async () => {
+          if (!await ask('להפסיק לשלוח מה-Gmail שלך? ההרשאה תימחק כאן ותבוטל בגוגל. אפשר יהיה לחבר שוב.', 'ניתוק')) return;
+          await api('/admin/mailer', { method: 'DELETE' });
+          route();
+        },
+      }, 'ניתוק'))
+    : el('div', { className: 'mailer' },
+      el('div', { className: 'row' }, googleButton('/api/auth/google?mail=1', 'חיבור Gmail לשליחה אוטומטית')),
+      el('p', { className: 'note' }, 'אחרי החיבור ההזמנות נשלחות מהכתובת שלך בלי לפתוח את Gmail. מבקשים מגוגל רק רשות לשלוח, לא לקרוא. עד אז נוצר מכתב מוכן שפותחים ושולחים ביד.'));
 
   function showPending(list) {
     pendingBox.replaceChildren(...(list.length ? [el('h2', {}, `הוזמנו ועוד לא נכנסו (${list.length})`)] : []), ...list.map((item) => el('div', { className: 'person' },
@@ -1011,10 +1048,11 @@ async function adminPage() {
         el('button', {
           className: 'plain',
           type: 'button',
-          title: 'יוצר קישור חדש ומבטל את הקודם',
+          title: 'קישור חדש במקום הקודם, במכתב חדש',
           onclick: async () => {
             try {
-              sent.replaceChildren(letter(await api('/admin/email-invites', { method: 'POST', body: { email: item.email, name: item.name ?? '' } })));
+              const again = await api('/admin/email-invites', { method: 'POST', body: { email: item.email, name: item.name ?? '', note: note.value.trim() } });
+              sent.replaceChildren(...[outcome([again]), letter(again)].filter(Boolean));
               sent.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             } catch (err) {
               tell(err.message);
@@ -1041,8 +1079,8 @@ async function adminPage() {
       meter('העלאות ב-24 השעות האחרונות', usage.today, usage.uploadLimit, `${usage.today} מתוך ${usage.uploadLimit}`)),
     el('section', { className: 'card' },
       el('h2', {}, 'הזמנה במייל'),
-      el('p', { className: 'muted' }, 'שורה לכל מוזמן: שם, פסיק, כתובת מייל. לכל אחד נוצר קישור אישי ומכתב מוכן עם הקישור ועם סרטון ההסבר, ושולחים אותו מהמייל שלך. מי שהוזמן בכתובת של Google יכול גם להיכנס ישר עם Google, והתמונה שלו מגיעה משם.'),
-      emailForm, sent, pendingBox),
+      el('p', { className: 'muted' }, 'כל מוזמן מקבל ממך מכתב עם קישור אישי ועם סרטון ההסבר. מי שהוזמן בכתובת של Google יכול גם להיכנס ישר עם Google, והתמונה שלו מגיעה משם.'),
+      connection, emailForm, sent, pendingBox),
     el('section', { className: 'card' },
       el('h2', {}, 'הזמנה בקישור, בלי מייל'),
       el('p', { className: 'muted' }, 'למי שמעדיפים וואטסאפ. בלי כתובת אי אפשר להיכנס עם Google עד שמחברים אותו מהדף האישי.'),

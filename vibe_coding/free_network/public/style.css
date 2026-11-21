@@ -1494,4 +1494,11 @@ dialog { color: var(--text); font: inherit; }
 
 .transcript summary { cursor: pointer; font-weight: 600; color: var(--brand); }
 .transcript p { margin: 12px 0 0; }
-.invite-letter .muted { margin-inline-start: 8px; }
+.invite-letter .muted { margin-inline: 8px; }
+
+.invite-note { width: 100%; }
+.card > form > .field, .mailer { display: grid; gap: 6px; margin-top: 12px; font-size: 14.5px; color: var(--muted); }
+.row.mailer { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.mailer .note { margin: 0; }
+.invite-letter.went { padding-block: 10px; }
+.letter-text { text-align: right; }
