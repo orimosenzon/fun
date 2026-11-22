@@ -15,7 +15,7 @@ const format = (options) => new Intl.DateTimeFormat('he-IL', options);
 const hour = (ms) => format({ timeStyle: 'short' }).format(ms);
 
 export async function messenger({ me, withId, ui }) {
-  const { el, icon, avatar, link, api, ask, tell, demo, richText, lightbox, prepareImage, dayLabel, daysAgo, back, pulse, unread } = ui;
+  const { el, icon, avatar, link, api, ask, tell, richText, lightbox, prepareImage, dayLabel, daysAgo, back, pulse, unread } = ui;
   const [{ conversations }, open] = await Promise.all([api('/messages'), withId ? api(`/messages/${withId}`) : null]);
   let convos = conversations;
 
@@ -206,7 +206,7 @@ export async function messenger({ me, withId, ui }) {
         return el('div', { className: `msg-row ${side}` },
           el('div', { className: 'msg removed' }, el('p', { className: 'text' }, item.mine ? 'מחקת את ההודעה' : 'ההודעה נמחקה'), time));
       }
-      const removable = item.mine && !item.pending && !demo;
+      const removable = item.mine && !item.pending;
       const box = el('div', { className: 'msg', ...(removable ? { tabIndex: 0 } : {}) });
       if (item.image || item.preview) box.append(picture(item));
       if (item.body) box.append(richText(item.body));
@@ -309,7 +309,7 @@ export async function messenger({ me, withId, ui }) {
 
     // Tells the server how far the reader has seen, so the count is right on every device.
     async function seen() {
-      if (demo || stopped || document.hidden) return;
+      if (stopped || document.hidden) return;
       const incoming = list.findLast((item) => !item.mine && !item.removed)?.id ?? 0;
       if (incoming <= markedUpTo) return;
       const before = markedUpTo;
@@ -350,7 +350,7 @@ export async function messenger({ me, withId, ui }) {
 
     function schedule(delay) {
       clearTimeout(timer);
-      if (stopped || demo || document.hidden) return;
+      if (stopped || document.hidden) return;
       timer = setTimeout(poll, delay ?? (Date.now() - lastActivity > CALM_AFTER_MS ? SLOW_MS : FAST_MS));
     }
 

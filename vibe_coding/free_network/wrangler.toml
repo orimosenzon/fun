@@ -6,7 +6,7 @@ compatibility_date = "2026-09-01"
 directory = "public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*"]
+run_worker_first = ["/api/*", "/why", "/why.html"]
 
 [[d1_databases]]
 binding = "DB"
@@ -19,47 +19,28 @@ migrations_dir = "migrations"
 binding = "IMAGES"
 bucket_name = "free-network-images"
 
-# A public, read-only showcase with invented content. It has its own database and no image
-# storage, and leaves out /why, which is not cleared for publication yet.
-[env.demo]
-name = "free-network-demo"
+# The real network, open only to people the admin invites. Everything above is the copy that
+# runs on the developer's machine. The database kept its first name, from the trial days.
+[env.live]
+name = "free-network"
 
-[env.demo.vars]
-DEMO = "1"
+[env.live.vars]
+INVITE_ONLY = "1"
+ADMIN_EMAIL = "admin@invite.invalid"
+GOOGLE_CLIENT_ID = "499440299994-1jorad0ruokmg0hdlkrv60dmm314jqt2.apps.googleusercontent.com"
 
-[env.demo.assets]
+[env.live.assets]
 directory = "public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*", "/why", "/why.html"]
 
-[[env.demo.d1_databases]]
-binding = "DB"
-database_name = "free-network-demo"
-database_id = "b678c8d3-e381-4cab-a5ad-4580f729fd44"
-migrations_dir = "migrations"
-
-# The real network, open only to people the admin invites. Login links replace email for now.
-[env.pilot]
-name = "free-network"
-
-[env.pilot.vars]
-INVITE_ONLY = "1"
-ADMIN_EMAIL = "admin@invite.invalid"
-GOOGLE_CLIENT_ID = "499440299994-1jorad0ruokmg0hdlkrv60dmm314jqt2.apps.googleusercontent.com"
-
-[env.pilot.assets]
-directory = "public"
-binding = "ASSETS"
-not_found_handling = "single-page-application"
-run_worker_first = ["/api/*"]
-
-[[env.pilot.d1_databases]]
+[[env.live.d1_databases]]
 binding = "DB"
 database_name = "free-network-pilot"
 database_id = "38b23e87-9b69-49fb-81c9-d6bcc7ddaea7"
 migrations_dir = "migrations"
 
-[[env.pilot.r2_buckets]]
+[[env.live.r2_buckets]]
 binding = "IMAGES"
 bucket_name = "free-network-images"

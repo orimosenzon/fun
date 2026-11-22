@@ -64,7 +64,7 @@ function startingPoint(people, me) {
 }
 
 export function friendsGlobe({ me, friends, ui }) {
-  const { el, icon, avatar, go, api, tell, demo } = ui;
+  const { el, icon, avatar, go, api, tell } = ui;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canvas = el('canvas', { className: 'globe-canvas', ariaLabel: 'כדור הארץ עם החברים שלך. גוררים כדי לסובב, גלגלת או צביטה כדי להתקרב.', role: 'img' });
   const pins = el('div', { className: 'globe-pins' });
@@ -619,7 +619,6 @@ export function friendsGlobe({ me, friends, ui }) {
         ? 'כרגע המקום שלך לא נשמר אצלנו, והחברים רואים אותך על הענן.'
         : 'כשיהיו לך חברים ברשת, הם יופיעו כאן.'));
     }
-    if (demo && (choosing || picking)) parts.push(el('p', { className: 'note' }, 'בגרסת ההדגמה שום דבר לא נשמר, אז גם המקום לא.'));
     controls.replaceChildren(...parts);
   }
 

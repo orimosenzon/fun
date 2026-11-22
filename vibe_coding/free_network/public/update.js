@@ -63,7 +63,7 @@ function keepOpen(kind, open, top) {
 
 // `all` opens every circle, for the update's own page; `top` is the update above the posts.
 export function updatePanel({ me, seen, ui, all = false, top = false }) {
-  const { el, icon, avatar, link, api, when, tell, demo, flyGlobe } = ui;
+  const { el, icon, avatar, link, api, when, tell, flyGlobe } = ui;
   const body = el('div', { className: 'update-body' },
     el('div', { className: 'bone' }), el('div', { className: 'bone short' }), el('div', { className: 'bone' }));
   const root = el('section', { className: 'update' },
@@ -200,7 +200,7 @@ export function updatePanel({ me, seen, ui, all = false, top = false }) {
       ? el('span', { className: 'peek-faces' }, ...faces.slice(0, 4).map((user) => avatar(user, { small: true })),
         faces.length > 4 ? el('span', { className: 'peek-count' }, `+${faces.length - 4}`) : null)
       : 'שקט';
-    const mine = demo ? null : myBubble();
+    const mine = myBubble();
     return ring('friends', 'users', 'החברים', peek,
       el('div', { className: 'faces' }, mine?.bubble, ...people.map(([, node]) => node)),
       mine?.form,

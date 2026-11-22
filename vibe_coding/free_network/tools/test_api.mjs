@@ -10,10 +10,9 @@ import { join } from 'node:path';
 const BASE = Number(process.env.TEST_PORT_BASE ?? 8792);
 const PORT = BASE + 7;
 const PROD_PORT = BASE + 6;
-const DEMO_PORT = BASE + 4;
 const STORAGE_PORT = BASE + 3;
 const UPLOADS_PORT = BASE + 2;
-const PILOT_PORT = BASE + 1;
+const INVITE_PORT = BASE + 1;
 const YOUTUBE_PORT = BASE;
 const VIDEO_ID = 'abcdefghijk';
 const youtubeRequests = [];
@@ -138,12 +137,10 @@ const root = mkdtempSync(join(tmpdir(), 'free-network-test-'));
 const servers = [];
 
 // Each server needs its own database directory: two cannot share one.
-function startServer(port, extraArgs, { database = 'free-network', seed } = {}) {
+function startServer(port, extraArgs) {
   const state = join(root, String(port));
-  const envArgs = extraArgs.filter((arg) => arg.startsWith('--env') || arg === 'demo');
   const quiet = { stdio: 'ignore', env: { ...process.env, CI: '1' } };
-  execFileSync('npx', ['wrangler', 'd1', 'migrations', 'apply', database, '--local', '--persist-to', state, ...envArgs], quiet);
-  if (seed) execFileSync('npx', ['wrangler', 'd1', 'execute', database, '--local', '--persist-to', state, ...envArgs, '--file', seed], quiet);
+  execFileSync('npx', ['wrangler', 'd1', 'migrations', 'apply', 'free-network', '--local', '--persist-to', state], quiet);
   const server = spawn('npx', ['wrangler', 'dev', '--port', String(port), '--inspector-port', String(port + 1000),
     '--persist-to', state, ...extraArgs], { stdio: 'ignore', detached: true });
   servers.push(server);
@@ -535,7 +532,7 @@ test('uploads stop at the daily limit of the whole network', async () => {
   assert.equal((await upload(first, phoneJpeg())).status, 429);
 });
 
-// One admin for all pilot tests: logins are rate limited per address, as in production.
+// One admin for all invite-only tests: logins are rate limited per address, as in production.
 let bossAccount;
 test('a place reaches friends only, rounded to about a kilometre', async () => {
   const dana = await signUp('dana-globe');
@@ -823,21 +820,13 @@ test('ending a friendship stops the writing, and what was written stays readable
   assert.equal(await unread(eli), 0);
 });
 
-test('the demo globe has friends on the earth and friends on the cloud', async () => {
-  const call = client(DEMO_PORT);
-  await call('POST', '/auth/demo');
-  const { friends } = (await call('GET', '/globe')).data;
-  assert.equal(friends.length, 8);
-  assert.equal(friends.filter((friend) => !friend.place).length, 2);
-});
-
 async function theBoss() {
-  bossAccount ??= await signUp('boss', PILOT_PORT);
+  bossAccount ??= await signUp('boss', INVITE_PORT);
   return bossAccount;
 }
 
 async function openInvite(link) {
-  const call = client(PILOT_PORT);
+  const call = client(INVITE_PORT);
   const verified = await call('POST', '/auth/verify', { token: link.split('#token=')[1] });
   return { call, verified };
 }
@@ -877,7 +866,7 @@ test('the waiting friend requests are counted, for the addressee only', async ()
 
 // Plays both redirects of a Google sign-in, with `code` standing for who chose to sign in.
 async function googleFlow(code, { user, link = false, mail = false, forgedState = false } = {}) {
-  const base = `http://localhost:${PILOT_PORT}/api/auth/google`;
+  const base = `http://localhost:${INVITE_PORT}/api/auth/google`;
   const session = user?.call.cookie() ?? '';
   const start = await fetch(`${base}${link ? '?link=1' : mail ? '?mail=1' : ''}`, { redirect: 'manual', headers: { Cookie: session } });
   const asked = new URL(start.headers.get('location'), base);
@@ -893,12 +882,12 @@ async function googleFlow(code, { user, link = false, mail = false, forgedState 
 }
 
 test('a linked Google account opens the same account on another device', async () => {
-  const lior = await signUp('lior', PILOT_PORT);
+  const lior = await signUp('lior', INVITE_PORT);
   assert.equal((await googleFlow('google-lior', { user: lior, link: true })).result, 'linked');
   assert.equal((await lior.call('GET', '/me')).data.user.googleLinked, true);
   const { result, cookie } = await googleFlow('google-lior');
   assert.equal(result, 'login');
-  const me = await fetch(`http://localhost:${PILOT_PORT}/api/me`, { headers: { Cookie: cookie } });
+  const me = await fetch(`http://localhost:${INVITE_PORT}/api/me`, { headers: { Cookie: cookie } });
   assert.equal((await me.json()).user.id, lior.id);
 });
 
@@ -916,7 +905,7 @@ test('Google never creates an account, and a forged redirect gets nothing', asyn
 });
 
 test('one Google account belongs to one person, and it can be unlinked', async () => {
-  const maya = await signUp('maya', PILOT_PORT);
+  const maya = await signUp('maya', INVITE_PORT);
   assert.equal((await googleFlow('google-lior', { user: maya, link: true })).result, 'taken');
   assert.equal((await googleFlow('google-maya', { user: maya, link: true })).result, 'linked');
   assert.equal((await maya.call('DELETE', '/me/google')).status, 200);
@@ -956,15 +945,15 @@ test('someone invited by email joins with Google at that address, with the pictu
   const joined = await googleFlow('google-new:newfriend@gmail.com:photo');
   assert.equal(joined.result, 'joined');
   const headers = { Cookie: joined.cookie };
-  const me = await (await fetch(`http://localhost:${PILOT_PORT}/api/me`, { headers })).json();
+  const me = await (await fetch(`http://localhost:${INVITE_PORT}/api/me`, { headers })).json();
   assert.equal(me.user.googleLinked, true);
   assert.equal(me.user.name, 'חבר חדש');
-  const picture = await fetch(`http://localhost:${PILOT_PORT}/api/images/${me.user.avatar}`);
+  const picture = await fetch(`http://localhost:${INVITE_PORT}/api/images/${me.user.avatar}`);
   assert.equal(picture.status, 200);
   const stored = Buffer.from(await picture.arrayBuffer());
   assert.ok(!stored.includes('GPS'));
   assert.deepEqual(pictureRequests, ['/a-/photo=s400-c']);
-  const friends = await (await fetch(`http://localhost:${PILOT_PORT}/api/friends`, { headers })).json();
+  const friends = await (await fetch(`http://localhost:${INVITE_PORT}/api/friends`, { headers })).json();
   assert.deepEqual(friends.friends.map((user) => user.name), ['boss']);
   assert.equal((await boss.call('GET', '/admin/overview')).data.emailInvites.length, 0);
   assert.equal((await googleFlow('google-new:newfriend@gmail.com')).result, 'login');
@@ -978,7 +967,7 @@ test('a member who came in by the emailed link returns with Google at the same a
   const { id } = (await member.call('GET', '/me')).data.user;
   const back = await googleFlow('google-back:back@gmail.com:letter');
   assert.equal(back.result, 'login');
-  const me = await (await fetch(`http://localhost:${PILOT_PORT}/api/me`, { headers: { Cookie: back.cookie } })).json();
+  const me = await (await fetch(`http://localhost:${INVITE_PORT}/api/me`, { headers: { Cookie: back.cookie } })).json();
   assert.equal(me.user.id, id);
   assert.equal(me.user.googleLinked, true);
   // Google's drawn letter is not a photo, so the member keeps the picture made of their name.
@@ -986,15 +975,15 @@ test('a member who came in by the emailed link returns with Google at the same a
 });
 
 test('linking Google brings its picture only to someone who has none', async () => {
-  const noPicture = await signUp('pictureless', PILOT_PORT);
+  const noPicture = await signUp('pictureless', INVITE_PORT);
   assert.equal((await googleFlow('google-pictureless:p@gmail.com:photo', { user: noPicture, link: true })).result, 'linked');
   assert.ok((await noPicture.call('GET', '/me')).data.user.avatar);
-  const chosen = await signUp('chosen', PILOT_PORT);
+  const chosen = await signUp('chosen', INVITE_PORT);
   const own = (await upload(chosen, phoneJpeg())).data.id;
   await chosen.call('PUT', '/me/images', { kind: 'avatar', imageId: own });
   await googleFlow('google-chosen:c@gmail.com:photo', { user: chosen, link: true });
   assert.equal((await chosen.call('GET', '/me')).data.user.avatar, own);
-  const elsewhere = await signUp('elsewhere', PILOT_PORT);
+  const elsewhere = await signUp('elsewhere', INVITE_PORT);
   await googleFlow('google-elsewhere:e@gmail.com:elsewhere', { user: elsewhere, link: true });
   assert.equal((await elsewhere.call('GET', '/me')).data.user.avatar, null);
 });
@@ -1003,7 +992,7 @@ test('an email invitation needs a verified address, and only the admin can send 
   const boss = await theBoss();
   await boss.call('POST', '/admin/email-invites', { email: 'careful@gmail.com' });
   assert.equal((await googleFlow('google-careful:careful@gmail.com!')).result, 'unknown');
-  const stranger = await signUp('stranger', PILOT_PORT);
+  const stranger = await signUp('stranger', INVITE_PORT);
   assert.equal((await stranger.call('POST', '/admin/email-invites', { email: 'x@gmail.com' })).status, 403);
   assert.equal((await stranger.call('DELETE', '/admin/email-invites/careful%40gmail.com')).status, 403);
   assert.equal((await boss.call('POST', '/admin/email-invites', { email: 'not an address' })).status, 400);
@@ -1033,7 +1022,7 @@ test('until the admin connects a Gmail, an invitation comes back as a letter to 
 
 test('only the admin connects a Gmail, and only for sending', async () => {
   const boss = await theBoss();
-  const stranger = await signUp('nosy', PILOT_PORT);
+  const stranger = await signUp('nosy', INVITE_PORT);
   assert.equal((await googleFlow('google-nosy:nosy@gmail.com', { user: stranger, mail: true })).result, null);
   const unticked = await googleFlow('google-boss-unticked:boss@gmail.com', { user: boss, mail: true });
   assert.equal(unticked.result, 'mail-refused');
@@ -1082,7 +1071,7 @@ test('disconnecting erases the key and tells Google, and a withdrawn key is forg
   assert.ok(data.text.includes(data.link));
   assert.equal(mailSent.length, before);
   assert.equal((await boss.call('GET', '/admin/overview')).data.mailer, null);
-  const stranger = await signUp('nosy2', PILOT_PORT);
+  const stranger = await signUp('nosy2', INVITE_PORT);
   assert.equal((await stranger.call('DELETE', '/admin/mailer')).status, 403);
 });
 
@@ -1103,10 +1092,10 @@ test('a new login link returns a member to the same account', async () => {
 });
 
 test('only the admin reaches the admin screen', async () => {
-  const stranger = await signUp('stranger', PILOT_PORT);
+  const stranger = await signUp('stranger', INVITE_PORT);
   assert.equal((await stranger.call('GET', '/admin/overview')).status, 403);
   assert.equal((await stranger.call('POST', '/admin/invites', {})).status, 403);
-  const nobody = client(PILOT_PORT);
+  const nobody = client(INVITE_PORT);
   assert.equal((await nobody('GET', '/admin/overview')).status, 401);
   assert.equal((await nobody('POST', '/admin/invites', {})).status, 401);
   assert.equal((await nobody('GET', '/me')).data.inviteOnly, true);
@@ -1125,74 +1114,29 @@ test('the admin screen reports usage against the limits', async () => {
   assert.ok(users >= 3);
 });
 
-test('the demo opens with one click and shows the invented feed', async () => {
-  const call = client(DEMO_PORT);
-  assert.equal((await call('GET', '/me')).data.demo, true);
-  assert.equal((await call('POST', '/auth/demo')).status, 200);
-  assert.equal((await call('GET', '/me')).data.user.name, 'אורח בדמו');
-  assert.equal((await call('GET', '/feed')).data.posts.length, 4);
-});
-
-test('the demo refuses every write and stores nothing', async () => {
-  const call = client(DEMO_PORT);
-  await call('POST', '/auth/demo');
-  const writes = [
-    ['POST', '/posts', { body: 'x', audience: 'public' }],
-    ['POST', '/posts/3/comments', { body: 'x' }],
-    ['PUT', '/me', { name: 'x' }],
-    ['POST', '/friends/5'],
-    ['DELETE', '/friends/2'],
-    ['POST', '/auth/request', { email: 'x@example.com' }],
-    ['POST', '/client-log', { message: 'x' }],
-    ['PUT', '/me/place', { lat: 1, lng: 1 }],
-    ['DELETE', '/me/place'],
-    ['POST', '/messages/2', { body: 'x' }],
-    ['PUT', '/messages/2/read', {}],
-    ['DELETE', '/messages/2/2'],
-  ];
-  for (const [method, path, body] of writes) assert.equal((await call(method, path, body)).status, 403, path);
-  assert.equal((await call('GET', '/feed')).data.posts.length, 4);
-  assert.equal((await call('GET', '/friends')).data.friends.length, 8);
-});
-
-test('the demo shows invented conversations, all of them read', async () => {
-  const call = client(DEMO_PORT);
-  await call('POST', '/auth/demo');
-  assert.deepEqual((await call('GET', '/messages')).data.conversations.map((item) => item.user.id), [3, 2]);
-  assert.equal((await call('GET', '/me')).data.user.unreadMessages, 0);
-  assert.deepEqual((await call('GET', '/messages/3')).data.messages.map((item) => item.removed), [false, true, false]);
-  assert.equal((await call('GET', '/messages/2')).data.messages.length, 5);
-});
-
-test('logging out of the demo leaves it open for the next visitor', async () => {
-  const first = client(DEMO_PORT);
-  await first('POST', '/auth/demo');
-  await first('POST', '/auth/logout');
-  const second = client(DEMO_PORT);
-  await second('POST', '/auth/demo');
-  assert.equal((await second('GET', '/me')).data.user.id, 1);
-});
-
-test('the demo serves /why without the unreviewed claims, and demo login exists only there', async () => {
+test('the claims on /why are shown only to members, and the philosophy to everyone', async () => {
+  const member = await signUp('reader');
   for (const path of ['/why', '/why.html']) {
-    const response = await fetch(`http://localhost:${DEMO_PORT}${path}`);
+    const response = await fetch(`http://localhost:${PORT}${path}`);
     assert.equal(response.status, 200, path);
+    assert.match(response.headers.get('cache-control'), /no-store/, path);
     const html = await response.text();
     assert.match(html, /רשת חברתית היא דבר חשוב מדי/, path);
     assert.doesNotMatch(html, /data-unreviewed|איך זה בא לידי ביטוי|class="claim"/, path);
+    const full = await (await fetch(`http://localhost:${PORT}${path}`, { headers: { Cookie: member.call.cookie() } })).text();
+    assert.match(full, /רשת חברתית היא דבר חשוב מדי/, path);
+    assert.match(full, /איך זה בא לידי ביטוי/, path);
+    assert.match(full, /class="claim"/, path);
   }
-  const full = await (await fetch(`http://localhost:${PORT}/why`)).text();
-  assert.match(full, /איך זה בא לידי ביטוי/);
-  assert.equal((await client(PROD_PORT)('POST', '/auth/demo')).status, 404);
+  const stale = await fetch(`http://localhost:${PORT}/why`, { headers: { Cookie: 'session=nothing-real' } });
+  assert.doesNotMatch(await stale.text(), /איך זה בא לידי ביטוי/);
 });
 
-test('the motto and the film page are public, in the network and in the demo', async () => {
-  for (const port of [PORT, DEMO_PORT]) {
-    assert.match(await (await fetch(`http://localhost:${port}/why`)).text(), /לבחור באופן דמוקרטי את העריץ שלך/);
-    const film = await fetch(`http://localhost:${port}/intro`);
-    assert.equal(film.status, 200);
-    assert.match(await film.text(), /<video[^>]+src="\/video\/intro\.mp4"/);
-  }
+test('the motto and the film page are public', async () => {
+  assert.match(await (await fetch(`http://localhost:${PORT}/why`)).text(), /לבחור באופן דמוקרטי את העריץ שלך/);
+  const film = await fetch(`http://localhost:${PORT}/intro`);
+  assert.equal(film.status, 200);
+  assert.match(await film.text(), /<video[^>]+src="\/video\/intro\.mp4"/);
 });
 
 test('without DEV_LOGIN a login link is never returned', async () => {
@@ -1226,14 +1170,13 @@ try {
     '--var', `WIKI_EN_ORIGIN:${fake}`, '--var', `PARDESPEDIA_ORIGIN:${fake}`, '--var', `PLANS_URL:${fake}/plans.json`,
     ...['N12', 'C13', 'C14', 'KAN'].flatMap((name) => ['--var', `${name}_FEED:${fake}/feed/${name.toLowerCase()}.xml`])]);
   startServer(PROD_PORT, []);
-  startServer(DEMO_PORT, ['--env', 'demo'], { database: 'free-network-demo', seed: 'tools/demo_seed.sql' });
   startServer(STORAGE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'STORAGE_LIMIT_BYTES:30']);
   startServer(UPLOADS_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'UPLOADS_PER_DAY:2']);
-  startServer(PILOT_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'INVITE_ONLY:1', '--var', 'ADMIN_EMAIL:boss@example.com',
+  startServer(INVITE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'INVITE_ONLY:1', '--var', 'ADMIN_EMAIL:boss@example.com',
     '--var', 'GOOGLE_CLIENT_ID:test-client', '--var', 'GOOGLE_CLIENT_SECRET:test-secret',
     '--var', `GOOGLE_TOKEN_URL:http://localhost:${YOUTUBE_PORT}/token`, '--var', `GOOGLE_PICTURE_ORIGIN:http://localhost:${YOUTUBE_PORT}`,
     '--var', `GMAIL_ORIGIN:http://localhost:${YOUTUBE_PORT}`, '--var', `GOOGLE_REVOKE_URL:http://localhost:${YOUTUBE_PORT}/revoke`]);
-  await Promise.all([PORT, PROD_PORT, DEMO_PORT, STORAGE_PORT, UPLOADS_PORT, PILOT_PORT].map(waitFor));
+  await Promise.all([PORT, PROD_PORT, STORAGE_PORT, UPLOADS_PORT, INVITE_PORT].map(waitFor));
   for (const [name, fn] of tests) {
     try {
       await fn();

@@ -43,7 +43,6 @@ const ICONS = {
   down: 'M6 9l6 6 6-6',
 };
 let me = null;
-let demo = false;
 let inviteOnly = false;
 let googleLogin = false;
 const GOOGLE_MESSAGES = {
@@ -522,7 +521,7 @@ function seenStore(value) {
 
 async function globe() {
   const { friends } = await api('/globe');
-  return friendsGlobe({ me, friends, ui: { el, icon, avatar, go, api, tell, demo } });
+  return friendsGlobe({ me, friends, ui: { el, icon, avatar, go, api, tell } });
 }
 
 async function globePage() {
@@ -541,7 +540,7 @@ async function flyGlobe(spot) {
 
 function update({ all = false, top = false } = {}) {
   seenUpTo ??= seenStore();
-  return updatePanel({ me, seen: seenUpTo, all, top, ui: { el, icon, avatar, link, api, when, tell, demo, flyGlobe } });
+  return updatePanel({ me, seen: seenUpTo, all, top, ui: { el, icon, avatar, link, api, when, tell, flyGlobe } });
 }
 
 function updatePage() {
@@ -632,7 +631,7 @@ async function messagesPage(id) {
   const page = await messenger({
     me,
     withId: id ? Number(id) : null,
-    ui: { el, icon, avatar, link, api, ask, tell, demo, richText, lightbox, prepareImage, dayLabel, daysAgo, back, pulse, unread: () => me?.unreadMessages ?? 0 },
+    ui: { el, icon, avatar, link, api, ask, tell, richText, lightbox, prepareImage, dayLabel, daysAgo, back, pulse, unread: () => me?.unreadMessages ?? 0 },
   });
   if (paint.stale()) {
     page.leave();
@@ -1159,23 +1158,13 @@ function loginPage() {
   const message = el('p', { className: 'muted' });
   const inviteNote = el('div', { className: 'card' },
     el('p', { className: 'flush' }, 'הרשת נמצאת בניסוי סגור. נכנסים עם הקישור האישי שבמייל ההזמנה, או עם חשבון Google של הכתובת שאליה היא נשלחה.'));
-  const demoEntry = el('div', { className: 'card' },
-    el('p', { style: 'margin-top: 0' }, 'כאן אפשר להציץ בממשק עם אנשים ופוסטים בדויים.'),
-    el('div', { className: 'row' }, el('button', {
-      type: 'button',
-      onclick: async () => {
-        await api('/auth/demo', { method: 'POST' });
-        await start();
-        go('/');
-      },
-    }, 'כניסה לדמו')));
   app.replaceChildren(el('section', { className: 'hero' },
     el('img', { src: '/favicon.svg', alt: '' }),
     el('h1', {}, 'השכונה שלך, בלי הרעש'),
     el('p', {}, 'הרשת החופשית של פרדס חנה-כרכור. מקום לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
   googleLogin ? el('div', { className: 'card' }, el('p', { className: 'flush' }, 'הוזמנת בכתובת של Google, או כבר חיברת חשבון?'),
     el('div', { className: 'row' }, googleButton('/api/auth/google', 'כניסה עם Google'))) : '',
-  demo ? demoEntry : inviteOnly ? inviteNote : el('form', {
+  inviteOnly ? inviteNote : el('form', {
     className: 'card',
     onsubmit: async (e) => {
       e.preventDefault();
@@ -1367,7 +1356,7 @@ async function start() {
       linkFailed = true;
     }
   }
-  ({ user: me, demo, inviteOnly, googleLogin } = await api('/me'));
+  ({ user: me, inviteOnly, googleLogin } = await api('/me'));
   // Opening an old link again is normal: someone already logged in just continues to the site.
   const google = new URLSearchParams(location.search).get('google');
   if (google) {
@@ -1376,7 +1365,6 @@ async function start() {
     if (GOOGLE_MESSAGES[google]) tell(GOOGLE_MESSAGES[google]);
   }
   if (linkFailed && !me) tell('הקישור הזה כבר נוצל או שפג תוקפו. בקשו קישור כניסה חדש ממי שהזמין אתכם.');
-  document.getElementById('demo-banner').hidden = !demo;
   renderNav();
   if (location.pathname === '/login' && me) history.replaceState(null, '', '/');
   await route();
@@ -1387,7 +1375,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden && me) pulse().catch(() => {});
 });
 setInterval(() => {
-  if (!document.hidden && me && !demo) pulse().catch(() => {});
+  if (!document.hidden && me) pulse().catch(() => {});
 }, PULSE_MS);
 window.addEventListener('popstate', async () => {
   await route();

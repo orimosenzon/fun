@@ -37,8 +37,6 @@ const YOUTUBE_ID = /^[\w-]{11}$/;
 const VIDEO_CACHE_SECONDS = 24 * 60 * 60;
 const GOOGLE_STATE_COOKIE = 'google_state';
 const GOOGLE_STATE_PATH = '/api/auth/google';
-const DEMO_SESSION = 'demo';
-const DEMO_WRITES = ['/api/auth/demo', '/api/auth/logout'];
 
 const FRIEND_IDS = `
   SELECT addressee_id FROM friendships WHERE requester_id = ?1 AND status = 'accepted'
@@ -129,10 +127,6 @@ function status(row, now = Date.now()) {
 
 function isLocalhost(c) {
   return ['localhost', '127.0.0.1'].includes(new URL(c.req.url).hostname);
-}
-
-function isDemo(c) {
-  return c.env.DEMO === '1';
 }
 
 function isAdmin(c) {
@@ -340,22 +334,16 @@ async function loadVisiblePost(c, id) {
 
 const app = new Hono();
 
-// The demo is public and has no moderation, so nothing a visitor sends is ever stored.
-// This runs first so that refused writes do not fill the log either.
-app.use('/api/*', async (c, next) => {
-  if (isDemo(c) && !['GET', 'HEAD'].includes(c.req.method) && !DEMO_WRITES.includes(c.req.path)) {
-    return c.json({ error: 'זו גרסת הדגמה לצפייה בלבד, אז שום דבר לא נשמר כאן' }, 403);
-  }
-  await next();
-});
-
-// Only the demo routes /why through the worker. The philosophy is public there, but the
-// claims about Facebook have not been checked by a lawyer yet, so they are cut out.
+// The philosophy on /why is public. The claims about Facebook have not been checked by a
+// lawyer yet, so only members see them: for everyone else they are cut out of the page.
 app.get('/why*', async (c) => {
   const page = await c.env.ASSETS.fetch(new URL('/why', c.req.url));
-  return new HTMLRewriter()
-    .on('[data-unreviewed]', { element: (element) => element.remove() })
-    .transform(page);
+  const shown = (await sessionUser(c))
+    ? page
+    : new HTMLRewriter().on('[data-unreviewed]', { element: (element) => element.remove() }).transform(page);
+  const response = new Response(shown.body, shown);
+  response.headers.set('Cache-Control', 'private, no-store');
+  return response;
 });
 
 function requestLog(c, fields) {
@@ -404,16 +392,19 @@ app.post('/api/client-log', async (c) => {
   return c.json({ ok: true });
 });
 
-app.use('/api/*', async (c, next) => {
+async function sessionUser(c) {
   const token = getCookie(c, SESSION_COOKIE);
-  if (token) {
-    const user = await c.env.DB
-      .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at FROM sessions s JOIN users u ON u.id = s.user_id
-        WHERE s.token_hash = ? AND s.expires_at > ?`)
-      .bind(await sha256(token), Date.now())
-      .first();
-    if (user) c.set('user', user);
-  }
+  if (!token) return null;
+  return c.env.DB
+    .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token_hash = ? AND s.expires_at > ?`)
+    .bind(await sha256(token), Date.now())
+    .first();
+}
+
+app.use('/api/*', async (c, next) => {
+  const user = await sessionUser(c);
+  if (user) c.set('user', user);
   await next();
 });
 
@@ -578,16 +569,9 @@ app.get('/api/auth/google/callback', async (c) => {
   return finish('joined');
 });
 
-// Every visitor shares one guest account. Its session row comes from tools/demo_seed.sql.
-app.post('/api/auth/demo', (c) => {
-  if (!isDemo(c)) return c.json({ error: 'לא נמצא' }, 404);
-  startSession(c, DEMO_SESSION);
-  return c.json({ ok: true });
-});
-
 app.post('/api/auth/logout', async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
-  if (token && !isDemo(c)) await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
+  if (token) await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
   return c.json({ ok: true });
 });
@@ -611,7 +595,6 @@ app.get('/api/me', async (c) => {
       place: place(user),
       status: status(user),
     } : null,
-    demo: isDemo(c),
     inviteOnly: c.env.INVITE_ONLY === '1',
     googleLogin: !!c.env.GOOGLE_CLIENT_ID,
   });
