@@ -64,7 +64,9 @@ def make_description(wikitext: str) -> str:
     t = re.sub(r"\{\{.*?\}\}", " ", t, flags=re.S)        # templates
     t = re.sub(r"<ref[^>]*>.*?</ref>", " ", t, flags=re.S)  # refs
     t = re.sub(r"<[^>]+>", " ", t)                         # other html tags
-    t = re.sub(r"\[\[(?:קובץ|File|תמונה):[^\]]*\]\]", " ", t)  # file links
+    # file links; captions may hold [[links]] one level deep, which a plain
+    # [^\]]* stopped at, leaking the caption tail into the description.
+    t = re.sub(r"\[\[(?:קובץ|File|תמונה):(?:[^\[\]]|\[\[[^\[\]]*\]\])*\]\]", " ", t)
     t = re.sub(r"\[\[[^\]\|]*\|([^\]]+)\]\]", r"\1", t)    # [[a|b]] -> b
     t = re.sub(r"\[\[([^\]]+)\]\]", r"\1", t)              # [[a]] -> a
     t = re.sub(r"\[https?://\S+\s+([^\]]+)\]", r"\1", t)   # [url text] -> text
