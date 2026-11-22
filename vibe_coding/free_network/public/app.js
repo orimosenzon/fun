@@ -41,6 +41,7 @@ const ICONS = {
   chat: 'M21 11.5a8.4 8.4 0 0 1-.9 3.8a8.5 8.5 0 0 1-7.6 4.7a8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8a8.5 8.5 0 0 1 4.7-7.6a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z',
   send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
   down: 'M6 9l6 6 6-6',
+  edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z',
 };
 let me = null;
 let inviteOnly = false;
@@ -394,7 +395,50 @@ function audienceChip(audience) {
   }, icon(open ? 'globe' : 'users'), open ? 'ציבורי' : 'חברים');
 }
 
-function postCard(post, { onDeleted } = {}) {
+// Tells the reader that the words are not the first ones. The tooltip says when they changed.
+function editedMark(ms) {
+  if (!ms) return null;
+  return el('span', { className: 'edited', title: `נערך ב-${format({ dateStyle: 'full', timeStyle: 'short' }).format(ms)}` }, 'נערך');
+}
+
+// Published words, opened for rewriting in the place where they are read.
+function editBox(words, { maxLength, label, save, close }) {
+  const text = el('textarea', {
+    maxLength,
+    dir: 'auto',
+    ariaLabel: label,
+    onkeydown: (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) text.form.requestSubmit();
+      if (e.key === 'Escape') close();
+    },
+  });
+  text.value = words;
+  const error = el('p', { className: 'error', hidden: true });
+  const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'שמירה');
+  const form = el('form', {
+    className: 'edit-box',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      submit.disabled = true;
+      error.hidden = true;
+      try {
+        await save(text.value);
+      } catch (err) {
+        error.textContent = err.message;
+        error.hidden = false;
+        submit.disabled = false;
+      }
+    },
+  }, text, el('div', { className: 'row' }, submit, el('button', { className: 'plain', type: 'button', onclick: close }, 'ביטול')), error);
+  form.open = () => {
+    text.focus();
+    text.setSelectionRange(text.value.length, text.value.length);
+  };
+  return form;
+}
+
+function postCard(post, options = {}) {
+  const { onDeleted } = options;
   const url = `/p/${post.id}`;
   const count = !post.commentCount ? 'להגיב' : post.commentCount === 1 ? 'תגובה אחת' : `${post.commentCount} תגובות`;
   const actions = el('div', { className: 'actions' }, link(url, labelled('comment', count)));
@@ -418,14 +462,48 @@ function postCard(post, { onDeleted } = {}) {
       }
     },
   }, icon('trash'));
-  return el('article', { className: 'card post' },
-    el('div', { className: 'head' }, profileLink(post.author, avatar(post.author)), el('div', { className: 'who' },
-      profileLink(post.author, el('span', { className: 'author', dir: 'auto' }, post.author.name)),
-      el('span', { className: 'meta' }, link(url, when(post.createdAt)), audienceChip(post.audience))), remove),
-    post.body ? richText(post.body) : null,
+  const words = post.body ? richText(post.body) : null;
+  const head = el('div', { className: 'head' }, profileLink(post.author, avatar(post.author)), el('div', { className: 'who' },
+    profileLink(post.author, el('span', { className: 'author', dir: 'auto' }, post.author.name)),
+    el('span', { className: 'meta' }, link(url, when(post.createdAt)), audienceChip(post.audience), editedMark(post.editedAt))));
+  const card = el('article', { className: 'card post' },
+    head,
+    words,
     post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
     actions);
+  if (post.mine) {
+    let box = null;
+    const close = () => {
+      box?.remove();
+      box = null;
+      if (words) words.hidden = false;
+    };
+    const edit = el('button', {
+      className: 'icon-button',
+      type: 'button',
+      ariaLabel: 'עריכת הפוסט',
+      title: 'עריכת הפוסט',
+      onclick: () => {
+        if (!box) {
+          box = editBox(post.body, {
+            maxLength: 5000,
+            label: 'עריכת הפוסט',
+            close,
+            save: async (body) => {
+              const { post: saved } = await api(`/posts/${post.id}`, { method: 'PUT', body: { body } });
+              card.replaceWith(postCard(saved, options));
+            },
+          });
+          head.after(box);
+          if (words) words.hidden = true;
+        }
+        box.open();
+      },
+    }, icon('edit'));
+    head.append(el('span', { className: 'head-tools' }, edit, remove));
+  }
+  return card;
 }
 
 async function composer(onPosted) {
@@ -646,18 +724,47 @@ function comment(item, reload, onReply) {
   const bubble = el('div', { className: 'bubble' },
     el('div', { className: 'comment-head' },
       profileLink(item.author, el('span', { className: 'author', dir: 'auto' }, item.author.name)),
-      el('span', { className: 'meta' }, when(item.createdAt))));
+      el('span', { className: 'meta' }, when(item.createdAt), editedMark(item.editedAt))));
   const node = el('div', { className: `comment${item.parentId ? ' reply' : ''}` }, profileLink(item.author, avatar(item.author, { small: true })), bubble);
   if (item.removedBy) {
     const by = item.removedBy === 'author' ? 'הכותב' : 'בעל הפוסט';
     bubble.append(el('p', { className: 'text removed' }, `התגובה הוסרה על ידי ${by}`));
     return node;
   }
-  if (item.body) bubble.append(richText(item.body));
+  const words = item.body ? richText(item.body) : null;
+  if (words) bubble.append(words);
   if (item.image) bubble.append(gallery([item.image]));
   if (item.youtubeId) bubble.append(video(item.youtubeId));
   const actions = el('div', { className: 'comment-actions' });
   if (onReply) actions.append(el('button', { className: 'plain', type: 'button', onclick: onReply }, labelled('reply', 'הגבה')));
+  if (item.canEdit) {
+    let box = null;
+    const close = () => {
+      box?.remove();
+      box = null;
+      if (words) words.hidden = false;
+    };
+    actions.append(el('button', {
+      className: 'plain',
+      type: 'button',
+      onclick: () => {
+        if (!box) {
+          box = editBox(item.body ?? '', {
+            maxLength: 2000,
+            label: 'עריכת התגובה',
+            close,
+            save: async (body) => {
+              await api(`/comments/${item.id}`, { method: 'PUT', body: { body } });
+              reload();
+            },
+          });
+          bubble.querySelector('.comment-head').after(box);
+          if (words) words.hidden = true;
+        }
+        box.open();
+      },
+    }, 'עריכה'));
+  }
   if (item.canRemove) {
     actions.append(el('button', {
       className: 'plain danger',
@@ -975,6 +1082,132 @@ function meter(label, value, max, text) {
     el('progress', { value, max }));
 }
 
+const CONTACT_PROBLEMS = {
+  expired: 'גוגל כבר לא מכבד את החיבור, אז אין השלמה מאנשי הקשר. חברו את ה-Gmail מחדש.',
+  disabled: 'כדי להשלים כתובות צריך להפעיל את People API בפרויקט הגוגל של הרשת (במסוף של גוגל, תחת APIs & Services). עד אז מקלידים שם, פסיק וכתובת.',
+  refused: 'גוגל לא נתן לקרוא את אנשי הקשר. חיבור מחדש של ה-Gmail, עם סימון ההרשאה לאנשי הקשר, יפעיל את ההשלמה.',
+};
+
+// Completes the line being typed from the admin's Google contacts, the way a mail program
+// does. The contacts are asked for when the box is first used, and live only in this page.
+function completeFromContacts(box) {
+  const list = el('ul', { className: 'suggestions', id: 'invite-suggestions', role: 'listbox', ariaLabel: 'הצעות מאנשי הקשר', hidden: true });
+  const note = el('p', { className: 'note', hidden: true });
+  let contacts = null;
+  let asked = false;
+  let shown = [];
+  let active = 0;
+  box.setAttribute('aria-autocomplete', 'list');
+  box.setAttribute('aria-controls', list.id);
+
+  function line() {
+    const at = box.selectionStart;
+    const start = box.value.lastIndexOf('\n', at - 1) + 1;
+    const next = box.value.indexOf('\n', at);
+    const end = next === -1 ? box.value.length : next;
+    return { start, end, text: box.value.slice(start, end) };
+  }
+
+  function hide() {
+    shown = [];
+    list.hidden = true;
+    list.replaceChildren();
+    box.setAttribute('aria-expanded', 'false');
+    box.removeAttribute('aria-activedescendant');
+  }
+
+  function mark() {
+    [...list.children].forEach((row, index) => row.setAttribute('aria-selected', String(index === active)));
+    box.setAttribute('aria-activedescendant', `suggestion-${active}`);
+    list.children[active]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function pick(contact) {
+    const { start, end } = line();
+    const text = contact.name ? `${contact.name}, ${contact.email}` : contact.email;
+    const rest = box.value.slice(end);
+    box.value = `${box.value.slice(0, start)}${text}\n${rest.replace(/^\n/, '')}`;
+    const caret = start + text.length + 1;
+    box.setSelectionRange(caret, caret);
+    hide();
+    box.focus();
+  }
+
+  function suggest() {
+    if (!contacts) return;
+    const { text } = line();
+    const words = text.toLowerCase().split(/[\s,;<>]+/).filter(Boolean);
+    const typed = new Set(box.value.toLowerCase().split(/[\s,;<>]+/));
+    if (words.join('').length < 2 || words.some((word) => contacts.some((contact) => contact.key === word))) return hide();
+    const starts = [];
+    const holds = [];
+    for (const contact of contacts) {
+      if (typed.has(contact.key) || !words.every((word) => contact.search.includes(word))) continue;
+      const first = contact.starts.some((part) => part.startsWith(words[0]));
+      (first ? starts : holds).push(contact);
+      if (starts.length === 6) break;
+    }
+    shown = [...starts, ...holds].slice(0, 6);
+    if (!shown.length) return hide();
+    active = 0;
+    list.replaceChildren(...shown.map((contact, index) => el('li', {
+      id: `suggestion-${index}`,
+      role: 'option',
+      onpointerdown: (e) => e.preventDefault(),
+      onclick: () => pick(contact),
+    }, contact.name ? el('span', { className: 'suggest-name', dir: 'auto' }, contact.name) : null,
+    el('span', { className: 'suggest-mail', dir: 'ltr' }, contact.email))));
+    // On a phone the keyboard takes the lower half, so the box moves up and the list fits above it.
+    if (list.hidden && matchMedia('(max-width: 640px)').matches) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    list.hidden = false;
+    box.setAttribute('aria-expanded', 'true');
+    mark();
+  }
+
+  async function load() {
+    if (asked) return;
+    asked = true;
+    try {
+      const { contacts: found, problem } = await api('/admin/contacts');
+      if (found) {
+        contacts = found.map((contact) => ({
+          ...contact,
+          key: contact.email.toLowerCase(),
+          search: `${contact.name} ${contact.email}`.toLowerCase(),
+          starts: [...contact.name.toLowerCase().split(/\s+/), contact.email.toLowerCase()],
+        }));
+        note.textContent = found.length
+          ? `ההצעות מגיעות מ-${found.length} הכתובות שבאנשי הקשר שלך בגוגל. הן נקראות עכשיו ולא נשמרות ברשת.`
+          : 'באנשי הקשר שלך בגוגל לא נמצאו כתובות, אז מקלידים שם, פסיק וכתובת.';
+        suggest();
+      } else {
+        note.textContent = CONTACT_PROBLEMS[problem] ?? 'לא הצלחנו לקרוא את אנשי הקשר מגוגל. אפשר להקליד שם, פסיק וכתובת.';
+      }
+    } catch {
+      note.textContent = 'לא הצלחנו לקרוא את אנשי הקשר מגוגל. אפשר להקליד שם, פסיק וכתובת.';
+    }
+    note.hidden = false;
+  }
+
+  box.addEventListener('focus', load);
+  box.addEventListener('input', suggest);
+  box.addEventListener('blur', hide);
+  box.addEventListener('keydown', (e) => {
+    if (!shown.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      active = (active + (e.key === 'ArrowDown' ? 1 : shown.length - 1)) % shown.length;
+      mark();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      pick(shown[active]);
+    } else if (e.key === 'Escape') {
+      hide();
+    }
+  });
+  return { list, note };
+}
+
 async function adminPage() {
   const paint = painter();
   const { usage, users, posts, comments, members, emailInvites, mailer, defaultNote } = await api('/admin/overview');
@@ -994,7 +1227,8 @@ async function adminPage() {
   // An invitation is a letter from a friend, so it leaves from the admin's own Gmail: by
   // itself once they connected it for sending, and otherwise by their hand. Each line of the
   // box is one person: a name, a comma, an address.
-  const people = el('textarea', { className: 'invite-lines', placeholder: 'דנה כהן, dana@gmail.com', dir: 'rtl', rows: 3, required: true, ariaLabel: 'מוזמנים: שם, פסיק, כתובת מייל. שורה לכל אחד' });
+  const people = el('textarea', { className: 'invite-lines', id: 'invite-people', placeholder: 'דנה כהן, dana@gmail.com', dir: 'rtl', rows: 3, required: true });
+  const completion = mailer?.contacts ? completeFromContacts(people) : null;
   const note = el('textarea', { className: 'invite-note', dir: 'rtl', rows: 4, maxLength: 1500, ariaLabel: 'מה לכתוב במכתב' });
   const NOTE_KEY = 'invite-note';
   try {
@@ -1075,26 +1309,32 @@ async function adminPage() {
       if (!sending && mailer) return route();
       showPending((await api('/admin/overview')).emailInvites);
     },
-  }, el('label', { className: 'field' }, el('span', {}, 'מוזמנים: שם, פסיק, כתובת. שורה לכל אחד'), people),
+  }, el('div', { className: 'field' },
+    el('label', { htmlFor: 'invite-people' }, completion ? 'מוזמנים: מתחילים להקליד שם או כתובת ובוחרים מהרשימה. שורה לכל אחד' : 'מוזמנים: שם, פסיק, כתובת. שורה לכל אחד'),
+    el('div', { className: 'suggest-wrap' }, people, completion?.list), completion?.note),
   el('label', { className: 'field' }, el('span', {}, 'מה לכתוב להם. הפנייה בשם, הסרטון, הקישור האישי והחתימה נוספים לבד'), note),
   el('div', { className: 'row' }, submit));
 
   // Sending in the admin's name needs their permission, once. Only sending is asked for.
   const connection = !googleLogin ? null : mailer
-    ? el('div', { className: 'row mailer' }, el('span', { className: 'chip friends' }, icon('check'), 'שליחה אוטומטית'),
-      el('span', { className: 'muted' }, 'המכתבים יוצאים מ-', el('span', { dir: 'ltr' }, mailer.address), '.'),
-      el('button', {
-        className: 'plain',
-        type: 'button',
-        onclick: async () => {
-          if (!await ask('להפסיק לשלוח מה-Gmail שלך? ההרשאה תימחק כאן ותבוטל בגוגל. אפשר יהיה לחבר שוב.', 'ניתוק')) return;
-          await api('/admin/mailer', { method: 'DELETE' });
-          route();
-        },
-      }, 'ניתוק'))
+    ? el('div', { className: 'mailer' },
+      el('div', { className: 'row mailer' }, el('span', { className: 'chip friends' }, icon('check'), 'שליחה אוטומטית'),
+        mailer.contacts ? el('span', { className: 'chip friends' }, icon('check'), 'השלמת כתובות') : null,
+        el('span', { className: 'muted' }, 'המכתבים יוצאים מ-', el('span', { dir: 'ltr' }, mailer.address), '.'),
+        el('button', {
+          className: 'plain',
+          type: 'button',
+          onclick: async () => {
+            if (!await ask('להפסיק לשלוח מה-Gmail שלך? ההרשאה תימחק כאן ותבוטל בגוגל. אפשר יהיה לחבר שוב.', 'ניתוק')) return;
+            await api('/admin/mailer', { method: 'DELETE' });
+            route();
+          },
+        }, 'ניתוק')),
+      mailer.contacts ? null : el('div', { className: 'row' }, googleButton('/api/auth/google?mail=1', 'חיבור מחדש, עם השלמת כתובות')),
+      mailer.contacts ? null : el('p', { className: 'note' }, 'החיבור הנוכחי מרשה רק לשלוח. חיבור מחדש מוסיף רשות לקרוא את אנשי הקשר שלך בגוגל, כדי שכתובת תשלים את עצמה בזמן ההקלדה. אנשי הקשר לא נשמרים ברשת.'))
     : el('div', { className: 'mailer' },
       el('div', { className: 'row' }, googleButton('/api/auth/google?mail=1', 'חיבור Gmail לשליחה אוטומטית')),
-      el('p', { className: 'note' }, 'אחרי החיבור ההזמנות נשלחות מהכתובת שלך בלי לפתוח את Gmail. מבקשים מגוגל רק רשות לשלוח, לא לקרוא. עד אז נוצר מכתב מוכן שפותחים ושולחים ביד.'));
+      el('p', { className: 'note' }, 'אחרי החיבור ההזמנות נשלחות מהכתובת שלך בלי לפתוח את Gmail, וכתובת משלימה את עצמה מאנשי הקשר שלך בזמן ההקלדה. מבקשים מגוגל רשות לשלוח ורשות לקרוא את אנשי הקשר, לא את המיילים. אנשי הקשר לא נשמרים ברשת, ובמסך של גוגל אפשר לסמן רק את השליחה. עד אז נוצר מכתב מוכן שפותחים ושולחים ביד.'));
 
   function showPending(list) {
     pendingBox.replaceChildren(...(list.length ? [el('h2', {}, `הוזמנו ועוד לא נכנסו (${list.length})`)] : []), ...list.map((item) => el('div', { className: 'person' },

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { outsideNews, israelNews, PICTURE_HOSTS } from './digest.js';
 import { writeLog } from './log.js';
-import { DEFAULT_NOTE, MAX_NOTE, SEND_SCOPE, inviteLetter, seal, sendFromGmail, unseal } from './mail.js';
+import { CONTACT_SCOPES, DEFAULT_NOTE, MAX_NOTE, SEND_SCOPE, googleContacts, inviteLetter, seal, sendFromGmail, unseal } from './mail.js';
 
 const SESSION_COOKIE = 'session';
 const SESSION_MS = 90 * 24 * 60 * 60 * 1000;
@@ -250,6 +250,7 @@ function serializePost(row, viewer) {
     youtubeId: row.youtube_id,
     audience: row.audience,
     createdAt: row.created_at,
+    editedAt: row.edited_at ?? null,
     commentCount: row.comment_count,
     images: JSON.parse(row.image_ids),
     mine: viewer?.id === row.author_id,
@@ -265,7 +266,9 @@ function serializeComment(row, viewer, post) {
     image: row.image_id,
     parentId: row.parent_id,
     createdAt: row.created_at,
+    editedAt: row.removed_by ? null : row.edited_at ?? null,
     removedBy: row.removed_by,
+    canEdit: !row.removed_by && viewer?.id === row.author_id,
     canRemove: !row.removed_by && !!viewer && (viewer.id === row.author_id || viewer.id === post.author_id),
   };
 }
@@ -492,8 +495,9 @@ app.get('/api/auth/google', (c) => {
     client_id: c.env.GOOGLE_CLIENT_ID,
     redirect_uri: googleRedirectUri(c),
     response_type: 'code',
-    // To send invitations, Google is asked for one more thing only: sending. Not reading.
-    scope: mode === 'mail' ? `openid email ${SEND_SCOPE}` : 'openid email profile',
+    // To send invitations, Google is asked for sending, and for reading the contacts so that an
+    // address completes itself. Never for reading mail. The admin may tick only the sending.
+    scope: mode === 'mail' ? ['openid', 'email', SEND_SCOPE, ...CONTACT_SCOPES].join(' ') : 'openid email profile',
     prompt: mode === 'mail' ? 'consent' : 'select_account',
     ...(mode === 'mail' ? { access_type: 'offline' } : {}),
     state,
@@ -519,9 +523,10 @@ app.get('/api/auth/google/callback', async (c) => {
     if (!isAdmin(c)) return finish('failed');
     if (!google.refreshToken || !google.address || !google.scopes.includes(SEND_SCOPE)) return back('mail-refused');
     await db
-      .prepare(`INSERT INTO mailers (user_id, address, refresh_token, created_at) VALUES (?1, ?2, ?3, ?4)
-        ON CONFLICT (user_id) DO UPDATE SET address = ?2, refresh_token = ?3, created_at = ?4`)
-      .bind(c.get('user').id, google.address, await seal(c.env.GOOGLE_CLIENT_SECRET, google.refreshToken), Date.now())
+      .prepare(`INSERT INTO mailers (user_id, address, refresh_token, created_at, contacts) VALUES (?1, ?2, ?3, ?4, ?5)
+        ON CONFLICT (user_id) DO UPDATE SET address = ?2, refresh_token = ?3, created_at = ?4, contacts = ?5`)
+      .bind(c.get('user').id, google.address, await seal(c.env.GOOGLE_CLIENT_SECRET, google.refreshToken), Date.now(),
+        CONTACT_SCOPES.some((scope) => google.scopes.includes(scope)) ? 1 : 0)
       .run();
     return back('mail');
   }
@@ -735,6 +740,26 @@ app.get('/api/posts/:id', async (c) => {
   });
 });
 
+// Only the words of a post can change, and only by its writer. The audience stays as the
+// people who answered knew it, and readers are told that the post was edited.
+app.put('/api/posts/:id', requireUser, async (c) => {
+  const id = parseId(c.req.param('id'));
+  const user = c.get('user');
+  const post = id && (await c.env.DB.prepare(`${POST_SELECT} WHERE p.id = ? AND p.author_id = ? AND p.deleted_at IS NULL`).bind(id, user.id).first());
+  if (!post) return c.json({ error: 'הפוסט לא נמצא' }, 404);
+
+  const input = await readJson(c);
+  if (typeof input.body !== 'string') return c.json({ error: 'הפוסט ריק' }, 400);
+  const body = input.body.trim();
+  if (body.length > MAX_POST) return c.json({ error: 'הפוסט ארוך מדי' }, 400);
+  if (!body && post.image_ids === '[]') return c.json({ error: 'הפוסט ריק' }, 400);
+  if (body !== post.body) {
+    Object.assign(post, { body, youtube_id: findYoutubeId(body), edited_at: Date.now() });
+    await c.env.DB.prepare('UPDATE posts SET body = ?, youtube_id = ?, edited_at = ? WHERE id = ?').bind(post.body, post.youtube_id, post.edited_at, id).run();
+  }
+  return c.json({ post: serializePost(post, user) });
+});
+
 app.delete('/api/posts/:id', requireUser, async (c) => {
   const id = parseId(c.req.param('id'));
   const result = await c.env.DB
@@ -839,6 +864,24 @@ app.post('/api/posts/:id/comments', requireUser, async (c) => {
     .first();
   if (image) await c.env.DB.prepare('UPDATE images SET comment_id = ? WHERE id = ?').bind(row.id, image).run();
   return c.json({ id: row.id }, 201);
+});
+
+// A comment is rewritten only by whoever wrote it. The owner of the post may remove it, not reword it.
+app.put('/api/comments/:id', requireUser, async (c) => {
+  const id = parseId(c.req.param('id'));
+  const user = c.get('user');
+  const comment = id && (await c.env.DB
+    .prepare(`SELECT m.body, (SELECT id FROM images WHERE comment_id = m.id) AS image_id FROM comments m
+      JOIN posts p ON p.id = m.post_id WHERE m.id = ? AND m.author_id = ? AND m.removed_by IS NULL AND p.deleted_at IS NULL`)
+    .bind(id, user.id)
+    .first());
+  if (!comment) return c.json({ error: 'התגובה לא נמצאה' }, 404);
+
+  const input = await readJson(c);
+  const body = typeof input.body === 'string' ? input.body.trim() : '';
+  if (body.length > MAX_COMMENT || (!body && !comment.image_id)) return c.json({ error: 'התגובה ריקה או ארוכה מדי' }, 400);
+  if (body !== (comment.body ?? '')) await c.env.DB.prepare('UPDATE comments SET body = ?, edited_at = ? WHERE id = ?').bind(body, Date.now(), id).run();
+  return c.json({ ok: true });
 });
 
 app.delete('/api/comments/:id', requireUser, async (c) => {
@@ -1236,8 +1279,25 @@ app.get('/api/admin/overview', requireAdmin, async (c) => {
       GROUP BY email ORDER BY createdAt DESC`)
     .bind(Date.now(), `%${NO_MAILBOX}`)
     .all();
-  const mailer = await db.prepare('SELECT address FROM mailers WHERE user_id = ?').bind(c.get('user').id).first();
-  return c.json({ usage: await imageUsage(c), ...counts.results[0], members: members.results, emailInvites, mailer, defaultNote: DEFAULT_NOTE });
+  const mailer = await db.prepare('SELECT address, contacts FROM mailers WHERE user_id = ?').bind(c.get('user').id).first();
+  return c.json({
+    usage: await imageUsage(c),
+    ...counts.results[0],
+    members: members.results,
+    emailInvites,
+    mailer: mailer && { address: mailer.address, contacts: !!mailer.contacts },
+    defaultNote: DEFAULT_NOTE,
+  });
+});
+
+// The admin's own contacts, for completing an address while an invitation is typed. They are
+// read from Google now, handed to the admin's browser, and stored nowhere.
+app.get('/api/admin/contacts', requireAdmin, async (c) => {
+  c.header('Cache-Control', 'private, no-store');
+  const mailer = await c.env.DB.prepare('SELECT refresh_token, contacts FROM mailers WHERE user_id = ?').bind(c.get('user').id).first();
+  if (!mailer?.contacts) return c.json({ contacts: null, problem: 'unconnected' });
+  const { contacts = null, problem = null } = await googleContacts(c.env, mailer.refresh_token);
+  return c.json({ contacts, problem });
 });
 
 // Stops the sending: the key is erased here, and Google is told to stop honouring it.

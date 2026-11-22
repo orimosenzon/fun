@@ -1771,3 +1771,41 @@ dialog { color: var(--text); font: inherit; }
   .convo { min-height: 62px; }
   .pill-link { min-height: 40px; }
 }
+
+/* Editing published words in place. */
+.head-tools { display: flex; align-items: center; align-self: flex-start; margin-inline-start: auto; margin-inline-end: -6px; }
+.head-tools .icon-button { margin-inline: 0; }
+.edited { font-size: 12.5px; color: var(--muted); }
+.edited::before { content: "· "; }
+.edit-box { margin: 10px 0 4px; }
+.edit-box textarea { width: 100%; min-height: 64px; }
+.edit-box .row { margin-top: 8px; }
+.bubble .edit-box { min-width: min(100%, 22em); }
+
+/* Addresses that complete themselves from the admin's contacts. */
+.suggest-wrap { position: relative; }
+.suggest-wrap textarea { display: block; }
+#invite-people { scroll-margin-top: 84px; }
+.suggestions {
+  position: absolute;
+  z-index: 5;
+  inset-inline: 0;
+  top: calc(100% + 4px);
+  max-height: 264px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.suggestions li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 9px; cursor: pointer; }
+.suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--hover); }
+.suggest-name { color: var(--text); font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest-mail { flex: none; max-width: 60%; color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card > form > .field > label { display: block; }
+@media (max-width: 640px) {
+  .suggestions li { min-height: 44px; align-items: center; }
+}

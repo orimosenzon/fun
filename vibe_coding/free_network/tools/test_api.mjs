@@ -20,6 +20,7 @@ const digestRequests = [];
 const pictureRequests = [];
 const mailSent = [];
 const revoked = [];
+const peopleRequests = [];
 
 // Stands in for YouTube, and records what the worker sends it.
 const fakeYoutube = createServer((request, response) => {
@@ -46,7 +47,9 @@ const fakeYoutube = createServer((request, response) => {
       const encoded = Buffer.from(JSON.stringify(claims)).toString('base64url');
       response.setHeader('Content-Type', 'application/json');
       // Google hands a lasting key only when asked for one, and the scopes the person agreed to.
-      const scope = `openid email${code.includes('unticked') ? '' : ' https://www.googleapis.com/auth/gmail.send'}`;
+      // "contacts" in the code is a person who also ticked the reading of their contacts.
+      const scope = `openid email${code.includes('unticked') ? '' : ' https://www.googleapis.com/auth/gmail.send'}${code.includes('contacts')
+        ? ' https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly' : ''}`;
       response.end(JSON.stringify({ id_token: `x.${encoded}.y`, refresh_token: `key-of-${code}`, scope }));
     });
     return;
@@ -103,6 +106,28 @@ ${card('מאוחר יותר באותו יום')}
           : { parse: { text: '<div><ul><li><a href="/wiki/%D7%92%D7%A9%D7%9D" title="גשם">גשם</a> <small>(בתמונה)</small> ירד &amp; ירד ב<a href="/wiki/X">צפון</a> (<a rel="nofollow" class="external text" href="https://news.example/1">אתר</a>)</li>\n<li>ידיעה שנייה</li></ul></div>' } };
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify(body));
+    return;
+  }
+  // Google's contacts: saved ones in two pages, and the people remembered from past letters.
+  // A key with "disabled" in it meets a project where the People API was never switched on.
+  if (request.url.startsWith('/v1/people/me/connections') || request.url.startsWith('/v1/otherContacts')) {
+    const query = new URL(request.url, 'http://x').searchParams;
+    peopleRequests.push({ url: request.url, pass: request.headers.authorization });
+    response.setHeader('Content-Type', 'application/json');
+    const person = (name, ...emails) => ({ ...(name ? { names: [{ displayName: name }] } : {}), emailAddresses: emails.map((value) => ({ value })) });
+    if (request.headers.authorization.includes('disabled')) {
+      response.statusCode = 403;
+      response.end(JSON.stringify({ error: { code: 403, status: 'PERMISSION_DENIED', details: [{ reason: 'SERVICE_DISABLED' }] } }));
+    } else if (request.url.startsWith('/v1/otherContacts')) {
+      const fine = query.get('readMask') === 'names,emailAddresses';
+      response.end(JSON.stringify(fine ? { otherContacts: [person(null, 'Dana@Example.org'), person('רון שכתבתי לו', 'ron@example.org'), person('בלי כתובת'), person('שבור', 'not-an-address')] } : {}));
+    } else if (query.get('personFields') !== 'names,emailAddresses') {
+      response.end('{}');
+    } else if (!query.get('pageToken')) {
+      response.end(JSON.stringify({ connections: [person('דנה כהן', 'dana@example.org', 'dana.work@example.com')], nextPageToken: 'page 2' }));
+    } else {
+      response.end(JSON.stringify({ connections: query.get('pageToken') === 'page 2' ? [person('יוסי לוי', 'yossi@example.org')] : [] }));
+    }
     return;
   }
   if (request.url === '/gmail/v1/users/me/messages/send' || request.url === '/revoke') {
@@ -292,6 +317,75 @@ test('only the author can delete a post, and it disappears', async () => {
   assert.equal((await bob.call('DELETE', `/posts/${id}`)).status, 404);
   assert.equal((await alice.call('DELETE', `/posts/${id}`)).status, 200);
   assert.equal((await anon('GET', `/posts/${id}`)).status, 404);
+});
+
+test('only the author rewrites a post, and readers are told it was edited', async () => {
+  const { id } = (await alice.call('POST', '/posts', { body: 'נוסח ראשון', audience: 'friends' })).data;
+  const read = async (who = bob) => (await who.call('GET', `/posts/${id}`)).data.post;
+  assert.equal((await read()).editedAt, null);
+  assert.equal((await bob.call('PUT', `/posts/${id}`, { body: 'של מישהו אחר' })).status, 404);
+  assert.equal((await anon('PUT', `/posts/${id}`, { body: 'בלי חשבון' })).status, 401);
+  // Saving the same words is not an edit.
+  assert.equal((await alice.call('PUT', `/posts/${id}`, { body: ' נוסח ראשון ' })).data.post.editedAt, null);
+
+  const started = Date.now();
+  const { status, data } = await alice.call('PUT', `/posts/${id}`, { body: 'נוסח שני https://youtu.be/dQw4w9WgXcQ', audience: 'public' });
+  assert.equal(status, 200);
+  assert.equal(data.post.mine, true);
+  const after = await read();
+  assert.equal(after.body, 'נוסח שני https://youtu.be/dQw4w9WgXcQ');
+  assert.equal(after.youtubeId, 'dQw4w9WgXcQ');
+  assert.ok(after.editedAt >= started);
+  // Only the words change: the audience stays as the people who answered knew it.
+  assert.equal(after.audience, 'friends');
+  assert.equal((await carol.call('GET', `/posts/${id}`)).status, 404);
+  assert.equal((await bob.call('GET', '/feed')).data.posts.find((post) => post.id === id).body, after.body);
+
+  assert.equal((await alice.call('PUT', `/posts/${id}`, { body: '  ' })).status, 400);
+  assert.equal((await alice.call('PUT', `/posts/${id}`, {})).status, 400);
+  assert.equal((await alice.call('PUT', `/posts/${id}`, { body: 'א'.repeat(5001) })).status, 400);
+  assert.equal((await read()).body, after.body);
+  await alice.call('DELETE', `/posts/${id}`);
+  assert.equal((await alice.call('PUT', `/posts/${id}`, { body: 'אחרי מחיקה' })).status, 404);
+});
+
+test('a post with a picture can lose its words, and keeps the picture', async () => {
+  const image = (await alice.call('POST', '/images', phoneJpeg())).data.id;
+  const { id } = (await alice.call('POST', '/posts', { body: 'עם תמונה', audience: 'public', images: [image] })).data;
+  const { data } = await alice.call('PUT', `/posts/${id}`, { body: '' });
+  assert.equal(data.post.body, '');
+  assert.deepEqual(data.post.images, [image]);
+  assert.ok(data.post.editedAt);
+});
+
+test('only the writer rewrites a comment, not the owner of the post, and not after it was removed', async () => {
+  const { id } = (await bob.call('POST', `/posts/${publicPost}/comments`, { body: 'תגובה עם טעות' })).data;
+  const find = async () => (await anon('GET', `/posts/${publicPost}`)).data.comments.find((item) => item.id === id);
+  assert.equal((await find()).editedAt, null);
+  const seenBy = async (who) => (await who.call('GET', `/posts/${publicPost}`)).data.comments.find((item) => item.id === id);
+  assert.equal((await seenBy(bob)).canEdit, true);
+  assert.equal((await seenBy(alice)).canEdit, false);
+  assert.equal((await seenBy(alice)).canRemove, true);
+  assert.equal((await alice.call('PUT', `/comments/${id}`, { body: 'בעלת הפוסט משכתבת' })).status, 404);
+  assert.equal((await anon('PUT', `/comments/${id}`, { body: 'אורח' })).status, 401);
+  assert.equal((await bob.call('PUT', `/comments/${id}`, { body: 'תגובה עם טעות' })).status, 200);
+  assert.equal((await find()).editedAt, null);
+
+  const started = Date.now();
+  assert.equal((await bob.call('PUT', `/comments/${id}`, { body: 'תגובה מתוקנת https://youtu.be/dQw4w9WgXcQ' })).status, 200);
+  const after = await find();
+  assert.equal(after.body, 'תגובה מתוקנת https://youtu.be/dQw4w9WgXcQ');
+  assert.equal(after.youtubeId, 'dQw4w9WgXcQ');
+  assert.ok(after.editedAt >= started);
+  assert.equal((await bob.call('PUT', `/comments/${id}`, { body: '' })).status, 400);
+  assert.equal((await bob.call('PUT', `/comments/${id}`, { body: 'א'.repeat(2001) })).status, 400);
+
+  await bob.call('DELETE', `/comments/${id}`);
+  assert.equal((await bob.call('PUT', `/comments/${id}`, { body: 'אחרי הסרה' })).status, 404);
+  const removed = await find();
+  assert.equal(removed.body, null);
+  assert.equal(removed.editedAt, null);
+  assert.equal((await seenBy(bob)).canEdit, false);
 });
 
 // A tiny JPEG shaped like a phone photo: an Exif block holding a location, then the picture data.
@@ -1029,9 +1123,13 @@ test('only the admin connects a Gmail, and only for sending', async () => {
   assert.equal((await boss.call('GET', '/admin/overview')).data.mailer, null);
   const connected = await googleFlow('google-boss:The.Boss@gmail.com', { user: boss, mail: true });
   assert.equal(connected.result, 'mail');
-  assert.equal(connected.asked.searchParams.get('scope'), 'openid email https://www.googleapis.com/auth/gmail.send');
+  assert.equal(connected.asked.searchParams.get('scope'), 'openid email https://www.googleapis.com/auth/gmail.send '
+    + 'https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly');
   assert.equal(connected.asked.searchParams.get('access_type'), 'offline');
-  assert.deepEqual((await boss.call('GET', '/admin/overview')).data.mailer, { address: 'The.Boss@gmail.com' });
+  // The boss ticked only the sending, so nothing is read from the contacts and Google is not asked.
+  assert.deepEqual((await boss.call('GET', '/admin/overview')).data.mailer, { address: 'The.Boss@gmail.com', contacts: false });
+  assert.deepEqual((await boss.call('GET', '/admin/contacts')).data, { contacts: null, problem: 'unconnected' });
+  assert.equal(peopleRequests.length, 0);
   // Connecting for sending is not signing in: no account was linked or created by it.
   assert.equal((await boss.call('GET', '/me')).data.user.googleLinked, false);
 });
@@ -1073,6 +1171,35 @@ test('disconnecting erases the key and tells Google, and a withdrawn key is forg
   assert.equal((await boss.call('GET', '/admin/overview')).data.mailer, null);
   const stranger = await signUp('nosy2', INVITE_PORT);
   assert.equal((await stranger.call('DELETE', '/admin/mailer')).status, 403);
+});
+
+test('with permission, the admin gets their Google contacts to complete an address, and nothing is kept', async () => {
+  const boss = await theBoss();
+  assert.equal((await googleFlow('google-boss-contacts:boss@gmail.com', { user: boss, mail: true })).result, 'mail');
+  assert.deepEqual((await boss.call('GET', '/admin/overview')).data.mailer, { address: 'boss@gmail.com', contacts: true });
+  const response = await fetch(`http://localhost:${INVITE_PORT}/api/admin/contacts`, { headers: { Cookie: boss.call.cookie() } });
+  assert.match(response.headers.get('cache-control'), /no-store/);
+  const { contacts, problem } = await response.json();
+  assert.equal(problem, null);
+  // Saved contacts and remembered ones together, each address once, a name where Google has one.
+  assert.deepEqual([...contacts].sort((a, b) => a.email.localeCompare(b.email)), [
+    { name: 'דנה כהן', email: 'dana.work@example.com' },
+    { name: 'דנה כהן', email: 'dana@example.org' },
+    { name: 'רון שכתבתי לו', email: 'ron@example.org' },
+    { name: 'יוסי לוי', email: 'yossi@example.org' },
+  ]);
+  assert.ok(peopleRequests.length >= 3);
+  for (const { pass } of peopleRequests) assert.equal(pass, 'Bearer pass-for-key-of-google-boss-contacts');
+  const stranger = await signUp('nosy3', INVITE_PORT);
+  assert.equal((await stranger.call('GET', '/admin/contacts')).status, 403);
+  assert.equal((await client(INVITE_PORT)('GET', '/admin/contacts')).status, 401);
+
+  // A Google project without the People API says so, and a withdrawn key asks to connect again.
+  await googleFlow('google-boss-contacts-disabled:boss@gmail.com', { user: boss, mail: true });
+  assert.deepEqual((await boss.call('GET', '/admin/contacts')).data, { contacts: null, problem: 'disabled' });
+  await googleFlow('google-boss-contacts-withdrawn:boss@gmail.com', { user: boss, mail: true });
+  assert.deepEqual((await boss.call('GET', '/admin/contacts')).data, { contacts: null, problem: 'expired' });
+  await boss.call('DELETE', '/admin/mailer');
 });
 
 test('without Google settings the routes do not exist', async () => {
@@ -1172,7 +1299,7 @@ try {
   startServer(PROD_PORT, []);
   startServer(STORAGE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'STORAGE_LIMIT_BYTES:30']);
   startServer(UPLOADS_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'UPLOADS_PER_DAY:2']);
-  startServer(INVITE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'INVITE_ONLY:1', '--var', 'ADMIN_EMAIL:boss@example.com',
+  startServer(INVITE_PORT, ['--var', `PEOPLE_ORIGIN:http://localhost:${YOUTUBE_PORT}`, '--var', 'DEV_LOGIN:1', '--var', 'INVITE_ONLY:1', '--var', 'ADMIN_EMAIL:boss@example.com',
     '--var', 'GOOGLE_CLIENT_ID:test-client', '--var', 'GOOGLE_CLIENT_SECRET:test-secret',
     '--var', `GOOGLE_TOKEN_URL:http://localhost:${YOUTUBE_PORT}/token`, '--var', `GOOGLE_PICTURE_ORIGIN:http://localhost:${YOUTUBE_PORT}`,
     '--var', `GMAIL_ORIGIN:http://localhost:${YOUTUBE_PORT}`, '--var', `GOOGLE_REVOKE_URL:http://localhost:${YOUTUBE_PORT}/revoke`]);

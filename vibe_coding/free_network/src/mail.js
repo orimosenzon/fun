@@ -1,7 +1,11 @@
 // Invitations by email. There is no mail service: a letter goes out from the Gmail of the
-// person who invites, after they allowed the network to send in their name, and nothing else.
+// person who invites, after they allowed the network to send in their name. They may also let
+// it read their contacts, so that an address completes itself while it is typed.
 
 export const SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send';
+// Saved contacts, and the people Google remembers from past letters. Reading only.
+export const CONTACT_SCOPES = ['https://www.googleapis.com/auth/contacts.readonly', 'https://www.googleapis.com/auth/contacts.other.readonly'];
+const CONTACT_PAGES = 5;
 export const MAX_NOTE = 1500;
 export const DEFAULT_NOTE = 'אני בונה רשת חברתית חדשה. אין בה פרסומות, ואין בה אלגוריתם שמחליט בשבילנו מה נראה. היא עדיין קטנה ונמצאת בניסוי בין חברים, ואשמח לראות אותך בין הראשונים.';
 const SUBJECT = 'הזמנה אישית לרשת החופשית';
@@ -74,29 +78,81 @@ function mime({ to, subject, text, html }) {
     part('text/plain', text) + part('text/html', html) + `--${boundary}--`].join('\r\n');
 }
 
-// Sends one letter from the Gmail that the sealed key belongs to. Says 'expired' when Google
-// no longer honours the key, so the admin knows to connect again.
+// Trades the sealed key for a pass that Google accepts for the next hour. The problem is
+// 'expired' when Google no longer honours the key, so the admin knows to connect again.
+async function googlePass(env, sealedKey) {
+  const grant = await fetch(env.GOOGLE_TOKEN_URL ?? 'https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      refresh_token: await unseal(env.GOOGLE_CLIENT_SECRET, sealedKey),
+      grant_type: 'refresh_token',
+    }),
+  });
+  const tokens = await grant.json().catch(() => ({}));
+  if (!grant.ok) return { problem: tokens.error === 'invalid_grant' ? 'expired' : 'failed' };
+  return { pass: tokens.access_token };
+}
+
+// Sends one letter from the Gmail that the sealed key belongs to.
 export async function sendFromGmail(env, sealedKey, letter) {
   try {
-    const grant = await fetch(env.GOOGLE_TOKEN_URL ?? 'https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      body: new URLSearchParams({
-        client_id: env.GOOGLE_CLIENT_ID,
-        client_secret: env.GOOGLE_CLIENT_SECRET,
-        refresh_token: await unseal(env.GOOGLE_CLIENT_SECRET, sealedKey),
-        grant_type: 'refresh_token',
-      }),
-    });
-    const tokens = await grant.json().catch(() => ({}));
-    if (!grant.ok) return tokens.error === 'invalid_grant' ? 'expired' : 'failed';
+    const { pass, problem } = await googlePass(env, sealedKey);
+    if (problem) return problem;
     const sent = await fetch(`${env.GMAIL_ORIGIN ?? 'https://gmail.googleapis.com'}/gmail/v1/users/me/messages/send`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${tokens.access_token}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${pass}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw: urlSafe(encoded(mime(letter))) }),
     });
     if (sent.ok) return 'sent';
     return sent.status === 401 ? 'expired' : 'failed';
   } catch {
     return 'failed';
+  }
+}
+
+// The names and addresses in the admin's Google contacts, read now and kept nowhere. One list
+// may be refused while the other is allowed, so each is read on its own. The problem is
+// 'disabled' when the People API is switched off in the Google project of the network.
+export async function googleContacts(env, sealedKey) {
+  try {
+    const { pass, problem } = await googlePass(env, sealedKey);
+    if (problem) return { problem };
+    const origin = env.PEOPLE_ORIGIN ?? 'https://people.googleapis.com';
+    const lists = [
+      ['connections', `${origin}/v1/people/me/connections?personFields=names,emailAddresses&sortOrder=LAST_MODIFIED_DESCENDING&pageSize=1000`],
+      ['otherContacts', `${origin}/v1/otherContacts?readMask=names,emailAddresses&pageSize=1000`],
+    ];
+    const found = new Map();
+    const problems = [];
+    await Promise.all(lists.map(async ([field, address]) => {
+      let pageToken = null;
+      for (let page = 0; page < CONTACT_PAGES; page++) {
+        const response = await fetch(pageToken ? `${address}&pageToken=${encodeURIComponent(pageToken)}` : address, { headers: { Authorization: `Bearer ${pass}` } });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const disabled = JSON.stringify(data.error ?? '').includes('SERVICE_DISABLED');
+          problems.push(disabled ? 'disabled' : response.status === 401 ? 'expired' : response.status === 403 ? 'refused' : 'failed');
+          return;
+        }
+        for (const person of data[field] ?? []) {
+          const name = typeof person.names?.[0]?.displayName === 'string' ? person.names[0].displayName.trim().slice(0, 100) : '';
+          for (const entry of person.emailAddresses ?? []) {
+            const email = typeof entry.value === 'string' ? entry.value.trim() : '';
+            const key = email.toLowerCase();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) continue;
+            // Saved contacts come first, and a name beats no name.
+            if (!found.has(key) || (!found.get(key).name && name)) found.set(key, { name, email });
+          }
+        }
+        pageToken = data.nextPageToken;
+        if (!pageToken) return;
+      }
+    }));
+    if (!found.size && problems.length) return { problem: problems.includes('disabled') ? 'disabled' : problems[0] };
+    return { contacts: [...found.values()] };
+  } catch {
+    return { problem: 'failed' };
   }
 }
