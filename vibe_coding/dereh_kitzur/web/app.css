@@ -200,10 +200,11 @@ body.flying .photo-pin { display: none; }
  * middle three: it changes nothing about how the map looks, it asks the map a
  * question. */
 .fab-2 { bottom: calc(var(--panel-h) + 82px); }
-.fab-3 { bottom: calc(var(--panel-h) + 130px); }
-.fab-4 { bottom: calc(var(--panel-h) + 178px); }
-.fab-5 { bottom: calc(var(--panel-h) + 246px); }
-.fab-6 { bottom: calc(var(--panel-h) + 314px); }
+/* .fab-3 was the tilt button; it is a switch inside the view popover now, and
+ * everything above it came down by its 48px. */
+.fab-4 { bottom: calc(var(--panel-h) + 130px); }
+.fab-5 { bottom: calc(var(--panel-h) + 198px); }
+.fab-6 { bottom: calc(var(--panel-h) + 266px); }
 
 .fab svg { width: 22px; height: 22px; fill: #3c4a45; }
 .fab.on svg { fill: var(--accent); }
@@ -243,7 +244,7 @@ body.flying .photo-pin { display: none; }
 #craft {
   position: absolute;
   inset-inline-end: 43px;
-  bottom: calc(var(--panel-h) + 301px);
+  bottom: calc(var(--panel-h) + 253px);
   z-index: 501;
   width: 26px;
   height: 26px;
@@ -1248,11 +1249,10 @@ span.act { cursor: default; }
   .fab { bottom: 20px; inset-inline-end: auto;
          inset-inline-start: calc(var(--panel-w) + 20px); }
   .fab-2 { bottom: 88px; }
-  .fab-3 { bottom: 136px; }
-  .fab-4 { bottom: 184px; }
-  .fab-5 { bottom: 252px; }
-  .fab-6 { bottom: 320px; }
-  #craft { bottom: 307px; inset-inline-end: auto; inset-inline-start: calc(var(--panel-w) + 51px); }
+  .fab-4 { bottom: 136px; }
+  .fab-5 { bottom: 204px; }
+  .fab-6 { bottom: 272px; }
+  #craft { bottom: 259px; inset-inline-end: auto; inset-inline-start: calc(var(--panel-w) + 51px); }
 
   .sheet { align-items: center; }
   .sheet-card { max-width: 460px; border-radius: 16px; margin: 0 16px; }
@@ -4444,7 +4444,7 @@ body.flying .m3d-ctl { display: none !important; }
  * button repeats the ☰ menu. Together they filled the corner the flight
  * button rises into when the list is half open, and the balloon sat on top of
  * them. The compass stays: it is the only way back to north. */
-@media (pointer: coarse) and (max-width: 719px) {
+@media (pointer: coarse) and (max-width: 859px) {
   .maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out, .share-ctrl { display: none !important; }
 }
 
@@ -4466,7 +4466,7 @@ body.asking-plan::before {
   box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
   pointer-events: none;
 }
-@media (min-width: 720px) {
+@media (min-width: 860px) {
   body.asking-plan::before { inset-inline: calc(var(--panel-w) + 70px) auto; max-width: 340px; }
 }
 body.flying.asking-plan::before { display: none; }
@@ -4486,4 +4486,106 @@ body.flying.asking-plan::before { display: none; }
 .detail-head .tip { flex: 1; min-width: 0; }
 .detail-share { flex: none; margin-inline-start: auto; }
 .detail-share svg { transform: none; width: 17px; height: 17px; }
-@media (max-width: 719px) { .detail-head .tip { visibility: hidden; } }
+@media (max-width: 859px) { .detail-head .tip { visibility: hidden; } }
+
+/* ---------- how the map looks: one button and its popover ---------- */
+
+.fab-view img {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 0 0 1.5px #3c4a45;
+}
+.fab-view[aria-expanded="true"] img { box-shadow: 0 0 0 2.5px var(--accent); }
+
+.view-pop {
+  position: absolute;
+  z-index: 950;
+  inset-inline-end: 66px;
+  bottom: calc(var(--panel-h) + 14px);
+  width: 252px;
+  max-width: calc(100vw - 80px);
+  padding: 12px 14px 8px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .28);
+}
+/* Restated for the wide layout here, after the rule above, and not in the
+ * desktop block further up the file, where the rule above would win. */
+@media (min-width: 860px) {
+  .view-pop { bottom: 20px; inset-inline-end: auto; inset-inline-start: calc(var(--panel-w) + 76px); }
+}
+.view-pop[hidden] { display: none; }
+body.flying .view-pop, body.m3d-street .view-pop { display: none; }
+
+.view-h { margin: 0 0 9px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+
+.view-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+.view-tile {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.view-tile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 17 / 14;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 5px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .14);
+}
+.view-tile.on { color: var(--accent); font-weight: 700; }
+.view-tile.on img { box-shadow: 0 0 0 3px var(--accent); }
+
+.view-sw {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 0 6px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.view-sw small { display: block; font-size: 11.5px; color: var(--muted); }
+.view-sw[hidden] { display: none; }
+
+.view-tg {
+  flex: none;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: #c3ccc7;
+  transition: background .15s ease;
+}
+.view-tg::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+  transition: inset-inline-start .15s ease;
+}
+.view-sw.on .view-tg { background: var(--accent); }
+.view-sw.on .view-tg::after { inset-inline-start: 21px; }

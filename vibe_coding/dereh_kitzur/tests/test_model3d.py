@@ -58,11 +58,16 @@ try:
         pg.wait_for_function('() => window.__map && __map.isStyleLoaded() && typeof Model3D !== "undefined"',
                              timeout=60000)
         settle(pg)
+        # The buttons are wired once the data has landed, which on a slow
+        # network is after the map: the tiles exist from that moment.
+        pg.wait_for_selector('.view-tile', state='attached', timeout=60000)
 
         # streets -> satellite -> 3D
         pg.click('#basemap')
+        pg.click('.view-tile[data-i="1"]')
         pg.wait_for_timeout(1500)
         pg.click('#basemap')
+        pg.click('.view-tile[data-i="2"]')
         pg.wait_for_function('() => __map.getLayer("m3d-roofs")', timeout=60000)
         settle(pg)
         st = pg.evaluate('''() => ({
@@ -168,6 +173,7 @@ try:
 
         # Off the model: the ceiling and the terrain come back.
         pg.click('#basemap')
+        pg.click('.view-tile[data-i="0"]')
         pg.wait_for_timeout(3000)
         off = pg.evaluate('''() => ({ id: BASEMAPS[baseIndex].id, max: __map.getMaxPitch(),
                                       pitch: __map.getPitch(), terrain: !!__map.getTerrain(),

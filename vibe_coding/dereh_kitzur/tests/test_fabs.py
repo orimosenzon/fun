@@ -42,7 +42,7 @@ try:
             const r = n.getBoundingClientRect();
             return {id, t: Math.round(r.top), b: Math.round(r.bottom),
                     l: Math.round(r.left), r: Math.round(r.right), h: Math.round(r.height)}; };
-          return {list: ['locate','basemap','tilt','layers','plan-fab','explore','craft'].map(at),
+          return {list: ['locate','basemap','layers','plan-fab','explore','craft'].map(at),
                   vh: window.innerHeight};
         }''')
         rows = [x for x in r['list'] if x and x['id'] != 'craft']

@@ -115,29 +115,46 @@ BASEMAPS.push({
     light: { anchor: 'map', position: [1.4, 215, 40], color: '#fffaf0', intensity: 0.32 }
   }
 });
-/* The globe button shows where it goes next, not where you are (Ori,
- * 14/10/2026): a globe for the photograph, buildings for the model, a folded
- * map for the street map. The background you are on is in plain sight; what
- * the button is for is the one you are about to get. The model's buildings
- * are two boxes drawn in isometric, their sides in two shades so that they
- * read as solids at 22 pixels. */
-const BASEMAP_ICONS = {
-  sat: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm6.9 6h-2.9a15.6 15.6 0 00-1.4-3.6A8 8 0 0118.9 8zM12 4c.8 1.2 1.4 2.5 1.8 4h-3.6c.4-1.5 1-2.8 1.8-4zM4.3 14a7.9 7.9 0 010-4h3.3a16.5 16.5 0 000 4H4.3zm.8 2H8a15.6 15.6 0 001.4 3.6A8 8 0 015.1 16zm2.9-8H5.1a8 8 0 014.3-3.6A15.6 15.6 0 008 8zm4 12c-.8-1.2-1.4-2.5-1.8-4h3.6c-.4 1.5-1 2.8-1.8 4zm2.2-6H9.8a14.7 14.7 0 010-4h4.4a14.7 14.7 0 010 4zm.4 5.6A15.6 15.6 0 0016 16h2.9a8 8 0 01-4.3 3.6zm1.8-5.6a16.5 16.5 0 000-4h3.3a7.9 7.9 0 010 4h-3.3z"/>',
-  '3d': '<path d="M2.5 6.2L7 4l4.5 2.2L7 8.4z" opacity=".45"/>'
-    + '<path d="M2.5 6.2L7 8.4v12.1l-4.5-2.2z"/>'
-    + '<path d="M11.5 6.2L7 8.4v12.1l4.5-2.2z" opacity=".7"/>'
-    + '<path d="M12.5 12.2L17 10l4.5 2.2-4.5 2.2z" opacity=".45"/>'
-    + '<path d="M12.5 12.2l4.5 2.2v7.1l-4.5-2.2z"/>'
-    + '<path d="M21.5 12.2L17 14.4v7.1l4.5-2.2z" opacity=".7"/>',
-  streets: '<path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>'
-};
+/* History: while this was a button that stepped through the backgrounds, it
+ * showed where it would go next (Ori, 14/10/2026), because a stepping button
+ * is about its next press. Since 22/11/2026 it opens a choice of all three,
+ * so there is no "next", and it shows the one that is on. */
+/* The button wears the background that is showing, and the popover marks it.
+ * Short names here: "צילום לוויין" does not fit under a 70px picture. */
+const VIEW_NAMES = { streets: 'רחובות', sat: 'לוויין', '3d': 'תלת-ממד' };
 
 function paintBasemapButton() {
-  const next = BASEMAPS[(baseIndex + 1) % BASEMAPS.length];
+  const now = BASEMAPS[baseIndex];
+  el('basemap-img').src = `img/bg-${now.id}.webp`;
+  document.querySelectorAll('.view-tile').forEach((t) => {
+    const on = +t.dataset.i === baseIndex;
+    t.classList.toggle('on', on);
+    t.setAttribute('aria-pressed', on);
+  });
+}
+
+function buildViewPop() {
+  el('view-tiles').innerHTML = BASEMAPS.map((b, i) =>
+    `<button class="view-tile" data-i="${i}"><img src="img/bg-${b.id}.webp" alt="">${VIEW_NAMES[b.id] || b.name}</button>`).join('');
+  const pop = el('view-pop');
   const btn = el('basemap');
-  btn.querySelector('svg').innerHTML = BASEMAP_ICONS[next.id];
-  btn.title = `מעבר ל${next.id === 'streets' ? 'מפת ' : ''}${next.name}`;
-  btn.setAttribute('aria-label', btn.title);
+  const show = (on) => {
+    pop.hidden = !on;
+    btn.setAttribute('aria-expanded', on);
+  };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); show(pop.hidden); });
+  el('view-tiles').addEventListener('click', (e) => {
+    const t = e.target.closest('.view-tile');
+    if (!t) return;
+    if (+t.dataset.i !== baseIndex) { setBasemap(+t.dataset.i); syncView(); }
+    show(false);
+  });
+  // Anywhere else closes it: the map, the list, another button.
+  document.addEventListener('pointerdown', (e) => {
+    if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) show(false);
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') show(false); });
+  paintBasemapButton();
 }
 
 const isDark = (i) => BASEMAPS[i].id !== 'streets';
@@ -4592,10 +4609,7 @@ function wireControls() {
     el('explore').hidden = true;
     el('craft').hidden = true;
   }
-  el('basemap').addEventListener('click', () => {
-    setBasemap((baseIndex + 1) % BASEMAPS.length);
-    syncView();
-  });
+  buildViewPop();
 
   if (map) {
     // The map opens tilted, and `pitchend` only ever fires after somebody has
