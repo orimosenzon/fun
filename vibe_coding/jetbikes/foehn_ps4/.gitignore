@@ -1,0 +1,7 @@
+build/
+build-ps4/
+*.ppm
+*.o
+*.pkg
+eboot.bin
+assets/ground.bin
