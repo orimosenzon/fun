@@ -1,5 +1,6 @@
 import { friendsGlobe } from '/globe.js';
 import { updatePanel } from '/update.js';
+import { messenger } from '/messages.js';
 
 const app = document.getElementById('app');
 // Beside the feed: the update on the left once there is room for it, and the globe on the
@@ -37,6 +38,9 @@ const ICONS = {
   minus: 'M5 12h14',
   flag: 'M4 22V4M4 4h13l-2 4 2 4H4',
   sun: 'M12 17a5 5 0 1 0 0-10a5 5 0 0 0 0 10M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',
+  chat: 'M21 11.5a8.4 8.4 0 0 1-.9 3.8a8.5 8.5 0 0 1-7.6 4.7a8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8a8.5 8.5 0 0 1 4.7-7.6a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z',
+  send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
+  down: 'M6 9l6 6 6-6',
 };
 let me = null;
 let demo = false;
@@ -57,6 +61,14 @@ history.scrollRestoration = 'manual';
 let movedInside = false;
 let shownPath = null;
 let seenUpTo;
+// What the page on screen has to stop when the reader moves on, like asking for new messages.
+let leavePage = null;
+// Pages arrive at different speeds, and the reader may move on before one does. Every page takes
+// a painter as it starts, and what it draws is dropped once a newer page has been asked for.
+let routeTurn = 0;
+const TITLE = document.title;
+// There is no live connection, so the counts on the menu are asked for again this often.
+const PULSE_MS = 30000;
 // Someone who has just joined sees the welcome page once, until they press on into the network.
 const WELCOME_KEY = 'welcome';
 
@@ -170,7 +182,7 @@ const tell = (message) => dialogBox(message, { confirmLabel: 'הבנתי', cance
 // Pictures open over the page, so reading a post never throws the reader into another tab.
 function lightbox(ids, start) {
   let at = start;
-  const picture = el('img', { alt: 'תמונה מהפוסט' });
+  const picture = el('img', { alt: 'תמונה' });
   const counter = el('span', { className: 'lightbox-count' });
   const box = el('dialog', { className: 'lightbox' });
   const show = (step) => {
@@ -514,7 +526,8 @@ async function globe() {
 }
 
 async function globePage() {
-  app.replaceChildren(el('div', { className: 'card globe-page' },
+  const paint = painter();
+  paint(el('div', { className: 'card globe-page' },
     el('h1', {}, 'החברים שלי בעולם'),
     await globe()));
 }
@@ -536,6 +549,7 @@ function updatePage() {
 }
 
 async function feedPage() {
+  const paint = painter();
   const list = el('div', { className: 'feed' });
   const more = el('button', { className: 'ghost more', type: 'button', hidden: true }, 'פוסטים ישנים יותר');
   const end = el('div', { className: 'feed-end', hidden: true },
@@ -588,7 +602,7 @@ async function feedPage() {
   const news = SIDE_UPDATE.matches
     ? el('aside', { className: 'card update-side' }, update())
     : el('aside', { className: 'card update-top' }, update({ top: true }));
-  app.replaceChildren(...[
+  paint(...[
     side,
     news,
     await composer(route),
@@ -596,6 +610,37 @@ async function feedPage() {
     list,
     more,
     end].filter(Boolean));
+}
+
+function painter() {
+  const turn = routeTurn;
+  const paint = (...nodes) => {
+    if (turn === routeTurn) app.replaceChildren(...nodes);
+  };
+  paint.stale = () => turn !== routeTurn;
+  return paint;
+}
+
+// Back to where the reader came from, or to the given page when they arrived here directly.
+function back(path) {
+  if (movedInside) history.back();
+  else go(path);
+}
+
+async function messagesPage(id) {
+  const paint = painter();
+  const page = await messenger({
+    me,
+    withId: id ? Number(id) : null,
+    ui: { el, icon, avatar, link, api, ask, tell, demo, richText, lightbox, prepareImage, dayLabel, daysAgo, back, pulse, unread: () => me?.unreadMessages ?? 0 },
+  });
+  if (paint.stale()) {
+    page.leave();
+    return;
+  }
+  leavePage = page.leave;
+  paint(page.node);
+  page.shown();
 }
 
 function comment(item, reload, onReply) {
@@ -706,6 +751,7 @@ function commentThread(postId, top, replies) {
 }
 
 async function postPage(id) {
+  const paint = painter();
   const { post, comments } = await api(`/posts/${id}`);
   const back = !me ? null : el('a', {
     className: 'back',
@@ -724,7 +770,7 @@ async function postPage(id) {
 
   if (me?.name) section.append(commentForm(id, null, 'כתיבת תגובה'));
   else section.append(el('p', {}, link('/login', 'התחברו'), ' כדי להגיב.'));
-  app.replaceChildren(...[back, postCard(post, { onDeleted: () => go('/') }), section].filter(Boolean));
+  paint(...[back, postCard(post, { onDeleted: () => go('/') }), section].filter(Boolean));
 }
 
 function person(user, ...actions) {
@@ -750,7 +796,14 @@ function friendAction(label, method, id, { plain = false, confirmText = null } =
   }, label);
 }
 
+function messageLink(user, label) {
+  const anchor = link(`/messages/${user.id}`, labelled('chat', label));
+  anchor.className = 'pill-link';
+  return anchor;
+}
+
 async function friendsPage() {
+  const paint = painter();
   const { friends, incoming, outgoing } = await api('/friends');
   const known = new Set([...friends, ...incoming, ...outgoing].map((user) => user.id));
   const results = el('div');
@@ -792,9 +845,10 @@ async function friendsPage() {
       friendAction('ביטול', 'DELETE', user.id, { plain: true }))));
   }
   card.append(el('h2', {}, `החברים שלך (${friends.length})`), ...friends.map((user) => person(user,
+    messageLink(user, 'הודעה'),
     friendAction('הסרה', 'DELETE', user.id, { plain: true, confirmText: `להסיר את ${user.name} מהחברים שלך?` }))));
   if (!friends.length) card.append(el('p', { className: 'note' }, 'עוד אין לך חברים כאן. חפשו מישהו לפי שם ושלחו בקשת חברות.'));
-  app.replaceChildren(card);
+  paint(card);
 }
 
 async function savePicture(kind, imageId) {
@@ -829,6 +883,7 @@ function editablePicture(kind, label, content, error) {
 }
 
 async function profilePage(id) {
+  const paint = painter();
   const { user, friendship, posts, hasMore } = await api(`/users/${id}`);
   const list = el('div');
   const more = el('button', { className: 'plain', type: 'button', hidden: !hasMore }, 'פוסטים ישנים יותר');
@@ -902,7 +957,7 @@ async function profilePage(id) {
         user.cover ? remove('cover', 'הסרת תמונת הכותרת') : null,
         el('button', { className: 'plain phone-only', type: 'button', onclick: logout }, 'יציאה מהחשבון'))].filter(Boolean));
   } else if (friendship === 'friends') {
-    body.append(el('p', { className: 'chip friends' }, icon('check'), 'חברים'));
+    body.append(el('div', { className: 'row' }, el('span', { className: 'chip friends' }, icon('check'), 'חברים'), messageLink(user, 'שליחת הודעה')));
   } else if (friendship === 'incoming') {
     body.append(el('div', { className: 'row' }, friendAction('אישור בקשת החברות', 'POST', user.id)));
   } else if (friendship === 'outgoing') {
@@ -911,7 +966,7 @@ async function profilePage(id) {
     body.append(el('div', { className: 'row' }, friendAction('בקשת חברות', 'POST', user.id)));
   }
 
-  app.replaceChildren(el('section', { className: 'card profile' },
+  paint(el('section', { className: 'card profile' },
     ...(mine ? editablePicture('cover', 'החלפת תמונת הכותרת', cover, error) : [cover]), body), list, more);
 }
 
@@ -922,6 +977,7 @@ function meter(label, value, max, text) {
 }
 
 async function adminPage() {
+  const paint = painter();
   const { usage, users, posts, comments, members, emailInvites, mailer, defaultNote } = await api('/admin/overview');
   const gb = (bytes) => (bytes / 1024 ** 3).toFixed(2);
   const result = el('div');
@@ -1071,7 +1127,7 @@ async function adminPage() {
   }
   showPending(emailInvites);
 
-  app.replaceChildren(
+  paint(
     el('section', { className: 'card' },
       el('h1', {}, 'ניהול'),
       el('p', { className: 'muted' }, `${users} משתמשים · ${posts} פוסטים · ${comments} תגובות`),
@@ -1201,9 +1257,27 @@ async function refreshMe() {
   renderNav();
 }
 
+// Asks for the counts again, and redraws the menu only when one of them moved.
+async function pulse() {
+  const before = me;
+  const { user } = await api('/me');
+  if (!before || me !== before) return;
+  me = user;
+  const moved = user?.unreadMessages !== before.unreadMessages;
+  if (!user || moved || user.friendRequests !== before.friendRequests) renderNav();
+  // A session that ended shows the page again the way a visitor sees it.
+  if (!user) route();
+  else if (moved) document.dispatchEvent(new CustomEvent('unread'));
+}
+
 function renderNav() {
   const why = el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
+  // A phone's bottom bar has no room for every page, so there "why" moves to the top bar.
+  const topWhy = document.getElementById('top-why');
+  if (!topWhy.firstChild) topWhy.append(icon('info'));
+  topWhy.hidden = !me;
   if (!me) {
+    document.title = TITLE;
     nav.replaceChildren(...[why, link('/login', labelled('user', 'כניסה'))].filter(Boolean));
     return;
   }
@@ -1215,9 +1289,16 @@ function renderNav() {
     friends.classList.add('has-count');
     friends.append(el('span', { className: 'count', ariaLabel: `${me.friendRequests} בקשות חברות` }, String(me.friendRequests)));
   }
+  why.classList.add('desktop-only');
+  const mail = link('/messages', labelled('chat', 'הודעות'));
+  if (me.unreadMessages) {
+    mail.classList.add('has-count');
+    mail.append(el('span', { className: 'count', ariaLabel: `${me.unreadMessages} הודעות שלא נקראו` }, String(me.unreadMessages)));
+  }
+  document.title = me.unreadMessages ? `(${me.unreadMessages}) ${TITLE}` : TITLE;
   const world = link('/globe', labelled('globe', 'גלובוס'));
   const news = link('/update', labelled('sun', 'העדכון'));
-  nav.replaceChildren(...[home, news, mine, friends, world, admin, why, el('button', {
+  nav.replaceChildren(...[home, mail, news, mine, friends, world, admin, why, el('button', {
     className: 'plain desktop-only',
     type: 'button',
     onclick: logout,
@@ -1226,7 +1307,10 @@ function renderNav() {
 }
 
 function markNav() {
-  for (const item of nav.querySelectorAll('a')) item.classList.toggle('active', item.pathname === location.pathname);
+  const here = location.pathname;
+  for (const item of nav.querySelectorAll('a')) {
+    item.classList.toggle('active', item.pathname === here || (item.pathname === '/messages' && here.startsWith('/messages/')));
+  }
 }
 
 function skeleton() {
@@ -1236,29 +1320,35 @@ function skeleton() {
 
 async function route() {
   markNav();
+  leavePage?.();
+  leavePage = null;
+  routeTurn++;
+  const paint = painter();
   const path = location.pathname;
   const arriving = path !== shownPath;
   // Only a move to another page gets the placeholder and the entrance. A refresh in place stays still.
   app.classList.toggle('arriving', arriving);
-  const waiting = arriving ? setTimeout(() => app.replaceChildren(skeleton()), 160) : null;
+  const waiting = arriving ? setTimeout(() => paint(skeleton()), 160) : null;
   const post = location.pathname.match(/^\/p\/(\d+)$/);
   const profile = location.pathname.match(/^\/u\/(\d+)$/);
+  const messages = location.pathname.match(/^\/messages(?:\/(\d+))?$/);
   try {
-    await show(post, profile);
+    await show(post, profile, messages);
   } catch (err) {
-    app.replaceChildren(el('div', { className: 'card empty' }, el('p', { className: 'error' }, err.message),
+    paint(el('div', { className: 'card empty' }, el('p', { className: 'error' }, err.message),
       el('div', { className: 'row center' }, el('button', { className: 'ghost', type: 'button', onclick: route }, 'לנסות שוב'))));
   } finally {
     clearTimeout(waiting);
-    shownPath = path;
+    if (!paint.stale()) shownPath = path;
   }
 }
 
-async function show(post, profile) {
+async function show(post, profile, messages) {
   if (post) await postPage(post[1]);
   else if (!me) loginPage();
   else if (!me.name || welcomeFlag()) welcomePage();
   else if (profile) await profilePage(profile[1]);
+  else if (messages) await messagesPage(messages[1]);
   else if (location.pathname === '/friends') await friendsPage();
   else if (location.pathname === '/globe') await globePage();
   else if (location.pathname === '/update') updatePage();
@@ -1294,8 +1384,11 @@ async function start() {
 
 // A phone keeps the page open for days, so the count is refreshed on coming back to it.
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && me) refreshMe().catch(() => {});
+  if (!document.hidden && me) pulse().catch(() => {});
 });
+setInterval(() => {
+  if (!document.hidden && me && !demo) pulse().catch(() => {});
+}, PULSE_MS);
 window.addEventListener('popstate', async () => {
   await route();
   scrollTo(0, scrollByPath.get(location.pathname) ?? 0);

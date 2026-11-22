@@ -127,6 +127,8 @@ a { color: var(--brand); text-underline-offset: 3px; }
 
 #nav, .nav { display: flex; align-items: center; gap: 4px; font-size: 15px; }
 
+.top-why { display: none; }
+
 #nav a, .nav a, #nav button.plain {
   display: inline-flex;
   align-items: center;
@@ -842,7 +844,15 @@ button.video { position: relative; }
     box-shadow: 0 -1px 6px rgba(116, 78, 28, 0.14);
   }
 
-  #nav > a { flex: 1; display: flex; justify-content: center; min-height: 56px; padding: 0; border-radius: 0; }
+  #nav > a { flex: 1; display: flex; justify-content: center; min-width: 0; min-height: 56px; padding: 0; border-radius: 0; }
+
+  #nav > a .with-icon, #nav > a .label { max-width: 100%; min-width: 0; }
+
+  #nav > a .label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+  .top-why { display: grid; place-items: center; width: 44px; height: 44px; margin-inline-end: -8px; color: var(--text); border-radius: 50%; }
+
+  .top-why .icon { width: 22px; height: 22px; }
 
   #nav > a { position: relative; }
 
@@ -1502,3 +1512,263 @@ dialog { color: var(--text); font: inherit; }
 .mailer .note { margin: 0; }
 .invite-letter.went { padding-block: 10px; }
 .letter-text { text-align: right; }
+
+/* A link that reads as a small button, like "send a message" beside a friend. */
+.pill-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  color: var(--brand);
+  font-size: 14.5px;
+  font-weight: 550;
+  text-decoration: none;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+}
+
+.pill-link:hover { background: var(--hover); }
+
+.profile-body .row .chip { padding-block: 3px; font-size: 14px; }
+
+/* Private messages: the conversations on one side and the open one beside them. On a narrow
+   screen each of the two is a page of its own. */
+.messenger { display: grid; gap: 16px; }
+
+.messenger .card { margin: 0; }
+
+/* The open conversation is fixed to the screen on a phone, and a moving parent would capture it. */
+.arriving > .messenger { animation-name: appear; }
+
+@keyframes appear { from { opacity: 0; } }
+
+.convo-list { padding: 14px 10px 10px; }
+
+.convo-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px 8px; }
+
+.convo-head h1 { margin: 0; font-size: 23px; }
+
+.convo-picker { margin: 0 0 8px; padding: 8px; background: var(--thread); border-radius: 14px; }
+
+.convo-picker .note { margin: 6px 8px; }
+
+.convo-list > .note { margin: 6px 8px 10px; }
+
+.convo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 7px 8px;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 14px;
+}
+
+.convo:hover { background: var(--hover); }
+
+.convo.active { background: var(--brand-tint); }
+
+.convo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+
+.convo-name, .convo-last { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.convo-name { font-weight: 600; }
+
+.convo-last { color: var(--muted); font-size: 14.5px; }
+
+.convo.unread .convo-last { color: var(--text); font-weight: 550; }
+
+.convo-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+
+.convo-time { color: var(--muted); font-size: 12.5px; }
+
+.convo.unread .convo-time { color: var(--citrus-ink); font-weight: 600; }
+
+.convo-rule { margin: 14px 8px 4px; color: var(--quiet); font-size: 13px; line-height: 1.45; }
+
+.chat { display: flex; flex-direction: column; height: calc(100dvh - 124px); min-height: 360px; padding: 0; overflow: hidden; }
+
+.chat-none { align-items: center; justify-content: center; gap: 6px; color: var(--muted); text-align: center; }
+
+.chat-none img { width: 56px; height: 56px; opacity: 0.85; }
+
+.chat-none p { margin: 0; max-width: 18em; }
+
+.chat-head { flex: none; display: flex; align-items: center; gap: 4px; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+
+.chat-head a { display: flex; align-items: center; gap: 10px; min-width: 0; color: inherit; text-decoration: none; }
+
+.chat-head .chat-back { flex: none; justify-content: center; width: 40px; height: 40px; margin-inline-start: -8px; border-radius: 50%; }
+
+.chat-head .chat-back:hover { background: var(--hover); }
+
+.chat-name { overflow: hidden; font-weight: 650; white-space: nowrap; text-overflow: ellipsis; }
+
+.chat-head a:hover .chat-name { text-decoration: underline; text-underline-offset: 3px; }
+
+.chat-log {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 12px;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  background: var(--thread);
+}
+
+/* A short conversation rests on the bottom, next to where the next message is written. */
+.chat-log > :first-child { margin-top: auto; }
+
+.chat-day {
+  align-self: center;
+  margin: 12px 0 2px;
+  padding: 1px 12px;
+  color: var(--quiet);
+  font-size: 12.5px;
+  font-weight: 600;
+  background: rgba(252, 246, 234, 0.85);
+  border-radius: 999px;
+}
+
+.chat-unread { margin: 12px 0 2px; font-size: 13px; }
+
+.chat-empty { align-self: center; margin-bottom: 8px; color: var(--muted); font-size: 14.5px; }
+
+.chat-older { align-self: center; flex: none; }
+
+.msg-row { flex: none; display: flex; align-items: center; gap: 2px; max-width: min(86%, 520px); margin-top: 8px; }
+
+.msg-row.follows { margin-top: 3px; }
+
+.msg-row.theirs { align-self: flex-start; }
+
+/* The reader's own messages stand on the far side, as in the messengers people know. */
+.msg-row.mine { align-self: flex-end; flex-direction: row-reverse; }
+
+.msg {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: 7px 12px 4px;
+  background: var(--field);
+  border-radius: 17px;
+  border-end-start-radius: 5px;
+  box-shadow: 0 1px 1.5px rgba(116, 78, 28, 0.16);
+  outline-offset: 2px;
+}
+
+.msg-row.mine .msg { background: var(--brand-tint); border-end-start-radius: 17px; border-end-end-radius: 5px; }
+
+
+.msg .text { margin: 0; }
+
+.msg-time { display: block; margin-top: 1px; color: var(--muted); font-size: 11.5px; line-height: 1.5; text-align: end; }
+
+.msg-picture { display: block; margin: 0 -6px 4px; }
+
+.msg-picture:first-child { margin-top: -1px; }
+
+.msg-picture img { display: block; max-width: 100%; max-height: 340px; border-radius: 12px; }
+
+.msg.removed { color: var(--muted); font-style: italic; background: none; box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+.msg-row.pending .msg { opacity: 0.6; }
+
+.msg-row.failed { flex-wrap: wrap; }
+
+.msg-row.failed .msg { opacity: 1; box-shadow: inset 0 0 0 1.5px var(--danger); }
+
+.msg-failed { flex-basis: 100%; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 2px; font-size: 13.5px; }
+
+.msg-failed .error { font-size: 13.5px; }
+
+/* Removing shows only beside the message the pointer or the finger is on. */
+.msg-remove {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border-radius: 50%;
+  visibility: hidden;
+}
+
+.msg-row:hover .msg-remove, .msg-row:focus-within .msg-remove { visibility: visible; }
+
+.msg-remove:hover { color: var(--danger); background: rgba(168, 80, 75, 0.1); filter: none; }
+
+.msg-remove .icon { width: 16px; height: 16px; }
+
+.chat-jump {
+  position: sticky;
+  bottom: 2px;
+  align-self: center;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 5px 14px;
+  font-size: 14px;
+  box-shadow: 0 3px 10px rgba(15, 42, 56, 0.3);
+}
+
+.chat-foot { flex: none; border-top: 1px solid var(--line); }
+
+.chat-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }
+
+.chat-form .previews, .chat-form .error { flex-basis: 100%; margin: 0 6px 6px; }
+
+.chat-form textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 30dvh; padding: 9px 16px; line-height: 1.45; border-radius: 22px; resize: none; }
+
+.chat-form > button { flex: none; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; }
+
+.chat-form .chat-attach { color: var(--muted); background: none; }
+
+.chat-form .chat-attach:hover { color: var(--brand); background: var(--hover); filter: none; }
+
+.chat-form .icon { width: 21px; height: 21px; }
+
+/* The page reads right to left, so the paper plane flies left. */
+.chat-send .icon { transform: scaleX(-1) translateX(1px); }
+
+.chat-closed { margin: 0; padding: 12px 16px; color: var(--muted); font-size: 14.5px; text-align: center; }
+
+@media (min-width: 900px) {
+  main:has(> .messenger) { max-width: 980px; }
+  .messenger { grid-template-columns: 330px minmax(0, 1fr); align-items: start; }
+  .convo-list { height: calc(100dvh - 124px); min-height: 360px; overflow: hidden auto; scrollbar-width: thin; }
+  .chat-head .chat-back { display: none; }
+}
+
+@media (max-width: 899px) {
+  .messenger.has-chat .convo-list, .messenger:not(.has-chat) .chat { display: none; }
+}
+
+/* On a phone an open conversation takes the whole screen, menu included, down to the keyboard. */
+@media (max-width: 640px) {
+  .messenger.has-chat .chat {
+    position: fixed;
+    top: var(--view-top, 0px);
+    right: 0;
+    left: 0;
+    z-index: 4;
+    height: var(--view-h, 100dvh);
+    min-height: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  body:has(.messenger.has-chat) #nav { display: none; }
+
+  .chat-head { padding-top: max(9px, env(safe-area-inset-top)); }
+  .msg-row { max-width: 90%; }
+  .convo { min-height: 62px; }
+  .pill-link { min-height: 40px; }
+}

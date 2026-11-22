@@ -15,6 +15,10 @@ const LOGIN_REQUESTS_PER_HOUR = 5;
 const PAGE_SIZE = 30;
 const MAX_POST = 5000;
 const MAX_COMMENT = 2000;
+const MAX_MESSAGE = 4000;
+const MESSAGES_PAGE = 50;
+// A removal is reported again for a few seconds, so one that landed between two questions is not missed.
+const REMOVAL_OVERLAP_MS = 10000;
 const MAX_NAME = 60;
 const MAX_IMAGE_BYTES = 1024 * 1024;
 const MAX_IMAGES_PER_POST = 4;
@@ -272,9 +276,9 @@ function serializeComment(row, viewer, post) {
   };
 }
 
-// An uploaded image that its owner has not used yet, in a post, a comment or on their profile.
+// An uploaded image that its owner has not used yet, in a post, a comment, a message or on their profile.
 const UNUSED_IMAGE = `
-  SELECT 1 FROM images WHERE id = ?1 AND owner_id = ?2 AND post_id IS NULL AND comment_id IS NULL
+  SELECT 1 FROM images WHERE id = ?1 AND owner_id = ?2 AND post_id IS NULL AND comment_id IS NULL AND message_id IS NULL
     AND NOT EXISTS (SELECT 1 FROM users WHERE avatar_id = ?1 OR cover_id = ?1)`;
 
 const POST_SELECT = `
@@ -290,6 +294,30 @@ async function areFriends(db, a, b) {
     .bind(a, b)
     .first();
   return !!row;
+}
+
+// The two people of a conversation are kept smaller id first, so each pair has one row.
+function conversationOf(db, a, b) {
+  return db.prepare('SELECT * FROM conversations WHERE low_id = ? AND high_id = ?').bind(Math.min(a, b), Math.max(a, b)).first();
+}
+
+const MESSAGE_SELECT = 'SELECT m.*, (SELECT id FROM images WHERE message_id = m.id) AS image_id FROM messages m';
+
+// Messages from the other side that this member has not seen yet, in all their conversations.
+const UNREAD_MESSAGES = `
+  SELECT COUNT(*) AS n FROM conversations k JOIN messages m ON m.conversation_id = k.id
+    AND m.id > CASE WHEN k.low_id = ?1 THEN k.low_read ELSE k.high_read END
+  WHERE (k.low_id = ?1 OR k.high_id = ?1) AND m.sender_id <> ?1 AND m.removed_at IS NULL`;
+
+function serializeMessage(row, viewerId) {
+  return {
+    id: row.id,
+    mine: row.sender_id === viewerId,
+    body: row.body,
+    image: row.image_id ?? null,
+    at: row.created_at,
+    removed: !!row.removed_at,
+  };
 }
 
 // Whoever joins by invitation starts as a friend of the person who invited them.
@@ -566,10 +594,10 @@ app.post('/api/auth/logout', async (c) => {
 
 app.get('/api/me', async (c) => {
   const user = c.get('user');
-  const waiting = user && await c.env.DB
-    .prepare(`SELECT COUNT(*) AS n FROM friendships WHERE addressee_id = ? AND status = 'pending'`)
-    .bind(user.id)
-    .first();
+  const [waiting, unread] = !user ? [] : (await c.env.DB.batch([
+    c.env.DB.prepare(`SELECT COUNT(*) AS n FROM friendships WHERE addressee_id = ? AND status = 'pending'`).bind(user.id),
+    c.env.DB.prepare(UNREAD_MESSAGES).bind(user.id),
+  ])).map((part) => part.results[0]);
   return c.json({
     user: user ? {
       id: user.id,
@@ -578,6 +606,7 @@ app.get('/api/me', async (c) => {
       cover: user.cover_id,
       admin: isAdmin(c),
       friendRequests: waiting.n,
+      unreadMessages: unread.n,
       googleLinked: !!user.google_sub,
       place: place(user),
       status: status(user),
@@ -770,17 +799,21 @@ app.post('/api/images', requireUser, async (c) => {
 });
 
 // Every request is checked against the post, so a copied image address does not bypass the audience.
+// An image in a message opens only for the two people of that conversation.
 app.get('/api/images/:id', async (c) => {
   const id = c.req.param('id');
+  const viewer = c.get('user');
   const image = await c.env.DB
     .prepare(`SELECT owner_id, comment_id,
       COALESCE(post_id, (SELECT post_id FROM comments WHERE id = images.comment_id)) AS post_id,
-      EXISTS (SELECT 1 FROM users WHERE avatar_id = images.id OR cover_id = images.id) AS profile
-      FROM images WHERE id = ?`)
-    .bind(id)
+      EXISTS (SELECT 1 FROM users WHERE avatar_id = images.id OR cover_id = images.id) AS profile,
+      EXISTS (SELECT 1 FROM messages m JOIN conversations k ON k.id = m.conversation_id
+        WHERE m.id = images.message_id AND ?2 IN (k.low_id, k.high_id)) AS in_conversation
+      FROM images WHERE id = ?1`)
+    .bind(id, viewer?.id ?? 0)
     .first();
   const post = image?.post_id && (await loadVisiblePost(c, image.post_id));
-  const visible = image?.profile || post || (image && !image.post_id && c.get('user')?.id === image.owner_id);
+  const visible = image?.profile || post || image?.in_conversation || (image && !image.post_id && viewer?.id === image.owner_id);
   const object = visible && (await c.env.IMAGES.get(id));
   if (!object) return c.json({ error: 'התמונה לא נמצאה' }, 404);
   return new Response(object.body, {
@@ -1064,6 +1097,145 @@ app.delete('/api/friends/:id', requireUser, async (c) => {
       WHERE (requester_id = ?1 AND addressee_id = ?2) OR (requester_id = ?2 AND addressee_id = ?1)`)
     .bind(c.get('user').id, parseId(c.req.param('id')))
     .run();
+  return c.json({ ok: true });
+});
+
+// Private messages. A conversation is between two members, and only the two of them ever get
+// anything from these routes. It is addressed by the other member's id.
+async function correspondent(c) {
+  const id = parseId(c.req.param('userId'));
+  if (!id || id === c.get('user').id) return null;
+  return c.env.DB.prepare(`SELECT id, name, avatar_id AS avatar FROM users WHERE id = ? AND name <> ''`).bind(id).first();
+}
+
+// Every conversation of the reader, the one with the newest message first.
+app.get('/api/messages', requireUser, async (c) => {
+  const me = c.get('user').id;
+  const { results } = await c.env.DB
+    .prepare(`SELECT u.id, u.name, u.avatar_id AS avatar,
+        m.sender_id, SUBSTR(m.body, 1, 140) AS body, m.created_at, m.removed_at,
+        EXISTS (SELECT 1 FROM images WHERE message_id = m.id) AS has_image,
+        (SELECT COUNT(*) FROM messages x WHERE x.conversation_id = k.id AND x.sender_id <> ?1 AND x.removed_at IS NULL
+          AND x.id > CASE WHEN k.low_id = ?1 THEN k.low_read ELSE k.high_read END) AS unread
+      FROM conversations k
+      JOIN users u ON u.id = CASE WHEN k.low_id = ?1 THEN k.high_id ELSE k.low_id END
+      JOIN messages m ON m.id = (SELECT MAX(id) FROM messages WHERE conversation_id = k.id)
+      WHERE k.low_id = ?1 OR k.high_id = ?1
+      ORDER BY m.id DESC LIMIT 200`)
+    .bind(me)
+    .all();
+  return c.json({ conversations: results.map((row) => ({
+    user: { id: row.id, name: row.name, avatar: row.avatar },
+    last: { mine: row.sender_id === me, body: row.body, image: !!row.has_image, at: row.created_at, removed: !!row.removed_at },
+    unread: row.unread,
+  })) });
+});
+
+// One conversation. Asked plainly it is the newest page, and "before" pages back. "after" brings
+// only what was written since, with the ids of messages removed since "since": that is what an
+// open conversation asks every few seconds, as there is no live connection.
+app.get('/api/messages/:userId', requireUser, async (c) => {
+  const db = c.env.DB;
+  const me = c.get('user').id;
+  const person = await correspondent(c);
+  if (!person) return c.json({ error: 'המשתמש לא נמצא' }, 404);
+
+  const now = Date.now();
+  const [conversation, canSend] = await Promise.all([conversationOf(db, me, person.id), areFriends(db, me, person.id)]);
+  const base = { user: person, canSend, now };
+  if (!conversation) return c.json({ ...base, messages: [], removed: [], hasMore: false, readUpTo: 0 });
+  base.readUpTo = conversation.low_id === me ? conversation.low_read : conversation.high_read;
+  const message = (row) => serializeMessage(row, me);
+
+  const after = parseId(c.req.query('after') ?? '');
+  if (after !== null) {
+    const since = (parseId(c.req.query('since') ?? '') ?? now) - REMOVAL_OVERLAP_MS;
+    const [fresh, gone] = await db.batch([
+      db.prepare(`${MESSAGE_SELECT} WHERE m.conversation_id = ? AND m.id > ? ORDER BY m.id LIMIT ?`).bind(conversation.id, after, MESSAGES_PAGE * 4),
+      db.prepare('SELECT id FROM messages WHERE conversation_id = ? AND removed_at >= ? AND id <= ?').bind(conversation.id, since, after),
+    ]);
+    return c.json({ ...base, messages: fresh.results.map(message), removed: gone.results.map((row) => row.id) });
+  }
+
+  const before = parseId(c.req.query('before') ?? '') ?? Number.MAX_SAFE_INTEGER;
+  const { results } = await db
+    .prepare(`${MESSAGE_SELECT} WHERE m.conversation_id = ? AND m.id < ? ORDER BY m.id DESC LIMIT ?`)
+    .bind(conversation.id, before, MESSAGES_PAGE + 1)
+    .all();
+  return c.json({ ...base, messages: results.slice(0, MESSAGES_PAGE).reverse().map(message), removed: [], hasMore: results.length > MESSAGES_PAGE });
+});
+
+// Writing is between friends only. The first message opens the conversation.
+app.post('/api/messages/:userId', requireUser, async (c) => {
+  const db = c.env.DB;
+  const me = c.get('user').id;
+  const person = await correspondent(c);
+  if (!person) return c.json({ error: 'המשתמש לא נמצא' }, 404);
+  if (!(await areFriends(db, me, person.id))) return c.json({ error: 'אפשר לכתוב רק לחברים' }, 403);
+
+  const input = await readJson(c);
+  const body = typeof input.body === 'string' ? input.body.trim() : '';
+  const image = input.image ?? null;
+  if (body.length > MAX_MESSAGE || (!body && !image)) return c.json({ error: 'ההודעה ריקה או ארוכה מדי' }, 400);
+  if (image !== null) {
+    const owned = typeof image === 'string' && await db.prepare(UNUSED_IMAGE).bind(image, me).first();
+    if (!owned) return c.json({ error: 'תמונה לא תקינה' }, 400);
+  }
+
+  const now = Date.now();
+  const mine = me < person.id ? 'low_read' : 'high_read';
+  const conversation = await db
+    .prepare(`INSERT INTO conversations (low_id, high_id, created_at) VALUES (?, ?, ?)
+      ON CONFLICT (low_id, high_id) DO UPDATE SET created_at = created_at RETURNING id`)
+    .bind(Math.min(me, person.id), Math.max(me, person.id), now)
+    .first();
+  const row = await db
+    .prepare('INSERT INTO messages (conversation_id, sender_id, body, created_at) VALUES (?, ?, ?, ?) RETURNING id')
+    .bind(conversation.id, me, body || null, now)
+    .first();
+  // Whoever answers has seen what they answer.
+  await db.batch([
+    db.prepare(`UPDATE conversations SET ${mine} = MAX(${mine}, ?) WHERE id = ?`).bind(row.id, conversation.id),
+    ...(image ? [db.prepare('UPDATE images SET message_id = ? WHERE id = ?').bind(row.id, image)] : []),
+  ]);
+  return c.json({ message: { id: row.id, mine: true, body: body || null, image, at: now, removed: false } }, 201);
+});
+
+// Marks the conversation as seen, up to a message the reader's screen really showed. The mark
+// never passes the newest message, so nothing written later can be skipped by it.
+app.put('/api/messages/:userId/read', requireUser, async (c) => {
+  const db = c.env.DB;
+  const me = c.get('user').id;
+  const other = parseId(c.req.param('userId'));
+  const conversation = other && other !== me && (await conversationOf(db, me, other));
+  if (!conversation) return c.json({ error: 'השיחה לא נמצאה' }, 404);
+
+  const { upTo } = await readJson(c);
+  const mine = conversation.low_id === me ? 'low_read' : 'high_read';
+  await db
+    .prepare(`UPDATE conversations SET ${mine} = MAX(${mine},
+      MIN(?1, COALESCE((SELECT MAX(id) FROM messages WHERE conversation_id = ?2), 0))) WHERE id = ?2`)
+    .bind(Number.isSafeInteger(upTo) && upTo > 0 ? upTo : Number.MAX_SAFE_INTEGER, conversation.id)
+    .run();
+  return c.json({ ok: true });
+});
+
+// Only the writer removes a message. Its text is erased and its picture is really deleted. A
+// mark stays in its place, for both sides, so the conversation still reads in order.
+app.delete('/api/messages/:userId/:id', requireUser, async (c) => {
+  const db = c.env.DB;
+  const id = parseId(c.req.param('id'));
+  const removed = id && (await db
+    .prepare('UPDATE messages SET body = NULL, removed_at = ? WHERE id = ? AND sender_id = ? AND removed_at IS NULL RETURNING id')
+    .bind(Date.now(), id, c.get('user').id)
+    .first());
+  if (!removed) return c.json({ error: 'ההודעה לא נמצאה' }, 404);
+
+  const image = await db.prepare('SELECT id FROM images WHERE message_id = ?').bind(id).first();
+  if (image) {
+    await c.env.IMAGES.delete(image.id);
+    await db.prepare('DELETE FROM images WHERE id = ?').bind(image.id).run();
+  }
   return c.json({ ok: true });
 });
 

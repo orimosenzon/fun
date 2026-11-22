@@ -671,6 +671,158 @@ test('a place must be a real point on the earth', async () => {
   assert.equal((await anon('PUT', '/me/place', { lat: 1, lng: 1 })).status, 401);
 });
 
+// Two friends and someone who is a friend of neither, for the private messages.
+async function threeForMessages(tag) {
+  const dana = await signUp(`dana-${tag}`);
+  const eli = await signUp(`eli-${tag}`);
+  const stranger = await signUp(`stranger-${tag}`);
+  await dana.call('POST', `/friends/${eli.id}`);
+  await eli.call('POST', `/friends/${dana.id}`);
+  return { dana, eli, stranger };
+}
+const write = (from, to, body, image) => from.call('POST', `/messages/${to.id}`, { body, image });
+const talk = (reader, other, query = '') => reader.call('GET', `/messages/${other.id}${query}`).then(({ data }) => data);
+const unread = (user) => user.call('GET', '/me').then(({ data }) => data.user.unreadMessages);
+
+test('a message reaches the friend it was written to, and nobody else', async () => {
+  const { dana, eli, stranger } = await threeForMessages('msg');
+  assert.equal((await anon('GET', '/messages')).status, 401);
+  assert.equal((await anon('GET', `/messages/${eli.id}`)).status, 401);
+  assert.equal((await anon('POST', `/messages/${eli.id}`, { body: 'x' })).status, 401);
+  assert.deepEqual((await talk(dana, eli)).messages, []);
+  assert.deepEqual((await dana.call('GET', '/messages')).data.conversations, []);
+
+  const sent = await write(dana, eli, ' שלום אלי ');
+  assert.equal(sent.status, 201);
+  assert.equal(sent.data.message.body, 'שלום אלי');
+  await write(eli, dana, 'שלום דנה https://example.com/a');
+
+  const mine = await talk(dana, eli);
+  assert.equal(mine.user.id, eli.id);
+  assert.equal(mine.canSend, true);
+  assert.deepEqual(mine.messages.map((item) => [item.body, item.mine]), [['שלום אלי', true], ['שלום דנה https://example.com/a', false]]);
+  assert.deepEqual((await talk(eli, dana)).messages.map((item) => item.mine), [false, true]);
+
+  const list = (await eli.call('GET', '/messages')).data.conversations;
+  assert.deepEqual(list.map((item) => item.user.id), [dana.id]);
+  assert.deepEqual([list[0].last.body, list[0].last.mine], ['שלום דנה https://example.com/a', true]);
+
+  // A stranger gets an empty conversation of their own, never this one.
+  assert.deepEqual((await stranger.call('GET', '/messages')).data.conversations, []);
+  const outside = await talk(stranger, dana);
+  assert.deepEqual([outside.messages, outside.canSend], [[], false]);
+  assert.equal((await write(stranger, dana, 'היי')).status, 403);
+  assert.equal((await stranger.call('PUT', `/messages/${dana.id}/read`, {})).status, 404);
+  assert.equal((await stranger.call('DELETE', `/messages/${dana.id}/${sent.data.message.id}`)).status, 404);
+  assert.equal(JSON.stringify((await stranger.call('GET', '/me')).data).includes('שלום'), false);
+
+  assert.equal((await write(dana, dana, 'לעצמי')).status, 404);
+  assert.equal((await write(dana, { id: 999999 }, 'לאף אחד')).status, 404);
+  assert.equal((await write(dana, eli, '   ')).status, 400);
+  assert.equal((await write(dana, eli, 'x'.repeat(4001))).status, 400);
+  assert.equal((await talk(dana, eli)).messages.length, 2);
+});
+
+test('unread messages are counted until they are read, and the mark never runs ahead', async () => {
+  const { dana, eli } = await threeForMessages('read');
+  const first = (await write(dana, eli, 'אחת')).data.message.id;
+  await write(dana, eli, 'שתיים');
+  assert.equal(await unread(eli), 2);
+  assert.equal(await unread(dana), 0);
+  assert.equal((await eli.call('GET', '/messages')).data.conversations[0].unread, 2);
+  assert.equal((await dana.call('GET', '/messages')).data.conversations[0].unread, 0);
+
+  // Opening the conversation does not mark it by itself. The screen says how far it showed.
+  assert.equal((await talk(eli, dana)).readUpTo, 0);
+  assert.equal(await unread(eli), 2);
+  assert.equal((await eli.call('PUT', `/messages/${dana.id}/read`, { upTo: first })).status, 200);
+  assert.equal(await unread(eli), 1);
+  await eli.call('PUT', `/messages/${dana.id}/read`, { upTo: 10 ** 12 });
+  assert.equal(await unread(eli), 0);
+  await write(dana, eli, 'שלוש');
+  assert.equal(await unread(eli), 1);
+
+  // Whoever answers has seen what they answer.
+  await write(eli, dana, 'עונה');
+  assert.equal(await unread(eli), 0);
+  assert.equal(await unread(dana), 1);
+  assert.equal((await eli.call('PUT', '/messages/999999/read', {})).status, 404);
+});
+
+test('a conversation comes in pages, and asking again brings only what is new', async () => {
+  const { dana, eli } = await threeForMessages('pages');
+  for (let i = 0; i < 53; i++) await write(dana, eli, `הודעה ${i}`);
+  const page = await talk(eli, dana);
+  assert.equal(page.messages.length, 50);
+  assert.equal(page.hasMore, true);
+  assert.equal(page.messages.at(-1).body, 'הודעה 52');
+  const older = await talk(eli, dana, `?before=${page.messages[0].id}`);
+  assert.deepEqual(older.messages.map((item) => item.body), ['הודעה 0', 'הודעה 1', 'הודעה 2']);
+  assert.equal(older.hasMore, false);
+
+  const newest = page.messages.at(-1).id;
+  assert.deepEqual((await talk(eli, dana, `?after=${newest}&since=${page.now}`)).messages, []);
+  await write(eli, dana, 'חדשה');
+  const fresh = await talk(dana, eli, `?after=${newest}&since=${page.now}`);
+  assert.deepEqual(fresh.messages.map((item) => [item.body, item.mine]), [['חדשה', false]]);
+});
+
+test('a picture in a message opens for the two of them only, and cannot be used again', async () => {
+  const { dana, eli, stranger } = await threeForMessages('picture');
+  const image = (await upload(dana, phoneJpeg())).data.id;
+  const sent = (await write(dana, eli, '', image)).data.message;
+  assert.deepEqual([sent.body, sent.image], [null, image]);
+  assert.equal((await talk(eli, dana)).messages[0].image, image);
+  assert.equal((await eli.call('GET', '/messages')).data.conversations[0].last.image, true);
+
+  assert.equal((await fetchImage(eli.call, image)).status, 200);
+  assert.equal((await fetchImage(dana.call, image)).status, 200);
+  assert.equal((await fetchImage(stranger.call, image)).status, 404);
+  assert.equal((await fetchImage(anon, image)).status, 404);
+
+  assert.equal((await write(dana, eli, 'שוב', image)).status, 400);
+  assert.equal((await dana.call('POST', '/posts', { body: 'x', audience: 'public', images: [image] })).status, 400);
+  assert.equal((await dana.call('PUT', '/me/images', { kind: 'avatar', imageId: image })).status, 400);
+  const theirs = (await upload(eli, phoneJpeg())).data.id;
+  assert.equal((await write(dana, eli, 'לא שלי', theirs)).status, 400);
+});
+
+test('a removed message leaves a mark for both sides, and its picture is really deleted', async () => {
+  const { dana, eli } = await threeForMessages('gone');
+  const image = (await upload(dana, phoneJpeg())).data.id;
+  const sent = (await write(dana, eli, 'תראה', image)).data.message;
+  const before = await talk(eli, dana);
+  assert.equal(await unread(eli), 1);
+
+  assert.equal((await eli.call('DELETE', `/messages/${dana.id}/${sent.id}`)).status, 404);
+  assert.equal((await dana.call('DELETE', `/messages/${eli.id}/${sent.id}`)).status, 200);
+  assert.equal((await dana.call('DELETE', `/messages/${eli.id}/${sent.id}`)).status, 404);
+  for (const [reader, other] of [[eli, dana], [dana, eli]]) {
+    const [after] = (await talk(reader, other)).messages;
+    assert.deepEqual([after.id, after.body, after.image, after.removed], [sent.id, null, null, true]);
+  }
+  assert.equal((await fetchImage(dana.call, image)).status, 404);
+  assert.equal((await fetchImage(eli.call, image)).status, 404);
+  assert.equal(await unread(eli), 0);
+  assert.deepEqual((await eli.call('GET', '/messages')).data.conversations[0].last, { mine: false, body: null, image: false, at: before.messages[0].at, removed: true });
+
+  // An open conversation learns of the removal the next time it asks what is new.
+  assert.deepEqual((await talk(eli, dana, `?after=${sent.id}&since=${before.now}`)).removed, [sent.id]);
+  assert.deepEqual((await talk(eli, dana, `?after=${sent.id}&since=${Date.now() + 60000}`)).removed, []);
+});
+
+test('ending a friendship stops the writing, and what was written stays readable', async () => {
+  const { dana, eli } = await threeForMessages('apart');
+  await write(dana, eli, 'לפני');
+  await eli.call('DELETE', `/friends/${dana.id}`);
+  assert.equal((await write(dana, eli, 'אחרי')).status, 403);
+  assert.equal((await write(eli, dana, 'אחרי')).status, 403);
+  const kept = await talk(eli, dana);
+  assert.deepEqual([kept.canSend, kept.messages.map((item) => item.body)], [false, ['לפני']]);
+  assert.equal((await eli.call('PUT', `/messages/${dana.id}/read`, {})).status, 200);
+  assert.equal(await unread(eli), 0);
+});
+
 test('the demo globe has friends on the earth and friends on the cloud', async () => {
   const call = client(DEMO_PORT);
   await call('POST', '/auth/demo');
@@ -994,10 +1146,22 @@ test('the demo refuses every write and stores nothing', async () => {
     ['POST', '/client-log', { message: 'x' }],
     ['PUT', '/me/place', { lat: 1, lng: 1 }],
     ['DELETE', '/me/place'],
+    ['POST', '/messages/2', { body: 'x' }],
+    ['PUT', '/messages/2/read', {}],
+    ['DELETE', '/messages/2/2'],
   ];
   for (const [method, path, body] of writes) assert.equal((await call(method, path, body)).status, 403, path);
   assert.equal((await call('GET', '/feed')).data.posts.length, 4);
   assert.equal((await call('GET', '/friends')).data.friends.length, 8);
+});
+
+test('the demo shows invented conversations, all of them read', async () => {
+  const call = client(DEMO_PORT);
+  await call('POST', '/auth/demo');
+  assert.deepEqual((await call('GET', '/messages')).data.conversations.map((item) => item.user.id), [3, 2]);
+  assert.equal((await call('GET', '/me')).data.user.unreadMessages, 0);
+  assert.deepEqual((await call('GET', '/messages/3')).data.messages.map((item) => item.removed), [false, true, false]);
+  assert.equal((await call('GET', '/messages/2')).data.messages.length, 5);
 });
 
 test('logging out of the demo leaves it open for the next visitor', async () => {

@@ -1,4 +1,6 @@
 -- Invented people and posts for the public demo. Safe to run again: it starts from empty.
+DELETE FROM messages;
+DELETE FROM conversations;
 DELETE FROM comments;
 DELETE FROM posts;
 DELETE FROM friendships;
@@ -63,3 +65,18 @@ INSERT INTO comments (id, post_id, author_id, body, created_at, removed_by, pare
   (4, 3, 5, 'כאן יש הסבר טוב על שתילה בחורף, גם מי שלא כתב את הפוסט יכול לשים קישור לחיץ: https://he.wikipedia.org/wiki/גינה_קהילתית', (unixepoch() - 78000) * 1000, NULL, NULL),
   (5, 3, 2, 'תודה! מעולה.', (unixepoch() - 77000) * 1000, NULL, 4),
   (6, 4, 4, 'נראה לי שזה החתול של השכנים ממול, בודקת.', (unixepoch() - 2 * 3600) * 1000, NULL, NULL);
+
+-- Private messages of the guest, all of them read: the demo cannot store that a visitor read one.
+INSERT INTO conversations (id, low_id, high_id, created_at, low_read, high_read) VALUES
+  (1, 1, 2, 0, 5, 5),
+  (2, 1, 3, 0, 8, 8);
+
+INSERT INTO messages (id, conversation_id, sender_id, body, created_at, removed_at) VALUES
+  (1, 1, 2, 'היי! באים מחר לשתילה בגינה הקהילתית?', (unixepoch() - 86400 - 7200) * 1000, NULL),
+  (2, 1, 1, 'בטח. מה להביא?', (unixepoch() - 86400 - 7000) * 1000, NULL),
+  (3, 1, 2, 'כפפות, ואם יש לכם מעדר קטן. קפה עליי.', (unixepoch() - 86400 - 6900) * 1000, NULL),
+  (4, 1, 2, 'זה המקום, ליד שער הכניסה: https://he.wikipedia.org/wiki/גינה_קהילתית', (unixepoch() - 86400 - 6800) * 1000, NULL),
+  (5, 1, 1, 'מעולה, נתראה בשמונה.', (unixepoch() - 86400 - 3600) * 1000, NULL),
+  (6, 2, 1, 'ראיתי את הפוסט על החתול. הוא עדיין אצלך?', (unixepoch() - 2 * 3600) * 1000, NULL),
+  (7, 2, 3, NULL, (unixepoch() - 2 * 3600 + 300) * 1000, (unixepoch() - 2 * 3600 + 360) * 1000),
+  (8, 2, 3, 'כן, יושב אצלנו במרפסת ואוכל טונה. תמר חושבת שהוא של השכנים שלה, מחכים לתשובה.', (unixepoch() - 3000) * 1000, NULL);
