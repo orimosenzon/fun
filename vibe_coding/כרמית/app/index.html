@@ -18,7 +18,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611201841">
+<link rel="stylesheet" href="style.css?v=202611230946">
 </head>
 <body>
   <div id="app">
@@ -84,6 +84,7 @@
       <div class="progress"><span id="progress-text"></span><span class="progress-bar"><i id="progress-fill"></i></span></div>
       <div class="riddle-card">
         <img id="riddle-image" src="" alt="חידה">
+        <p id="ai-note" class="ai-note hidden">התמונה נוצרה בבינה מלאכותית</p>
         <p id="riddle-question" class="question"></p>
         <div id="hint-box" class="hint-box hidden"></div>
         <input type="text" id="answer-input" placeholder="הקלידו את התשובה כאן" autocomplete="off">
@@ -104,7 +105,12 @@
             <button type="button" class="rate-btn" data-rate="medium" role="radio" aria-checked="false">בינונית</button>
             <button type="button" class="rate-btn" data-rate="hard" role="radio" aria-checked="false">קשה</button>
           </div>
-          <small id="rate-note" class="rate-note hidden">זה מכשיר של ניהול, אז הדירוג לא נספר בסטטיסטיקה.</small>
+          <button type="button" id="rate-more" class="rate-more" aria-expanded="false" aria-controls="rate-text-box">✎ רוצים להוסיף כמה מילים?</button>
+          <div id="rate-text-box" class="rate-text-box hidden">
+            <textarea id="rate-text" rows="3" maxlength="1000" aria-label="משוב על החידה" placeholder="מה חשבתם על החידה? כל מילה עוזרת."></textarea>
+            <button type="button" id="rate-send" class="secondary-btn small">שליחה</button>
+          </div>
+          <small id="rate-note" class="rate-note hidden">זה מכשיר של ניהול, אז הדירוג והמשוב לא נשמרים.</small>
         </div>
         <button id="next-btn" class="primary-btn hidden">לחידה הבאה ←</button>
       </div>
@@ -148,6 +154,6 @@
 
   </div>
 
-  <script type="module" src="script.js?v=202611201841"></script>
+  <script type="module" src="script.js?v=202611230946"></script>
 </body>
 </html>

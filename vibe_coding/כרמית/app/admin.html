@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611201841">
+<link rel="stylesheet" href="style.css?v=202611230946">
 </head>
 <body class="admin">
   <div id="app">
@@ -56,6 +56,10 @@
         <p class="help">מבקר הוא דפדפן אחד: מי שנכנס גם מהטלפון וגם מהמחשב נספר פעמיים, ומי שנכנס כמה פעמים באותו יום נספר פעם אחת באותו יום. הכניסות שלך ושל אורי נספרות בנפרד: כל דפדפן שנכנסו ממנו פעם לממשק הניהול מסומן כ"שלנו", גם אחרי יציאה מהחשבון. מכשיר שמעולם לא נכנסת ממנו לניהול ייספר כמבקר רגיל. הספירה התחילה ב-20/11/2026.</p>
         <div id="visits-body" class="stats-body"></div>
 
+        <h2 class="stat-h stat-section">מה כתבו השחקנים <span id="comments-count" class="count"></span></h2>
+        <p class="help">ליד שאלת הקושי השחקן יכול גם לכתוב כמה מילים על החידה, אם מתחשק לו. כאן מופיע כל מה שנכתב, החדש קודם. גם כאן, מה שנכתב מהמכשירים שלך ושל אורי לא נשמר.</p>
+        <div id="comments-body" class="stats-body"></div>
+
         <h2 class="stat-h stat-section">כמה קשות החידות</h2>
         <p class="help">אחרי כל חידה השחקן יכול לסמן אם היא הייתה לו קלה, בינונית או קשה. כאן רואים מה סימנו כולם, לכל חידון ולכל חידה בתוכו. הסימון לא חובה, אז לא כל מי ששיחק מופיע כאן. גם כאן, דירוגים מהמכשירים שלך ושל אורי לא נספרים.</p>
         <div class="stats-bar">
@@ -94,7 +98,11 @@
           <input type="search" id="pool-search" class="search" placeholder="חיפוש לפי תשובה, טקסט או רמז">
           <button id="pool-new" class="primary-btn small">+ חידה חדשה</button>
         </div>
-        <p class="help">כל החידות שנוצרו אי פעם. חידה יכולה להופיע בכמה חידונים, ועריכה שלה כאן משנה אותה בכולם.</p>
+        <div class="cat-bar">
+          <div id="cat-chips" class="cat-chips" role="group" aria-label="סינון לפי קטגוריה"></div>
+          <button id="cat-manage" class="link-btn">⚙ ניהול הקטגוריות</button>
+        </div>
+        <p class="help">כל החידות שנוצרו אי פעם. חידה יכולה להופיע בכמה חידונים, ועריכה שלה כאן משנה אותה בכולם. לכל חידה יש קטגוריה אחת, ואפשר להחליף אותה ישר מהכרטיס של החידה.</p>
         <div id="pool-grid" class="pool-grid"></div>
       </div>
     </section>
@@ -229,6 +237,8 @@
         <img id="image-preview" class="preview hidden" alt="">
         <span class="drop-hint">תמונת החידה *<small>לחיצה לבחירה, או גרירת קובץ לכאן</small></span>
       </label>
+      <label class="inline ai-check"><input type="checkbox" id="ai-image"> התמונה נוצרה בבינה מלאכותית
+        <small>השחקן יראה על זה שורה קטנה מתחת לתמונה</small></label>
 
       <label class="field">
         <span>טקסט מתחת לתמונה (לא חובה)</span>
@@ -238,6 +248,11 @@
       <label class="field">
         <span>רמז (לא חובה)</span>
         <input type="text" id="hint" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span>קטגוריה</span>
+        <select id="riddle-category" class="pick-target"></select>
       </label>
 
       <fieldset class="field">
@@ -266,6 +281,25 @@
         <button type="button" id="cancel-btn" class="secondary-btn">ביטול</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="cat-dialog">
+    <div class="riddle-card admin-form">
+      <div class="dialog-head">
+        <h2>קטגוריות</h2>
+        <button type="button" class="link-btn close" id="cat-close" title="סגירה">✕</button>
+      </div>
+      <p class="help">כל חידה שייכת לקטגוריה אחת. חידה שלא שויכה לשום קטגוריה נמצאת ב"כללי". כדי לשנות שם של קטגוריה פשוט כותבים עליו.</p>
+      <ul id="cat-list" class="cat-list"></ul>
+      <form id="cat-form" class="cat-add">
+        <input type="text" id="cat-name" maxlength="40" autocomplete="off" placeholder="שם לקטגוריה חדשה" aria-label="שם לקטגוריה חדשה">
+        <button type="submit" id="cat-add" class="primary-btn small">+ הוספה</button>
+      </form>
+      <div id="cat-error" class="feedback wrong hidden"></div>
+      <div class="buttons-row">
+        <button type="button" id="cat-done" class="secondary-btn">סגירה</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="letter-dialog">
@@ -302,6 +336,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611201841"></script>
+  <script type="module" src="admin.js?v=202611230946"></script>
 </body>
 </html>

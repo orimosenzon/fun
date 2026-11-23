@@ -8,7 +8,7 @@
 // (quiz.closing). Links used to name the letters themselves (&b=, &a=, and &m= before that); those are read only
 // for a quiz from before letters were marked in quizzes, so that what Carmit sees in the admin is what is shown.
 import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl, saveRating, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611201841';
+  hasHeading, fillHeading, safeUrl, saveRating, saveComment, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611230946';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -72,6 +72,7 @@ function noteVisit(flags = {}) {
 
 function showRating(level) {
   rateBox.classList.toggle('hidden', !ASK_RATING);
+  showComment(false);
   rateBtns.forEach((b) => {
     const on = b.dataset.rate === level;
     b.classList.toggle('on', on);
@@ -83,13 +84,57 @@ function rate(level) {
   const res = results[current];
   if (!res || res.skipped) return;
   res.rating = level;
+  const writing = !rateTextBox.classList.contains('hidden');
+  const draft = rateText.value;
   showRating(level);
+  // Choosing a level while writing leaves the text box as it is.
+  if (writing) { showComment(true); rateText.value = draft; }
   if (OWN) return;
+  if (res.comment) sendComment(res);   // words already sent carry the level chosen with them
   // The game never waits for this, and a rating that didn't get through is not the player's problem.
   saveRating(`${VISIT}-${res.riddle.id}`, { quiz: QUIZ_ID, riddle: res.riddle.id, level, correct: res.correct, hint: res.hintUsed })
     .catch((e) => console.error(e));
 }
 rateBtns.forEach((b) => b.addEventListener('click', () => rate(b.dataset.rate)));
+
+// Beside the three buttons the player can also write a few words about the riddle. Until asked for, it is one
+// quiet line; pressing it opens a text box. What was written is sent with "שליחה", or on moving to another riddle.
+const rateMore = $('rate-more');
+const rateTextBox = $('rate-text-box');
+const rateText = $('rate-text');
+
+function showComment(open) {
+  const sent = results[current]?.comment || '';
+  rateTextBox.classList.toggle('hidden', !open);
+  rateMore.setAttribute('aria-expanded', String(open));
+  rateMore.classList.toggle('sent', !!sent && !open);
+  rateMore.textContent = open ? '✕ ביטול' : sent ? '✓ תודה, קיבלנו. לחיצה לעריכה' : '✎ רוצים להוסיף כמה מילים?';
+  rateText.value = sent;
+}
+
+function sendComment(res) {
+  saveComment(`${VISIT}-${res.riddle.id}`, { quiz: QUIZ_ID, riddle: res.riddle.id, text: res.comment, level: res.rating || '',
+    correct: res.correct, hint: res.hintUsed }).catch((e) => console.error(e));
+}
+
+// Keeps what is in the text box, if anything new. Emptying the box does not take back words already sent.
+function keepComment() {
+  const res = results[current];
+  const text = rateText.value.trim();
+  if (!res || res.skipped || rateTextBox.classList.contains('hidden') || !text || text === res.comment) return;
+  res.comment = text;
+  if (!OWN) sendComment(res);
+}
+
+rateMore.addEventListener('click', () => {
+  const open = rateTextBox.classList.contains('hidden');
+  showComment(open);   // closing it this way drops what was not sent
+  if (open) rateText.focus();
+});
+$('rate-send').addEventListener('click', () => {
+  keepComment();
+  showComment(false);
+});
 
 $('copyright-year').textContent = new Date().getFullYear();
 
@@ -142,6 +187,7 @@ function showRiddle() {
   progressText.textContent = `${pad(current + 1)} / ${pad(order.length)}`;
   progressFill.style.width = `${(current / order.length) * 100}%`;
   riddleImage.src = r.image;
+  $('ai-note').classList.toggle('hidden', !r.aiImage);   // a small line under a picture made by AI
   riddleQuestion.textContent = r.question || '';
   riddleQuestion.classList.toggle('hidden', !r.question);
   hintBox.textContent = '';
@@ -257,11 +303,13 @@ function skipRiddle() {
 
 function prevRiddle() {
   if (current === 0) return;
+  keepComment();
   current--;
   showRiddle();
 }
 
 function nextRiddle() {
+  keepComment();
   current++;
   if (current >= order.length) {
     showReport();

@@ -33,6 +33,14 @@ service cloud.firestore {
         && request.resource.data.text is string
         && request.resource.data.image is string;
     }
+    // A category of riddles: just a name. A riddle points to its category by id (riddle.category).
+    match /categories/{id} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 40;
+    }
     // How hard a player found a riddle, marked after answering it. Anyone playing can write one (players are
     // not signed in); only Ori and Carmit read them, in the statistics tab. The id is made up by the player's
     // browser (a random visit id + the riddle), so the same player changing their mind overwrites their own.
@@ -43,6 +51,22 @@ service cloud.firestore {
         && request.resource.data.quiz is string && request.resource.data.quiz.size() <= 40
         && request.resource.data.riddle is string && request.resource.data.riddle.size() <= 40
         && request.resource.data.level in ['easy', 'medium', 'hard']
+        && request.resource.data.correct is bool
+        && request.resource.data.hint is bool
+        && request.resource.data.created == request.time
+        && exists(/databases/$(database)/documents/quizzes/$(request.resource.data.quiz));
+    }
+    // A few words a player wrote about a riddle, beside the rating (level is '' when no button was pressed).
+    // Like the ratings: anyone playing can write, only Ori and Carmit read. The text is short and only ever
+    // shown to them, as plain text.
+    match /comments/{id} {
+      allow read, delete: if isAdmin();
+      allow create, update: if id.size() <= 80
+        && request.resource.data.keys().hasOnly(['quiz', 'riddle', 'text', 'level', 'correct', 'hint', 'created'])
+        && request.resource.data.quiz is string && request.resource.data.quiz.size() <= 40
+        && request.resource.data.riddle is string && request.resource.data.riddle.size() <= 40
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
+        && request.resource.data.level in ['', 'easy', 'medium', 'hard']
         && request.resource.data.correct is bool
         && request.resource.data.hint is bool
         && request.resource.data.created == request.time

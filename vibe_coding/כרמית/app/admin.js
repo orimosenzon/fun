@@ -1,8 +1,8 @@
 // Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
-import { app, db, fs, ADMINS, LEVELS, loadRiddles, loadQuizzes, loadLetters, loadRatings, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611201841';
+import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611230946';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -16,6 +16,8 @@ let riddles = [];        // the pool, newest first
 let byId = new Map();
 let quizzes = [];
 let letters = [];        // letters to send along with a quiz, before it or after it (any quiz)
+let categories = [];     // the categories of riddles, in the order they were made; "כללי" is built in, not one of them
+let poolCat = null;      // the pool's filter: null = every riddle, '' = "כללי", or a category's id
 let current = null;      // the quiz open in the quiz view
 let picked = new Set();  // riddle ids checked in the quiz list, to copy or move to another quiz
 let lastPick = null;     // anchor for shift-click ranges
@@ -35,6 +37,10 @@ const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
 const riddleLabel = (r) => (r.answerType === 'image' ? 'תשובה בתמונה' : primaryAnswer(r));
 const quizRiddles = (q) => q.riddleIds.map((id) => byId.get(id)).filter(Boolean);
 const quizzesWith = (rid) => quizzes.filter((q) => q.riddleIds.includes(rid));
+// A riddle's category id, or '' for "כללי": no category, or one that was deleted since.
+const catId = (r) => (categories.some((c) => c.id === r.category) ? r.category : '');
+const catName = (id) => categories.find((c) => c.id === id)?.name || GENERAL;
+const inCat = (id) => riddles.filter((r) => catId(r) === id);
 // A locked quiz (quiz.locked, "קבוע") is one that was sent and must stay as it is: nothing in it can change, and
 // neither can the riddles in it, wherever they are edited from. These are its fields that the player sees.
 const LOCKED_FIELDS = ['title', 'cover', 'riddleIds', 'shuffle', 'level', 'heading', 'opening', 'closing'];
@@ -85,8 +91,9 @@ au.onAuthStateChanged(auth, async (user) => {
 });
 
 async function reload() {
-  [riddles, quizzes, letters] = await Promise.all([loadRiddles(), loadQuizzes(),
-    loadLetters().catch((e) => { console.error(e); return []; })]);
+  [riddles, quizzes, letters, categories] = await Promise.all([loadRiddles(), loadQuizzes(),
+    loadLetters().catch((e) => { console.error(e); return []; }),
+    loadCategories().catch((e) => { console.error(e); return []; })]);
   byId = new Map(riddles.map((r) => [r.id, r]));
 }
 
@@ -137,6 +144,7 @@ function renderHome() {
 
 let ratings = null;      // every rating ever given; loaded when the tab is first opened
 let visits = null;       // one per browser per day per page (the start screen or a quiz)
+let comments = [];       // what players wrote about riddles, beside the rating
 
 async function loadStats(force) {
   const body = $('stats-body');
@@ -144,7 +152,8 @@ async function loadStats(force) {
     body.replaceChildren(el('p', 'help', 'טוענים…'));
     $('visits-body').replaceChildren();
     try {
-      [ratings, visits] = await Promise.all([loadRatings(), loadVisits()]);
+      [ratings, visits, comments] = await Promise.all([loadRatings(), loadVisits(),
+        loadComments().catch((e) => { console.error(e); return []; })]);
     } catch (e) {
       console.error(e);
       body.replaceChildren(el('p', 'help warn', 'לא הצלחנו לטעון את הנתונים. נסו לרענן.'));
@@ -152,6 +161,7 @@ async function loadStats(force) {
     }
   }
   renderVisits();
+  renderComments();
   renderStats();
 }
 $('stats-refresh').addEventListener('click', () => loadStats(true));
@@ -350,6 +360,52 @@ function renderVisits() {
     out.push(el('p', 'help', 'עוד לא נרשמו מבקרים אמיתיים.'));
   }
   body.replaceChildren(...out);
+}
+
+// What players wrote, newest first: the words, and around them which riddle, in which quiz, when, and how it went.
+const stamp = (c) => (c && c.toMillis ? c.toMillis() : +c || 0);
+function renderComments() {
+  const body = $('comments-body');
+  $('comments-count').textContent = comments.length || '';
+  if (!comments.length) {
+    body.replaceChildren(el('p', 'help', 'עוד לא כתבו כלום. מה ששחקנים יכתבו יופיע כאן.'));
+    return;
+  }
+  const list = el('ul', 'comment-list');
+  for (const c of [...comments].sort((a, b) => stamp(b.created) - stamp(a.created))) {
+    const r = byId.get(c.riddle);
+    const q = quizzes.find((x) => x.id === c.quiz);
+    const li = el('li', 'pane comment');
+    if (r) {
+      const img = el('img', 'thumb');
+      img.src = r.image;
+      img.alt = '';
+      img.loading = 'lazy';
+      li.appendChild(img);
+    }
+    const main = el('div', 'stat-main');
+    const head = el('div', 'stat-head');
+    const when = stamp(c.created) ? new Date(stamp(c.created)).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    head.append(el('b', '', r ? riddleLabel(r) : 'חידה שנמחקה'), el('span', 'help', [q ? q.title || 'חידון ללא שם' : 'חידון שנמחק', when].filter(Boolean).join(' · ')));
+    const L = LEVELS.find((x) => x.id === c.level);
+    const facts = [c.correct ? 'פתר' : 'לא פתר', c.hint && 'נעזר ברמז', L ? `סימן "${L.name}"` : 'לא סימן רמת קושי'].filter(Boolean).join(' · ');
+    const foot = el('div', 'stat-head');
+    const del = el('button', 'link-btn del', 'מחיקה');
+    del.addEventListener('click', async () => {
+      if (!confirm('למחוק את המשוב הזה? אי אפשר לבטל את זה.')) return;
+      try {
+        await fs.deleteDoc(fs.doc(db, 'comments', c.id));
+      } catch (err) { return toast(`המחיקה נכשלה: ${err.message}`); }
+      comments = comments.filter((x) => x !== c);
+      renderComments();
+      toast('המשוב נמחק');
+    });
+    foot.append(el('span', 'help', facts), del);
+    main.append(head, el('p', 'comment-text', c.text), foot);
+    li.appendChild(main);
+    list.appendChild(li);
+  }
+  body.replaceChildren(list);
 }
 
 function renderStats() {
@@ -580,11 +636,61 @@ addEventListener('scroll', hidePeek, { passive: true });
 const matches = (r, term) => !term || [r.question, r.hint, ...(r.answers || [])]
   .some((s) => (s || '').toLowerCase().includes(term));
 
+// The row of categories above the pool: each one filters the pool to its riddles, and says how many it has.
+function renderCatBar() {
+  if (poolCat && !categories.some((c) => c.id === poolCat)) poolCat = null;
+  const chip = (value, name, n, cls = '') => {
+    const b = el('button', `cat-chip ${cls}`);
+    b.type = 'button';
+    b.append(name, el('span', 'count', String(n)));
+    b.setAttribute('aria-pressed', String(poolCat === value));
+    b.addEventListener('click', () => { poolCat = value; renderPool(); });
+    return b;
+  };
+  $('cat-chips').replaceChildren(
+    chip(null, 'הכול', riddles.length, 'all'),
+    ...categories.map((c) => chip(c.id, c.name, inCat(c.id).length)),
+    chip('', GENERAL, inCat('').length, 'general'),
+  );
+}
+
+// A category picker: Carmit's categories, "כללי", and a way to make a new one on the spot.
+const NEW_CAT = '+new';
+function fillCatSelect(sel, value) {
+  sel.replaceChildren(...categories.map((c) => new Option(c.name, c.id)), new Option(GENERAL, ''), new Option('+ קטגוריה חדשה…', NEW_CAT));
+  sel.value = categories.some((c) => c.id === value) ? value : '';
+  sel.dataset.value = sel.value;
+  sel.classList.toggle('general', !sel.value);
+}
+// apply(id) gets the chosen category; for "new" the categories window opens, and the one made there is chosen.
+function onCatSelect(sel, apply) {
+  sel.addEventListener('change', () => {
+    if (sel.value !== NEW_CAT) return apply(sel.value);
+    sel.value = sel.dataset.value;
+    openCats((c) => apply(c.id));
+  });
+}
+
+// The category is only for Carmit, the player never sees it: so it can change also on a riddle of a locked quiz.
+async function setCategory(r, id) {
+  if (catId(r) === id) return;
+  try {
+    await fs.updateDoc(fs.doc(db, 'riddles', r.id), { category: id, updated: fs.serverTimestamp() });
+  } catch (err) {
+    renderPool();
+    return toast(`השמירה נכשלה: ${err.message}`);
+  }
+  r.category = id;
+  toast(`החידה עברה לקטגוריה "${catName(id)}"`);
+  renderPool();
+}
+
 function renderPool() {
+  renderCatBar();
   const term = $('pool-search').value.trim().toLowerCase();
   const grid = $('pool-grid');
   grid.innerHTML = '';
-  for (const r of riddles.filter((x) => matches(x, term))) {
+  for (const r of riddles.filter((x) => (poolCat === null || catId(x) === poolCat) && matches(x, term))) {
     const tile = el('div', 'pool-tile');
     const img = el('img');
     img.src = r.image;
@@ -592,6 +698,13 @@ function renderPool() {
     const body = el('div', 'tile-body');
     body.appendChild(el('b', r.answerType === 'image' ? 'tag' : 'ans', riddleLabel(r)));
     if (r.hint) body.appendChild(el('div', 'sub', `רמז: ${r.hint}`));
+    if (r.aiImage) body.appendChild(el('div', 'sub ai-mark', 'התמונה נוצרה בבינה מלאכותית'));
+    const cat = el('select', 'cat-select');
+    cat.title = 'הקטגוריה של החידה';
+    cat.setAttribute('aria-label', 'קטגוריה');
+    fillCatSelect(cat, catId(r));
+    onCatSelect(cat, (id) => setCategory(r, id));
+    body.appendChild(cat);
     const qs = quizzesWith(r.id);
     const chips = el('div', 'chips');
     if (qs.length) {
@@ -616,10 +729,146 @@ function renderPool() {
     tile.append(img, body, actions);
     grid.appendChild(tile);
   }
-  if (!grid.children.length) grid.appendChild(el('p', 'help', term ? 'לא נמצאו חידות.' : 'המאגר ריק.'));
+  if (!grid.children.length) {
+    grid.appendChild(el('p', 'help', term ? 'לא נמצאו חידות.' : poolCat === null ? 'המאגר ריק.'
+      : `עוד אין חידות בקטגוריה "${catName(poolCat)}". אפשר לשייך אליה חידה מהכרטיס שלה, או ליצור חידה חדשה.`));
+  }
 }
 $('pool-search').addEventListener('input', renderPool);
 $('pool-new').addEventListener('click', () => openRiddle(null));
+
+// ---------- categories ----------
+// The window where Carmit adds, renames and deletes categories. Deleting one deletes no riddle: its riddles go
+// back to "כללי".
+
+const catDialog = $('cat-dialog');
+let catAdded = null;     // opened from a picker's "new category": what to do with the category made here
+
+function catError(msg) {
+  $('cat-error').textContent = msg;
+  $('cat-error').classList.toggle('hidden', !msg);
+}
+
+const sameName = (a, b) => a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim();
+// '' when the name is fine for a category (other than the one being renamed), or what is wrong with it.
+function nameProblem(name, except = null) {
+  if (!name) return 'צריך לכתוב שם לקטגוריה.';
+  if (sameName(name, GENERAL)) return `"${GENERAL}" כבר קיימת: שם נמצאת כל חידה שלא שויכה לקטגוריה.`;
+  if (categories.some((c) => c !== except && sameName(c.name, name))) return `כבר יש קטגוריה בשם "${name}".`;
+  return '';
+}
+
+function openCats(onAdded = null) {
+  catAdded = onAdded;
+  $('cat-form').reset();
+  catError('');
+  renderCats();
+  catDialog.showModal();
+  if (onAdded) $('cat-name').focus();
+}
+
+function renderCats() {
+  const count = (n) => (n ? plural(n, 'חידה אחת', 'חידות') : 'אין חידות');
+  const rows = categories.map((c) => {
+    const li = el('li', 'cat-row');
+    const name = el('input', 'cat-rename');
+    name.type = 'text';
+    name.maxLength = 40;
+    name.value = c.name;
+    name.autocomplete = 'off';
+    name.title = 'כותבים כאן כדי לשנות את השם';
+    name.setAttribute('aria-label', `שם הקטגוריה "${c.name}"`);
+    name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); } });
+    name.addEventListener('change', () => renameCategory(c, name));
+    const del = el('button', 'link-btn del', 'מחיקה');
+    del.type = 'button';
+    del.addEventListener('click', () => deleteCategory(c));
+    li.append(name, el('span', 'sub', count(inCat(c.id).length)), del);
+    return li;
+  });
+  const general = el('li', 'cat-row general');
+  general.append(el('b', '', GENERAL), el('span', 'sub', count(inCat('').length)), el('span', 'sub fixed', 'ברירת המחדל, תמיד כאן'));
+  $('cat-list').replaceChildren(...rows, general);
+}
+
+// After any change to the categories: the window itself, the page behind it, and the picker in an open riddle form.
+function refreshCats() {
+  renderCats();
+  current ? renderQuiz() : renderHome();
+  fillCatSelect($('riddle-category'), $('riddle-category').dataset.value);
+}
+
+$('cat-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('cat-name').value.replace(/\s+/g, ' ').trim();
+  catError(nameProblem(name));
+  if (nameProblem(name)) return $('cat-name').focus();
+  $('cat-add').disabled = true;
+  try {
+    const data = { name, by: auth.currentUser.email };
+    const ref = await fs.addDoc(fs.collection(db, 'categories'), { ...data, created: fs.serverTimestamp() });
+    const c = { id: ref.id, ...data, created: Date.now() };
+    categories.push(c);
+    $('cat-form').reset();
+    refreshCats();
+    if (catAdded) {
+      // Made on the way to choosing a category for a riddle: choose it, and back to the riddle.
+      catAdded(c);
+      catDialog.close();
+    } else {
+      toast(`הקטגוריה "${name}" נוספה`);
+      $('cat-name').focus();
+    }
+  } catch (err) {
+    catError(`ההוספה נכשלה: ${err.message}`);
+  } finally {
+    $('cat-add').disabled = false;
+  }
+});
+
+async function renameCategory(c, input) {
+  const name = input.value.replace(/\s+/g, ' ').trim();
+  if (name === c.name) { input.value = c.name; return; }
+  const problem = nameProblem(name, c);
+  catError(problem);
+  if (problem) { input.value = c.name; return; }
+  try {
+    await fs.updateDoc(fs.doc(db, 'categories', c.id), { name, updated: fs.serverTimestamp() });
+  } catch (err) {
+    input.value = c.name;
+    return catError(`שינוי השם נכשל: ${err.message}`);
+  }
+  c.name = name;
+  refreshCats();
+  toast(`השם שונה ל"${name}"`);
+}
+
+async function deleteCategory(c) {
+  const rs = inCat(c.id);
+  const what = rs.length
+    ? `\n${plural(rs.length, 'החידה שבה תעבור', 'החידות שבה יעברו')} ל"${GENERAL}". שום חידה לא נמחקת.`
+    : '\nאין בה חידות.';
+  if (!confirm(`למחוק את הקטגוריה "${c.name}"?${what}`)) return;
+  catError('');
+  try {
+    await fs.deleteDoc(fs.doc(db, 'categories', c.id));
+  } catch (err) { return catError(`המחיקה נכשלה: ${err.message}`); }
+  categories = categories.filter((x) => x !== c);
+  // From here the riddles already count as "כללי" (their category no longer exists); this only tidies the documents.
+  try {
+    await Promise.all(rs.map((r) => {
+      r.category = '';
+      return fs.updateDoc(fs.doc(db, 'riddles', r.id), { category: '', updated: fs.serverTimestamp() });
+    }));
+  } catch (err) { console.error(err); }
+  refreshCats();
+  toast(rs.length ? `הקטגוריה נמחקה, ו${plural(rs.length, 'חידה אחת עברה', 'חידות עברו')} ל"${GENERAL}"` : 'הקטגוריה נמחקה');
+}
+
+$('cat-manage').addEventListener('click', () => openCats());
+$('cat-close').addEventListener('click', () => catDialog.close());
+$('cat-done').addEventListener('click', () => catDialog.close());
+catDialog.addEventListener('click', (e) => { if (e.target === catDialog) catDialog.close(); });
 
 // A copy of a riddle as a new riddle in the pool, opened for editing. In a quiz the copy goes right after the
 // original, or takes its place (replace), e.g. when the original can't be edited because another quiz is locked.
@@ -1243,6 +1492,7 @@ function renderQuizList(rs) {
     img.alt = '';
     const meta = el('div', 'meta');
     meta.appendChild(el('b', r.answerType === 'image' ? 'tag' : 'ans', riddleLabel(r)));
+    if (catId(r)) meta.appendChild(el('span', 'cat-tag', catName(catId(r))));
     if (r.hint || r.question) meta.appendChild(el('div', 'sub', [r.question, r.hint && `רמז: ${r.hint}`].filter(Boolean).join(' · ')));
     const edit = el('button', 'link-btn', 'עריכה');
     edit.addEventListener('click', () => openRiddle(r));
@@ -1350,6 +1600,8 @@ function renderSideSource() {
   sel.innerHTML = '';
   sel.appendChild(new Option('מכל המאגר', ''));
   sel.appendChild(new Option('רק כאלה שלא בשום חידון', 'none'));
+  categories.forEach((c) => sel.appendChild(new Option(`קטגוריה: ${c.name}`, `cat:${c.id}`)));
+  if (categories.length) sel.appendChild(new Option(`קטגוריה: ${GENERAL}`, 'cat:'));
   quizzes.filter((q) => q !== current).forEach((q) => sel.appendChild(new Option(`מתוך: ${q.title || 'ללא שם'}`, q.id)));
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : '';
 }
@@ -1363,6 +1615,7 @@ function renderSidePool() {
   $('out-count').textContent = out.length;
   let from = out;
   if (source === 'none') from = out.filter((r) => !quizzesWith(r.id).length);
+  else if (source.startsWith('cat:')) from = out.filter((r) => catId(r) === source.slice(4));
   else if (source) {
     const src = quizzes.find((q) => q.id === source);
     from = src ? quizRiddles(src).filter((r) => !current.riddleIds.includes(r.id)) : out;
@@ -1564,6 +1817,8 @@ function openRiddle(r, quiz = null) {
   }
   resetForm();
   addToQuiz = quiz;
+  // A new riddle made while the pool shows one category starts in that category.
+  fillCatSelect($('riddle-category'), r ? catId(r) : (!quiz && poolCat) || '');
   $('form-title').textContent = r ? 'עריכת חידה' : quiz ? `חידה חדשה ב"${quiz.title}"` : 'חידה חדשה למאגר';
   if (r) {
     editing = r.id;
@@ -1573,6 +1828,7 @@ function openRiddle(r, quiz = null) {
     showPreview($('answer-preview'), answerImage);
     $('question').value = r.question || '';
     $('hint').value = r.hint || '';
+    $('ai-image').checked = !!r.aiImage;
     setType(r.answerType);
     if (r.answerType === 'text' && r.answers.length) {
       $('answers-list').innerHTML = '';
@@ -1584,6 +1840,7 @@ function openRiddle(r, quiz = null) {
   dialog.showModal();
 }
 
+onCatSelect($('riddle-category'), (id) => fillCatSelect($('riddle-category'), id));
 $('cancel-btn').addEventListener('click', () => dialog.close());
 $('dialog-close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
@@ -1611,6 +1868,8 @@ $('riddle-form').addEventListener('submit', async (e) => {
     image,
     question: $('question').value.trim(),
     hint: $('hint').value.trim(),
+    category: $('riddle-category').dataset.value || '',
+    aiImage: $('ai-image').checked,
     answerType: type,
     answers,
     primary,

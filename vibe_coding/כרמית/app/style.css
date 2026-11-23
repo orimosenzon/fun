@@ -1155,3 +1155,99 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
   .tabs { flex-wrap: wrap; gap: 0 2px; }
   .tab { padding: 8px 10px; font-size: 0.95rem; white-space: nowrap; }
 }
+
+/* ---------- categories of riddles (admin) ---------- */
+.cat-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin: 14px 0 10px; }
+.cat-bar + .help { margin-bottom: 12px; }
+.cat-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 320px; }
+.cat-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: inherit; font-size: 0.9rem; color: var(--muted);
+  background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.cat-chip:hover { border-color: #3a4153; color: var(--text); }
+.cat-chip .count { color: inherit; opacity: 0.75; }
+.cat-chip[aria-pressed="true"] { border-color: var(--violet); color: var(--text); background: rgba(167, 139, 250, 0.14); }
+.cat-chip[aria-pressed="true"] .count { color: var(--violet); opacity: 1; }
+.cat-chip.general { border-style: dashed; }
+.cat-chip:focus-visible, .cat-select:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+#cat-manage { white-space: nowrap; }
+
+/* the category of one riddle, on its tile: reads as a label, works as a picker */
+.cat-select {
+  max-width: 100%; margin-top: 2px;
+  font-family: inherit; font-size: 0.8rem; color: var(--violet);
+  background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.4); border-radius: 999px;
+  padding: 2px 8px; cursor: pointer;
+}
+.cat-select.general { color: var(--muted); background: none; border-color: var(--line); border-style: dashed; }
+.cat-select option { color: var(--text); background: var(--surface-2); }
+.cat-tag {
+  display: inline-block; margin-inline-start: 8px; vertical-align: middle;
+  font-size: 0.72rem; color: var(--violet); border: 1px solid rgba(167, 139, 250, 0.4); border-radius: 999px; padding: 0 8px;
+}
+#riddle-category { align-self: flex-start; min-width: 200px; font-size: 1rem; padding: 9px 12px; }
+
+/* the categories window */
+.cat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cat-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px 6px 10px;
+}
+.cat-row .sub { white-space: nowrap; }
+.cat-rename {
+  flex: 1; min-width: 0; font-family: inherit; font-size: 1rem; font-weight: 600; color: var(--text);
+  background: transparent; border: 1px solid transparent; border-radius: 7px; padding: 5px 8px;
+}
+.cat-rename:hover { border-color: var(--line); }
+.cat-rename:focus { outline: none; border-color: var(--cyan); background: var(--bg); }
+.cat-row.general { border-style: dashed; background: none; }
+.cat-row.general b { flex: 1; padding: 6px 9px; color: var(--muted); }
+.cat-row.general .fixed { padding-inline-end: 6px; }
+.cat-add { display: flex; gap: 8px; }
+.cat-add input {
+  flex: 1; min-width: 0; font-family: inherit; font-size: 1rem; padding: 9px 12px;
+  border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+}
+.cat-add input:focus { outline: none; border-color: var(--cyan); }
+@media (max-width: 480px) {
+  .cat-row { flex-wrap: wrap; }
+  .cat-row.general .fixed { display: none; }
+}
+
+/* ---------- a picture made by AI ---------- */
+/* For the player: one small quiet line right under the picture, out of the way of the riddle. */
+.ai-note {
+  margin: -9px 0 0; align-self: center;
+  font-size: 0.72rem; letter-spacing: 0.01em; color: var(--muted); opacity: 0.85;
+}
+.ai-note::before { content: "✦ "; color: var(--violet); }
+/* In the riddle form and on the pool tile. */
+.ai-check { margin: -4px 0 0; font-size: 0.95rem; flex-wrap: wrap; cursor: pointer; }
+.ai-check input { width: 17px; height: 17px; margin: 0; accent-color: var(--violet); }
+.ai-check small { flex: 1 1 100%; color: var(--muted); font-size: 0.8rem; padding-inline-start: 23px; }
+.ai-mark::before { content: "✦ "; color: var(--violet); }
+
+/* ---------- a few words about a riddle, beside the rating ---------- */
+/* For the player: one quiet line until it is pressed, then a text box opens under it. */
+.rate-more {
+  font: inherit; font-size: 0.82rem; color: var(--muted); background: none; border: none; cursor: pointer;
+  padding: 4px 8px; border-radius: 6px; opacity: 0.85;
+}
+.rate-more:hover { color: var(--text); opacity: 1; text-decoration: underline; }
+.rate-more:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.rate-more.sent { color: var(--lime); }
+.rate-text-box { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rate-text-box textarea {
+  width: 100%; resize: vertical; min-height: 76px; font: inherit; font-size: 1rem; line-height: 1.5;
+  padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+}
+.rate-text-box textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(94, 231, 255, 0.12); }
+.rate-text-box textarea::placeholder { color: #5b6273; }
+
+/* In the statistics tab: what the players wrote. */
+.comment-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.comment { flex-direction: row; align-items: flex-start; gap: 14px; padding: 14px 16px; }
+.comment .thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; background: #fff; }
+.comment-text { margin: 2px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.02rem; line-height: 1.6; }

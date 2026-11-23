@@ -47,6 +47,15 @@ export async function loadLetters() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+// A category: { name }. Every riddle belongs to one (riddle.category = the category's id); a riddle without one,
+// or whose category was deleted since, is in the built-in "כללי". In the order Carmit made them.
+export const GENERAL = 'כללי';
+export async function loadCategories() {
+  const snap = await fs.getDocs(fs.collection(db, 'categories'));
+  const at = (c) => (c && c.toMillis ? c.toMillis() : +c || 0);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => at(a.created) - at(b.created));
+}
+
 // Only web, mail, phone and WhatsApp links; a bare address gets https://.
 export function safeUrl(u) {
   const s = (u || '').trim();
@@ -102,6 +111,17 @@ export const levelLabel = (q) => {
 // Anyone can write a rating; only Ori and Carmit can read them (the statistics tab in the admin).
 export function saveRating(id, { quiz, riddle, level, correct, hint }) {
   return fs.setDoc(fs.doc(db, 'ratings', id), { quiz, riddle, level, correct, hint, created: fs.serverTimestamp() });
+}
+
+// A few words the player chose to write about a riddle, beside the three buttons (which may be left unpressed:
+// level is then ''). One document per riddle per visit, as with the ratings. Read only by Ori and Carmit.
+export function saveComment(id, { quiz, riddle, text, level, correct, hint }) {
+  return fs.setDoc(fs.doc(db, 'comments', id), { quiz, riddle, text, level, correct, hint, created: fs.serverTimestamp() });
+}
+
+export async function loadComments() {
+  const snap = await fs.getDocs(fs.collection(db, 'comments'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 export async function loadRatings() {

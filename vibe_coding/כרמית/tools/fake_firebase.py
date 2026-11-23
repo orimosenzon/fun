@@ -7,7 +7,8 @@ APP = "export const initializeApp = () => ({});"
 FS = """
 const img = '%s';
 const store = window.__store = { riddles: {}, quizzes: {}, letters: structuredClone(window.__LETTERS || {}), links: structuredClone(window.__LINKS || {}),
-  ratings: structuredClone(window.__RATINGS || {}), visits: structuredClone(window.__VISITS || {}) };
+  ratings: structuredClone(window.__RATINGS || {}), visits: structuredClone(window.__VISITS || {}),
+  categories: structuredClone(window.__CATEGORIES || {}), comments: structuredClone(window.__COMMENTS || {}) };
 for (let i = 1; i <= 4; i++) store.riddles['r' + i] = { image: img, answerType: 'text', answers: ['ANS' + i], primary: 0, created: i };
 store.quizzes.qold = { title: 'ישן', cover: '', riddleIds: ['r1'], created: 4 };
 store.quizzes.qe = { title: 'קל', cover: '', riddleIds: ['r1', 'r2'], level: 'easy', created: 3 };
@@ -17,6 +18,8 @@ store.quizzes.qh = { title: 'קשה', cover: '', riddleIds: ['r4'], level: 'hard
 (window.__PATH || []).forEach((id, i) => { store.quizzes[id].path = i; });
 // window.__PATCH = { quizId: { field: value } } adds to a quiz, e.g. what another page saved.
 for (const [id, patch] of Object.entries(window.__PATCH || {})) Object.assign(store.quizzes[id], patch);
+// window.__RIDDLES = { riddleId: { field: value } } does the same for a riddle.
+for (const [id, patch] of Object.entries(window.__RIDDLES || {})) Object.assign(store.riddles[id], patch);
 export const getFirestore = () => ({});
 export const collection = (db, name) => ({ name });
 export const doc = (db, name, id) => ({ name, id });
@@ -28,7 +31,8 @@ export const arrayRemove = (v) => ({ __remove: v });
 const snapDoc = (name, id) => ({ id, exists: () => id in store[name], data: () => structuredClone(store[name][id]) });
 export const getDocs = async (c) => ({ docs: Object.keys(store[c.name]).filter((id) => (c.where || []).every((w) => store[c.name][id][w.field] === w.value)).sort((a, b) => store[c.name][b].created - store[c.name][a].created).map((id) => snapDoc(c.name, id)) });
 export const getDoc = async (d) => snapDoc(d.name, d.id);
-export const addDoc = async (c, data) => { const id = 'new' + Date.now(); store[c.name][id] = structuredClone(data); return { id }; };
+let seq = 0;
+export const addDoc = async (c, data) => { const id = 'new' + Date.now() + '-' + seq++; store[c.name][id] = structuredClone(data); return { id }; };
 export const updateDoc = async (d, patch) => { Object.assign(store[d.name][d.id], structuredClone(patch)); sessionStorage.setItem('__last', JSON.stringify(patch)); };
 export const setDoc = async (d, data, opt) => { store[d.name][d.id] = { ...(opt && opt.merge ? store[d.name][d.id] : {}), ...structuredClone(data) }; };
 export const deleteDoc = async (d) => { delete store[d.name][d.id]; };
