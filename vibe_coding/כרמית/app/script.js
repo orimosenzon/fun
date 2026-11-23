@@ -4,11 +4,14 @@
 // Progress lasts for this visit only (sessionStorage), so a new visit starts again from the first quiz.
 // Two ways into a quiz: ?p=<id> is a step on the path; ?q=<id> is a quiz sent to someone on its own (solo):
 // they see only that quiz, never the start screen or the other quizzes.
+// A bundle (מקבץ) is a collection of quizzes Carmit sends as one link, ?s=<bundle>: its own start screen with its
+// quizzes, opening one after the other if the bundle is serial, or all open if not. A quiz played from it is
+// ?p=<quiz>&s=<bundle>, and everything that would lead to the start screen leads back to the bundle.
 // A solo quiz comes with the letters marked in it right now: one before it (quiz.opening) and one after it
 // (quiz.closing). Links used to name the letters themselves (&b=, &a=, and &m= before that); those are read only
 // for a quiz from before letters were marked in quizzes, so that what Carmit sees in the admin is what is shown.
-import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl, saveRating, saveComment, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611230946';
+import { loadQuiz, loadQuizzes, loadBundle, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
+  hasHeading, fillHeading, safeUrl, saveRating, saveComment, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611231001';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -389,10 +392,10 @@ answerInput.addEventListener('keydown', (e) => {
   }
 });
 
-// After a quiz on the path: straight on to the next one.
+// After a quiz on the path, or in a bundle: straight on to the next one not finished yet.
 async function offerNextQuiz() {
   try {
-    const path = playerPath(await loadQuizzes());
+    const path = BUNDLE ? (await loadBundle(BUNDLE))?.quizzes || [] : playerPath(await loadQuizzes());
     if (!path.some((q) => q.id === QUIZ_ID)) return; // a quiz sent by link, outside the path
     const next = nextOnPath(path);
     if (!next) {
@@ -401,7 +404,7 @@ async function offerNextQuiz() {
     }
     const btn = $('next-level-btn');
     btn.textContent = `לחידון הבא: ${next.title} ←`;
-    btn.href = `?p=${next.id}`;
+    btn.href = quizHref(next);
     btn.classList.remove('hidden');
     $('report-home-btn').className = 'secondary-btn link-as-btn';
   } catch (e) {
@@ -409,33 +412,41 @@ async function offerNextQuiz() {
   }
 }
 
-function showGallery(quizzes) {
-  const path = playerPath(quizzes);
+const quizHref = (q) => `?p=${q.id}${BUNDLE ? `&s=${BUNDLE}` : ''}`;
+
+// The quizzes of the path, or of a bundle. Serial: only the next one is open. Not serial (a bundle can be):
+// all are open, also the finished ones.
+function showGallery(path, serial = true, first = 'מתחילים מהרמה הקלה') {
   const done = doneQuizzes();
   const next = nextOnPath(path);
   intro.textContent = !path.length ? 'עוד אין חידונים. בקרוב.'
-    : next === path[0] ? 'מתחילים מהרמה הקלה'
-    : next ? 'ממשיכים מהחידון הבא' : 'סיימתם את כל החידונים. כל הכבוד!';
+    : !next ? 'סיימתם את כל החידונים. כל הכבוד!'
+    : !serial ? 'בוחרים חידון ומתחילים'
+    : next === path[0] ? first : 'ממשיכים מהחידון הבא';
   const gallery = $('gallery');
   gallery.classList.remove('hidden');
   const grid = document.createElement('div');
   grid.className = 'gallery-grid';
-  path.forEach((q, i) => grid.appendChild(galleryCard(q, i, done.has(q.id) ? 'done' : q === next ? 'next' : 'locked')));
+  path.forEach((q, i) => {
+    const state = serial ? (done.has(q.id) ? 'done' : q === next ? 'next' : 'locked') : done.has(q.id) ? 'done open' : 'open';
+    grid.appendChild(galleryCard(q, i, state));
+  });
   gallery.appendChild(grid);
 }
 
-// Only the next quiz is a link; finished ones show a check, later ones a lock.
+// On a serial list only the next quiz is a link: finished ones show a check, later ones a lock, dimmed.
 function galleryCard(q, i, state) {
-  const a = document.createElement(state === 'next' ? 'a' : 'div');
+  const link = state !== 'done' && state !== 'locked';
+  const a = document.createElement(link ? 'a' : 'div');
   a.className = `gallery-card ${state}`;
-  if (state === 'next') a.href = `?p=${q.id}`;
+  if (link) a.href = quizHref(q);
   const img = document.createElement('img');
   img.src = q.cover || DEFAULT_COVER;
   img.alt = '';
   if (!q.cover) img.className = 'default';
   const step = document.createElement('i');
   step.className = 'step';
-  step.textContent = state === 'done' ? '✓' : state === 'locked' ? '🔒' : String(i + 1).padStart(2, '0');
+  step.textContent = state.startsWith('done') ? '✓' : state === 'locked' ? '🔒' : String(i + 1).padStart(2, '0');
   const title = document.createElement('b');
   title.textContent = q.title;
   const n = document.createElement('span');
@@ -479,13 +490,20 @@ function showLetters(before, after) {
 
 const params = new URLSearchParams(location.search);
 const SOLO = !params.has('p') && params.has('q');
+// The bundle this page belongs to: its own screen, or a quiz played from it. (An id is letters and digits only.)
+const BUNDLE = (params.get('s') || '').replace(/[^\w-]/g, '') || null;
 if (SOLO) {
   document.body.classList.add('solo');
   $('logo-link').removeAttribute('href');
 }
+if (BUNDLE && !SOLO) {
+  // Whoever got a bundle stays in it: the ways "home" lead back to the bundle, not to the main start screen.
+  for (const id of ['logo-link', 'home-btn', 'report-home-btn']) $(id).href = `?s=${BUNDLE}`;
+  $('logo-link').title = 'לכל החידונים במקבץ';
+}
 
 // The way into the admin: one clear button on the start screen; once Ori or Carmit is signed in, on every screen.
-const ON_START = !params.has('p') && !params.has('q');
+const ON_START = !params.has('p') && !params.has('q') && !BUNDLE;
 if (ON_START) $('admin-btn').classList.remove('hidden');
 watchAdmin((isAdmin) => {
   OWN = OWN || isAdmin;
@@ -503,8 +521,21 @@ $('rate-note').classList.toggle('hidden', !OWN);
 
 try {
   const quizId = params.get('p') || params.get('q');
-  if (!quizId) {
-    showGallery(await loadQuizzes());
+  if (!quizId && BUNDLE) {
+    const bundle = await loadBundle(BUNDLE);
+    if (!bundle) {
+      intro.textContent = 'המקבץ הזה לא נמצא. אולי הוא נמחק.';
+    } else {
+      document.title = `${bundle.title} · חידות לכרמית`;
+      $('bundle-name').textContent = bundle.title;
+      $('bundle-name').classList.remove('hidden');
+      showGallery(bundle.quizzes, !!bundle.serial, 'מתחילים מהחידון הראשון');
+      // Counted apart from the main start screen ('') and from any quiz: the statistics tab shows it as the bundle.
+      visitBase = { quiz: `s:${bundle.id}`, solo: false };
+      noteVisit();
+    }
+  } else if (!quizId) {
+    showGallery(playerPath(await loadQuizzes()));
     visitBase = { quiz: '', solo: false };
     noteVisit();
   } else {
@@ -517,7 +548,7 @@ try {
       : [letter(params.get('b') || params.get('m')), letter(params.get('a'))]);
     if (!quiz) {
       intro.innerHTML = SOLO ? 'החידון הזה לא נמצא. אולי הוא נמחק.'
-        : 'החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל החידונים</a>';
+        : `החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="${BUNDLE ? `?s=${BUNDLE}` : 'index.html'}">לכל החידונים</a>`;
     } else {
       RIDDLES = quiz.riddles;
       QUIZ_ID = quiz.id;

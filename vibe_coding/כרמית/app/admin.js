@@ -1,8 +1,8 @@
 // Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
-// bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
-import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611230946';
+// bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>', '#bundle/<id>'.
+import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611231001';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -18,7 +18,9 @@ let quizzes = [];
 let letters = [];        // letters to send along with a quiz, before it or after it (any quiz)
 let categories = [];     // the categories of riddles, in the order they were made; "כללי" is built in, not one of them
 let poolCat = null;      // the pool's filter: null = every riddle, '' = "כללי", or a category's id
+let bundles = [];        // bundles (מקבצים): collections of quizzes, each with a link of its own
 let current = null;      // the quiz open in the quiz view
+let currentBundle = null;  // the bundle open in the bundle view
 let picked = new Set();  // riddle ids checked in the quiz list, to copy or move to another quiz
 let lastPick = null;     // anchor for shift-click ranges
 
@@ -91,8 +93,9 @@ au.onAuthStateChanged(auth, async (user) => {
 });
 
 async function reload() {
-  [riddles, quizzes, letters, categories] = await Promise.all([loadRiddles(), loadQuizzes(),
+  [riddles, quizzes, letters, bundles, categories] = await Promise.all([loadRiddles(), loadQuizzes(),
     loadLetters().catch((e) => { console.error(e); return []; }),
+    loadBundles().catch((e) => { console.error(e); return []; }),
     loadCategories().catch((e) => { console.error(e); return []; })]);
   byId = new Map(riddles.map((r) => [r.id, r]));
 }
@@ -106,11 +109,16 @@ function route() {
   hidePeek();
   const [, quizId] = location.hash.match(/^#quiz\/(.+)$/) || [];
   const quiz = quizId && quizzes.find((q) => q.id === quizId);
-  $('home-view').classList.toggle('hidden', !!quiz);
+  const [, bundleId] = location.hash.match(/^#bundle\/(.+)$/) || [];
+  const bundle = bundleId && bundles.find((b) => b.id === bundleId);
+  $('home-view').classList.toggle('hidden', !!(quiz || bundle));
   $('quiz-view').classList.toggle('hidden', !quiz);
+  $('bundle-view').classList.toggle('hidden', !bundle);
+  currentBundle = bundle || null;
   if (quiz) return openQuiz(quiz);
   current = null;
-  const tab = { '#pool': 'pool', '#path': 'path', '#letters': 'letters', '#stats': 'stats' }[location.hash] || 'quizzes';
+  if (bundle) return openBundle(bundle);
+  const tab = { '#pool': 'pool', '#bundles': 'bundles', '#path': 'path', '#letters': 'letters', '#stats': 'stats' }[location.hash] || 'quizzes';
   setTab(tab);
   renderHome();
   if (tab === 'stats') loadStats();
@@ -120,6 +128,7 @@ function setTab(tab) {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
   $('tab-quizzes').classList.toggle('hidden', tab !== 'quizzes');
   $('tab-pool').classList.toggle('hidden', tab !== 'pool');
+  $('tab-bundles').classList.toggle('hidden', tab !== 'bundles');
   $('tab-path').classList.toggle('hidden', tab !== 'path');
   $('tab-letters').classList.toggle('hidden', tab !== 'letters');
   $('tab-stats').classList.toggle('hidden', tab !== 'stats');
@@ -135,6 +144,7 @@ function renderHome() {
   $('quiz-count').textContent = quizzes.length;
   $('pool-count').textContent = riddles.length;
   renderQuizGrid();
+  renderBundles();
   renderPath();
   renderPool();
   renderAllLetters();
@@ -338,7 +348,10 @@ function renderVisits() {
           solo: uniq(list.filter((v) => v.solo)) };
       })
       .sort((a, b) => b.opened - a.opened);
-    if (rows.length) {
+    // A bundle's own screen (its list of quizzes) is a page too: how many opened it. The quizzes in it are counted above.
+    const bundleRows = bundles.filter((b) => perQuiz.has(`s:${b.id}`))
+      .map((b) => ({ b, opened: uniq(perQuiz.get(`s:${b.id}`)) })).sort((x, y) => y.opened - x.opened);
+    if (rows.length || bundleRows.length) {
       const pane = el('section', 'pane');
       pane.appendChild(el('h2', 'stat-h', 'לפי חידון'));
       const wrap = el('div', 'table-wrap');
@@ -350,6 +363,11 @@ function renderVisits() {
         const tr = el('tr');
         tr.append(el('td', '', r.q.title || 'חידון ללא שם'), el('td', 'num', String(r.opened)), el('td', 'num', String(r.started)),
           el('td', 'num', String(r.finished)), el('td', 'num', String(r.solo)));
+        table.appendChild(tr);
+      }
+      for (const r of bundleRows) {
+        const tr = el('tr');
+        tr.append(el('td', '', `מקבץ: ${r.b.title || 'ללא שם'}`), el('td', 'num', String(r.opened)), el('td', 'num', '–'), el('td', 'num', '–'), el('td', 'num', '–'));
         table.appendChild(tr);
       }
       wrap.appendChild(table);
@@ -457,7 +475,9 @@ async function setPath(ids) {
   }
 }
 
-function pathRow(q, i) {
+// A row for a quiz in an ordered list of quizzes (the path, a bundle), or beside it waiting to be added.
+// i = its place in the list, or null for one that is not in it. to = { add(q), remove(q), addTitle, removeTitle }.
+function quizRow(q, i, to) {
   const li = el('li', 'q-item path-item');
   li.dataset.id = q.id;
   const img = coverImg(q);
@@ -468,13 +488,13 @@ function pathRow(q, i) {
   const open = el('a', 'link-btn', 'עריכה');
   open.href = `#quiz/${q.id}`;
   if (i === null) {
-    li.title = 'הוספה לסוף המסלול';
+    li.title = to.addTitle;
     li.append(img, meta, open, el('span', 'add', '+'));
-    li.addEventListener('click', (e) => { if (e.target !== open) setPath([...onPath().map((x) => x.id), q.id]); });
+    li.addEventListener('click', (e) => { if (e.target !== open) to.add(q); });
   } else {
     const out = el('button', 'icon-btn', '✕');
-    out.title = 'הוצאה מהמסלול (החידון לא נמחק)';
-    out.addEventListener('click', () => setPath(onPath().map((x) => x.id).filter((id) => id !== q.id)));
+    out.title = to.removeTitle;
+    out.addEventListener('click', () => to.remove(q));
     li.append(el('span', 'grip', '⠿'), el('span', 'num', String(i + 1).padStart(2, '0')), img, meta, open, out);
   }
   li.draggable = true;
@@ -487,25 +507,9 @@ function pathRow(q, i) {
   return li;
 }
 
-function renderPath() {
-  const path = onPath();
-  const rest = quizzes.filter((q) => !path.includes(q));
-  $('path-count').textContent = path.length;
-  $('path-in-count').textContent = path.length;
-  $('path-out-count').textContent = rest.length;
-  $('path-fallback').classList.toggle('hidden', path.length > 0);
-  const list = $('path-list');
-  list.innerHTML = '';
-  if (!path.length) list.appendChild(el('li', 'empty-drop', 'גוררים לכאן חידונים, או לוחצים עליהם'));
-  path.forEach((q, i) => list.appendChild(pathRow(q, i)));
-  const out = $('path-out');
-  out.innerHTML = '';
-  rest.forEach((q) => out.appendChild(pathRow(q, null)));
-}
-
-// Dropping on the path list inserts at the pointer: reorders a quiz on it, or adds one from the side.
-{
-  const list = $('path-list');
+// Dropping a quiz on an ordered list inserts it at the pointer: reorders one already in it, or adds one from the
+// side. ids() = the list's quiz ids now, set(ids) = save the new order.
+function quizDrop(list, ids, set) {
   const marker = el('li', 'drop-marker');
   const at = (y) => {
     const items = [...list.querySelectorAll('.q-item:not(.dragging)')];
@@ -526,11 +530,171 @@ function renderPath() {
     if (!id || !quizzes.some((q) => q.id === id)) return;
     const { items, i } = at(e.clientY);
     const before = items[i]?.dataset.id;
-    const ids = onPath().map((q) => q.id).filter((x) => x !== id);
-    ids.splice(before ? ids.indexOf(before) : ids.length, 0, id);
-    setPath(ids);
+    const rest = ids().filter((x) => x !== id);
+    rest.splice(before ? rest.indexOf(before) : rest.length, 0, id);
+    set(rest);
   });
 }
+
+const PATH_ROW = {
+  add: (q) => setPath([...onPath().map((x) => x.id), q.id]),
+  remove: (q) => setPath(onPath().map((x) => x.id).filter((id) => id !== q.id)),
+  addTitle: 'הוספה לסוף המסלול',
+  removeTitle: 'הוצאה מהמסלול (החידון לא נמחק)',
+};
+
+function renderPath() {
+  const path = onPath();
+  const rest = quizzes.filter((q) => !path.includes(q));
+  $('path-count').textContent = path.length;
+  $('path-in-count').textContent = path.length;
+  $('path-out-count').textContent = rest.length;
+  $('path-fallback').classList.toggle('hidden', path.length > 0);
+  const list = $('path-list');
+  list.innerHTML = '';
+  if (!path.length) list.appendChild(el('li', 'empty-drop', 'גוררים לכאן חידונים, או לוחצים עליהם'));
+  path.forEach((q, i) => list.appendChild(quizRow(q, i, PATH_ROW)));
+  const out = $('path-out');
+  out.innerHTML = '';
+  rest.forEach((q) => out.appendChild(quizRow(q, null, PATH_ROW)));
+}
+quizDrop($('path-list'), () => onPath().map((q) => q.id), setPath);
+
+// ---------- bundles (מקבצים) ----------
+// A bundle is a titled, ordered collection of quizzes that is sent as one link (index.html?s=<id>). Serial: the
+// player gets them one after the other, each finished quiz opening the next, the rest dimmed and locked; not
+// serial: all open. The quizzes stay where they are: a quiz can be in several bundles, and on the path too.
+
+const bundleQuizzes = (b) => (b.quizIds || []).map((id) => quizzes.find((q) => q.id === id)).filter(Boolean);
+const bundleUrl = (b) => new URL(`index.html?s=${b.id}`, location.href).href;
+const bundleKind = (b) => (b.serial ? 'סדרתי' : 'כולם פתוחים');
+
+function renderBundles() {
+  $('bundle-count').textContent = bundles.length || '';
+  const grid = $('bundle-grid');
+  const add = el('button', 'bundle-card new-bundle');
+  add.id = 'bundle-new';
+  add.append(el('span', 'plus', '+'), el('span', '', 'מקבץ חדש'));
+  add.addEventListener('click', createBundle);
+  const cards = bundles.map((b) => {
+    const qs = bundleQuizzes(b);
+    const card = el('a', 'bundle-card');
+    card.href = `#bundle/${b.id}`;
+    // Its first quizzes' covers in a row, the way the player will meet them.
+    const strip = el('div', 'bundle-strip');
+    qs.slice(0, 4).forEach((q) => strip.appendChild(coverImg(q)));
+    if (!qs.length) strip.appendChild(el('span', 'help', 'עוד אין חידונים'));
+    if (qs.length > 4) strip.appendChild(el('span', 'more', `+${qs.length - 4}`));
+    const cap = el('div', 'caption');
+    cap.append(el('b', '', b.title || 'ללא שם'),
+      el('span', '', [qs.length ? plural(qs.length, 'חידון אחד', 'חידונים') : null, `${b.serial ? '🔒 ' : ''}${bundleKind(b)}`].filter(Boolean).join(' · ')));
+    card.append(strip, cap);
+    return card;
+  });
+  grid.replaceChildren(add, ...cards);
+}
+
+async function createBundle() {
+  const data = { title: 'מקבץ חדש', quizIds: [], serial: false, by: auth.currentUser.email };
+  try {
+    const ref = await fs.addDoc(fs.collection(db, 'bundles'), { ...data, created: fs.serverTimestamp() });
+    bundles.unshift({ id: ref.id, ...data });
+  } catch (err) { return toast(`יצירת המקבץ נכשלה: ${err.message}`); }
+  location.hash = `#bundle/${bundles[0].id}`;
+  setTimeout(() => { $('bundle-title').focus(); $('bundle-title').select(); }, 50);
+}
+
+function setBundleSave(st) {
+  const box = $('bundle-save');
+  box.textContent = { saving: 'שומרים…', saved: 'נשמר ✓', error: 'השמירה נכשלה' }[st] || '';
+  box.className = `save-state ${st}`;
+}
+
+async function saveBundle(patch) {
+  const b = currentBundle;
+  Object.assign(b, patch);
+  setBundleSave('saving');
+  try {
+    await fs.updateDoc(fs.doc(db, 'bundles', b.id), { ...patch, updated: fs.serverTimestamp() });
+    if (b === currentBundle) setBundleSave('saved');
+  } catch (err) {
+    setBundleSave('error');
+    toast(`השמירה נכשלה: ${err.message}`);
+  }
+}
+
+function openBundle(b) {
+  clearTimeout(bundleTimer);
+  $('bundle-title').value = b.title;
+  setBundleSave('');
+  $('bundle-play').href = bundleUrl(b);
+  renderBundle();
+  scrollTo({ top: 0 });
+}
+
+const BUNDLE_ROW = {
+  add: (q) => setBundleIds([...currentBundle.quizIds, q.id]),
+  remove: (q) => setBundleIds(currentBundle.quizIds.filter((id) => id !== q.id)),
+  addTitle: 'הוספה לסוף המקבץ',
+  removeTitle: 'הוצאה מהמקבץ (החידון לא נמחק)',
+};
+
+function setBundleIds(ids) {
+  saveBundle({ quizIds: ids });
+  renderBundle();
+}
+
+function renderBundle() {
+  const b = currentBundle;
+  const inside = bundleQuizzes(b);
+  const rest = quizzes.filter((q) => !inside.includes(q));
+  document.querySelector(`input[name="bundle-serial"][value="${b.serial ? 'yes' : 'no'}"]`).checked = true;
+  $('bundle-serial-help').textContent = b.serial
+    ? 'השחקן מתחיל מהחידון הראשון. כל שאר החידונים מופיעים מעומעמים ונעולים, וכל חידון שהוא מסיים פותח את הבא. בכל ביקור חדש הוא מתחיל שוב מהראשון.'
+    : 'השחקן רואה את כל החידונים פתוחים, ובוחר בעצמו מאיפה להתחיל ובאיזה סדר.';
+  $('bundle-stats').textContent = inside.length ? `${plural(inside.length, 'חידון אחד', 'חידונים')} · ${bundleKind(b)}` : 'עוד אין חידונים';
+  $('bundle-in-count').textContent = inside.length;
+  $('bundle-out-count').textContent = rest.length;
+  const list = $('bundle-in');
+  list.innerHTML = '';
+  if (!inside.length) list.appendChild(el('li', 'empty-drop', 'גוררים לכאן חידונים, או לוחצים עליהם'));
+  inside.forEach((q, i) => list.appendChild(quizRow(q, i, BUNDLE_ROW)));
+  $('bundle-out').replaceChildren(...rest.map((q) => quizRow(q, null, BUNDLE_ROW)));
+}
+quizDrop($('bundle-in'), () => bundleQuizzes(currentBundle).map((q) => q.id), setBundleIds);
+
+let bundleTimer = null;
+$('bundle-title').addEventListener('input', () => {
+  clearTimeout(bundleTimer);
+  setBundleSave('saving');
+  bundleTimer = setTimeout(() => saveBundle({ title: $('bundle-title').value.trim() }), 600);
+});
+$('bundle-title').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+document.querySelectorAll('input[name="bundle-serial"]').forEach((r) => r.addEventListener('change', () => {
+  saveBundle({ serial: r.value === 'yes' });
+  renderBundle();
+}));
+
+$('bundle-delete').addEventListener('click', async () => {
+  const b = currentBundle;
+  if (!confirm(`למחוק את המקבץ "${b.title}"?\nהחידונים שבו לא נמחקים. מי שקיבל קישור למקבץ כבר לא יוכל לפתוח אותו.`)) return;
+  try {
+    await fs.deleteDoc(fs.doc(db, 'bundles', b.id));
+  } catch (err) { return toast(`המחיקה נכשלה: ${err.message}`); }
+  bundles = bundles.filter((x) => x !== b);
+  toast('המקבץ נמחק');
+  location.hash = '#bundles';
+});
+
+$('bundle-share').addEventListener('click', () => {
+  const b = currentBundle;
+  // Made inside the click itself, as for a quiz: Safari on a phone only lets a click copy.
+  copyLink(shortLink({ s: b.id }).catch((err) => {
+    console.error(err);
+    toast('לא הצלחנו ליצור קישור קצר, הועתק הקישור הארוך.');
+    return bundleUrl(b);
+  }), 'הקישור למקבץ:');
+});
 
 function coverImg(q) {
   const img = el('img', q.cover ? 'cover' : 'cover default');
@@ -1073,8 +1237,10 @@ function randomCode() {
 
 // One code per quiz: the link only names the quiz, and the letters come from the quiz itself when it is opened.
 // (links/<code> still has b and a, empty in new links; in links made before 21/11/2026 they are no longer read.)
-async function shortLink(q) {
-  const found = await fs.getDocs(fs.query(fs.collection(db, 'links'), fs.where('q', '==', q.id)));
+// A bundle gets a code of its own the same way: target = { q: quizId } or { s: bundleId } (then q is '').
+async function shortLink(target) {
+  const [field, id] = target.s ? ['s', target.s] : ['q', target.q];
+  const found = await fs.getDocs(fs.query(fs.collection(db, 'links'), fs.where(field, '==', id)));
   if (found.docs.length) {
     // The newest one, so the same quiz keeps giving the link Carmit sent last.
     const at = (d) => { const c = d.data().created; return c ? (c.toMillis ? c.toMillis() : +c) : 0; };
@@ -1083,7 +1249,8 @@ async function shortLink(q) {
   for (let i = 0; i < 5; i++) {
     const code = randomCode();
     if ((await fs.getDoc(fs.doc(db, 'links', code))).exists()) continue;
-    await fs.setDoc(fs.doc(db, 'links', code), { q: q.id, b: '', a: '', key: `${q.id}||`, by: auth.currentUser.email, created: fs.serverTimestamp() });
+    await fs.setDoc(fs.doc(db, 'links', code), { q: target.q || '', b: '', a: '', ...(target.s ? { s: target.s } : {}), key: `${field}:${id}`,
+      by: auth.currentUser.email, created: fs.serverTimestamp() });
     return SHORT_BASE + '?' + code;
   }
   throw new Error('no free code');
@@ -1092,7 +1259,7 @@ async function shortLink(q) {
 $('share-btn').addEventListener('click', () => {
   const quiz = current;
   // Made inside the click itself: Safari on a phone only lets a click copy, not something that finishes later.
-  const url = shortLink(quiz).catch((err) => {
+  const url = shortLink({ q: quiz.id }).catch((err) => {
     console.error(err);
     toast('לא הצלחנו ליצור קישור קצר, הועתק הקישור הארוך.');
     return playUrl(quiz);
@@ -1101,14 +1268,14 @@ $('share-btn').addEventListener('click', () => {
 });
 
 // url may be a promise of the link (the short link is still being made).
-async function copyLink(url) {
+async function copyLink(url, what = 'הקישור לחידון:') {
   try {
     if (typeof ClipboardItem === 'undefined') throw new Error('no ClipboardItem');
     const blob = Promise.resolve(url).then((u) => new Blob([u], { type: 'text/plain' }));
     await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })]);
   } catch {
     const u = await url;
-    try { await navigator.clipboard.writeText(u); } catch { return prompt('הקישור לחידון:', u); }
+    try { await navigator.clipboard.writeText(u); } catch { return prompt(what, u); }
   }
   toast(`הקישור הועתק: ${await url}`);
 }
@@ -1460,6 +1627,11 @@ $('letter-form').addEventListener('submit', async (e) => {
 $('quiz-delete').addEventListener('click', async () => {
   if (!confirm(`למחוק את החידון "${current.title}"?\nהחידות עצמן נשארות במאגר.`)) return;
   await fs.deleteDoc(fs.doc(db, 'quizzes', current.id));
+  // Bundles that had it go on without it (the player skips a missing quiz anyway; this tidies the documents).
+  for (const b of bundles.filter((x) => (x.quizIds || []).includes(current.id))) {
+    b.quizIds = b.quizIds.filter((id) => id !== current.id);
+    fs.updateDoc(fs.doc(db, 'bundles', b.id), { quizIds: b.quizIds, updated: fs.serverTimestamp() }).catch((e) => console.error(e));
+  }
   quizzes = quizzes.filter((q) => q !== current);
   toast('החידון נמחק');
   location.hash = '';

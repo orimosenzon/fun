@@ -1251,3 +1251,28 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 .comment { flex-direction: row; align-items: flex-start; gap: 14px; padding: 14px 16px; }
 .comment .thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; background: #fff; }
 .comment-text { margin: 2px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.02rem; line-height: 1.6; }
+
+/* ---------- bundles (מקבצים) ---------- */
+/* For the player: the bundle's name above its quizzes. On a bundle that is not serial every quiz is open, also a finished one. */
+.bundle-name { margin: 0; font-size: clamp(1.3rem, 4.5vw, 1.7rem); text-align: center; }
+.gallery-card.done.open { cursor: pointer; opacity: 0.85; }
+.gallery-card.done.open:hover { border-color: var(--cyan); transform: translateY(-2px); }
+/* In the admin: each bundle is a card with its first quizzes' covers in a row. */
+.bundle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
+.bundle-card {
+  display: flex; flex-direction: column; gap: 12px; min-height: 150px; padding: 14px;
+  font: inherit; text-align: start; text-decoration: none; color: var(--text); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.bundle-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+.bundle-strip { display: flex; align-items: center; gap: 6px; min-height: 64px; }
+.bundle-strip img { width: 64px; height: 64px; object-fit: cover; border-radius: 9px; border: 1px solid var(--line); background: #0d0f14; flex: none; min-width: 0; flex-shrink: 1; }
+.bundle-strip img.default { object-fit: contain; }
+.bundle-strip .more { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); padding-inline-start: 4px; }
+.bundle-card .caption { display: flex; flex-direction: column; gap: 2px; margin-top: auto; }
+.bundle-card .caption b { font-size: 1.08rem; overflow-wrap: anywhere; }
+.bundle-card .caption span { font-size: 0.85rem; color: var(--muted); }
+.new-bundle { align-items: center; justify-content: center; gap: 6px; border-style: dashed; background: none; color: var(--muted); }
+.new-bundle .plus { font-family: var(--mono); font-size: 2.4rem; line-height: 1; color: var(--cyan); }
+.new-bundle:hover { color: var(--text); background: rgba(94, 231, 255, 0.04); }

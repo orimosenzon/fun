@@ -8,7 +8,8 @@ FS = """
 const img = '%s';
 const store = window.__store = { riddles: {}, quizzes: {}, letters: structuredClone(window.__LETTERS || {}), links: structuredClone(window.__LINKS || {}),
   ratings: structuredClone(window.__RATINGS || {}), visits: structuredClone(window.__VISITS || {}),
-  categories: structuredClone(window.__CATEGORIES || {}), comments: structuredClone(window.__COMMENTS || {}) };
+  categories: structuredClone(window.__CATEGORIES || {}), comments: structuredClone(window.__COMMENTS || {}),
+  bundles: structuredClone(window.__BUNDLES || {}) };
 for (let i = 1; i <= 4; i++) store.riddles['r' + i] = { image: img, answerType: 'text', answers: ['ANS' + i], primary: 0, created: i };
 store.quizzes.qold = { title: 'ישן', cover: '', riddleIds: ['r1'], created: 4 };
 store.quizzes.qe = { title: 'קל', cover: '', riddleIds: ['r1', 'r2'], level: 'easy', created: 3 };

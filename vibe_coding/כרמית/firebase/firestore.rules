@@ -24,6 +24,15 @@ service cloud.firestore {
         && request.resource.data.cover is string
         && request.resource.data.riddleIds is list;
     }
+    // A bundle (מקבץ): a titled, ordered collection of quiz ids with a link of its own; serial = one opens the next.
+    match /bundles/{id} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.title is string
+        && request.resource.data.quizIds is list
+        && request.resource.data.serial is bool;
+    }
     // A letter, not tied to any quiz: a sent link names one before the quiz and one after it
     // (index.html?q=<quiz>&b=<letter>&a=<letter>).
     match /letters/{id} {
@@ -87,7 +96,7 @@ service cloud.firestore {
         && request.resource.data.get('finished', true) == true
         && request.resource.data.created == request.time;
     }
-    // A short link (orimosenzon.github.io/fun/carmit/?<code>): which quiz and which letters it opens.
+    // A short link (orimosenzon.github.io/fun/carmit/?<code>): which quiz it opens (q), or which bundle (s, with q '').
     // Never changed once made, so a link that was sent always opens the same thing.
     match /links/{code} {
       allow read: if true;

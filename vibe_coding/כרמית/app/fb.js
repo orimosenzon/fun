@@ -35,6 +35,24 @@ export async function loadQuiz(id) {
   return quiz;
 }
 
+// A bundle (מקבץ) is a titled, ordered collection of quizzes with a link of its own: { title, quizIds, serial }.
+// serial: only the first quiz is open, and finishing one opens the next (like the path on the start screen);
+// otherwise all of them are open and the player chooses.
+export async function loadBundles() {
+  const snap = await fs.getDocs(fs.query(fs.collection(db, 'bundles'), fs.orderBy('created', 'desc')));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// For the player: the bundle with its quizzes in order. A quiz deleted since, or one with no riddles, drops out.
+export async function loadBundle(id) {
+  const snap = await fs.getDoc(fs.doc(db, 'bundles', id));
+  if (!snap.exists()) return null;
+  const bundle = { id: snap.id, ...snap.data() };
+  const docs = await Promise.all((bundle.quizIds || []).map((qid) => fs.getDoc(fs.doc(db, 'quizzes', qid))));
+  bundle.quizzes = docs.filter((d) => d.exists()).map((d) => ({ id: d.id, ...d.data() })).filter((q) => q.riddleIds.length);
+  return bundle;
+}
+
 // A letter: { name (for the admin only), text, image, linkText, linkUrl }, not tied to any quiz. A sent link names
 // the letter before the quiz (b=<id>) and the one after it (a=<id>); old links used m=<id> for the one before.
 export async function loadLetter(id) {

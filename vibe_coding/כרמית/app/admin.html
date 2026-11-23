@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611230946">
+<link rel="stylesheet" href="style.css?v=202611231001">
 </head>
 <body class="admin">
   <div id="app">
@@ -31,6 +31,7 @@
     <section id="home-view" class="view hidden">
       <nav class="tabs" role="tablist">
         <button class="tab active" data-tab="quizzes" role="tab">החידונים <span id="quiz-count" class="count"></span></button>
+        <button class="tab" data-tab="bundles" role="tab">מקבצים <span id="bundle-count" class="count"></span></button>
         <button class="tab" data-tab="path" role="tab">מה השחקן רואה <span id="path-count" class="count"></span></button>
         <button class="tab" data-tab="pool" role="tab">מאגר החידות <span id="pool-count" class="count"></span></button>
         <button class="tab" data-tab="letters" role="tab">מכתבים <span id="all-letters-count" class="count"></span></button>
@@ -77,6 +78,11 @@
         <div id="quiz-grid" class="quiz-grid"></div>
       </div>
 
+      <div id="tab-bundles" class="hidden">
+        <p class="help">מקבץ הוא אוסף של חידונים עם קישור אחד משלו, שאפשר לשלוח. במקבץ סדרתי רק החידון הראשון פתוח, וכל חידון שמסיימים פותח את הבא. במקבץ שאינו סדרתי כל החידונים פתוחים, והשחקן בוחר מאיפה להתחיל. חידון יכול להיות בכמה מקבצים.</p>
+        <div id="bundle-grid" class="bundle-grid"></div>
+      </div>
+
       <div id="tab-path" class="hidden">
         <p class="help">השחקן רואה רק את החידונים שבמסלול, בסדר הזה, ולא בוחר: רק הבא בתור פתוח, וכל חידון שהוא מסיים פותח את הבא. בכל ביקור חדש הוא מתחיל שוב מהראשון. גוררים כדי לשנות את הסדר.</p>
         <p id="path-fallback" class="help warn hidden">עוד לא נקבע מסלול, אז השחקן רואה כרגע את כל החידונים, הקלים קודם. ברגע שמוסיפים חידון ראשון למסלול, השחקן יראה רק את מה שבמסלול.</p>
@@ -104,6 +110,44 @@
         </div>
         <p class="help">כל החידות שנוצרו אי פעם. חידה יכולה להופיע בכמה חידונים, ועריכה שלה כאן משנה אותה בכולם. לכל חידה יש קטגוריה אחת, ואפשר להחליף אותה ישר מהכרטיס של החידה.</p>
         <div id="pool-grid" class="pool-grid"></div>
+      </div>
+    </section>
+
+    <!-- one bundle: a collection of quizzes with a link of its own -->
+    <section id="bundle-view" class="view hidden">
+      <a href="#bundles" class="back">→ כל המקבצים</a>
+      <div class="quiz-hero">
+        <div class="hero-main">
+          <label class="kicker" for="bundle-title">// מקבץ</label>
+          <input id="bundle-title" class="title-input" maxlength="80" placeholder="שם המקבץ" autocomplete="off">
+          <div class="hero-meta">
+            <span id="bundle-stats"></span>
+            <span id="bundle-save" class="save-state"></span>
+          </div>
+          <div class="order-row" role="radiogroup" aria-label="איך החידונים נפתחים לשחקן">
+            <span class="order-label">החידונים נפתחים לשחקן:</span>
+            <label class="seg"><input type="radio" name="bundle-serial" value="yes"><span>🔒 בזה אחר זה (סדרתי)</span></label>
+            <label class="seg"><input type="radio" name="bundle-serial" value="no"><span>כולם פתוחים</span></label>
+          </div>
+          <p id="bundle-serial-help" class="help level-help"></p>
+          <div class="hero-actions">
+            <button id="bundle-share" class="primary-btn small">העתקת קישור לשליחה</button>
+            <a id="bundle-play" class="secondary-btn small" target="_blank" rel="noopener">לראות כמו שחקן ↗</a>
+            <button id="bundle-delete" class="link-btn del">מחיקת המקבץ</button>
+          </div>
+        </div>
+      </div>
+      <div class="panes path-panes">
+        <section class="pane">
+          <div class="pane-head"><h2>במקבץ, לפי הסדר <span id="bundle-in-count" class="count"></span></h2></div>
+          <p class="help">גוררים כדי לשנות את הסדר. ✕ מוציא חידון מהמקבץ, בלי למחוק אותו.</p>
+          <ol id="bundle-in" class="quiz-list"></ol>
+        </section>
+        <section class="pane">
+          <div class="pane-head"><h2>חידונים שאפשר להוסיף <span id="bundle-out-count" class="count"></span></h2></div>
+          <p class="help">לוחצים או גוררים כדי להוסיף לסוף המקבץ. חידון בלי חידות לא יוצג לשחקן גם אם הוא במקבץ.</p>
+          <ol id="bundle-out" class="quiz-list"></ol>
+        </section>
       </div>
     </section>
 
@@ -336,6 +380,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611230946"></script>
+  <script type="module" src="admin.js?v=202611231001"></script>
 </body>
 </html>

@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Short links to Carmit's riddles: orimosenzon.github.io/fun/carmit/?<code>. WhatsApp and Facebook read the
-     preview below (they don't run scripts); a person is forwarded to the quiz that links/<code> in Firestore names.
+     preview below (they don't run scripts); a person is forwarded to the quiz, or the bundle of quizzes, that
+     links/<code> in Firestore names.
      The app itself is in vibe_coding/כרמית/app/; codes are made by its admin, on "העתקת קישור לשליחה". -->
 <title>חידות כרמית כונסרי</title>
 <meta name="description" content="Wordplay & Wonder · חידות ויזואליות שמשלבות צילום ומשחקי מילים בעברית ובאנגלית">
@@ -51,8 +52,10 @@
         .then((d) => {
           const f = d.fields || {};
           const val = (k) => (f[k] && f[k].stringValue) || '';
-          if (!val('q')) return fail();
+          if (!val('q') && !val('s')) return fail();
           const url = new URL(APP);
+          // A code is for one quiz (q), or for a bundle of quizzes (s).
+          if (!val('q')) { url.searchParams.set('s', val('s')); return location.replace(url.href); }
           url.searchParams.set('q', val('q'));
           if (val('b')) url.searchParams.set('b', val('b'));
           if (val('a')) url.searchParams.set('a', val('a'));
