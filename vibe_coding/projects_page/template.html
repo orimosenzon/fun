@@ -898,6 +898,23 @@
         .stats-spark { display: block; width: 96px; height: 24px; direction: ltr; }
         .stats-num { text-align: left; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--s-ink); }
         .stats-chg { text-align: left; font-variant-numeric: tabular-nums; font-size: 0.76rem; color: var(--s-ink-3); }
+        .stats-expand {
+            flex: none; border: 1px solid var(--s-line); background: #0f1d31; color: var(--s-ink-2);
+            border-radius: 7px; padding: 1px 7px; font: inherit; font-size: 0.72rem; cursor: pointer;
+        }
+        .stats-expand:hover, .stats-expand[aria-expanded="true"] { color: var(--s-ink); border-color: #818cf8; }
+        .stats-pages { margin: 2px 0 8px; padding: 6px 8px 8px; padding-inline-start: 44px; border-radius: 10px; background: #0c1728; }
+        .stats-pages ol { list-style: none; counter-reset: pg; }
+        .stats-pages li {
+            counter-increment: pg; display: grid; grid-template-columns: 1.6em minmax(0, 1fr) 6em 4.2em;
+            gap: 8px; align-items: center; padding: 3px 0; font-size: 0.8rem; color: #cbd5e1;
+        }
+        .stats-pages li::before { content: counter(pg); color: var(--s-ink-3); font-size: 0.72rem; text-align: center; }
+        .stats-pages a { color: inherit; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-pages a:hover { color: #fff; text-decoration: underline; }
+        .stats-pages .bar { height: 6px; border-radius: 3px; background: var(--c); opacity: 0.7; }
+        .stats-pages .n { text-align: left; font-variant-numeric: tabular-nums; }
+        .stats-pages-empty { font-size: 0.76rem; color: var(--s-ink-3); }
         .stats-note { margin-top: 12px; font-size: 0.72rem; color: #475569; text-align: center; }
         .stats-toast { font-size: 0.75rem; color: #fbbf24; min-height: 1em; }
         @media (max-width: 640px) {
@@ -1535,16 +1552,33 @@ window.vcStats = window.fetch ? fetch('projects_page/stats.json', { cache: 'no-c
                 '<span class="stats-check">' + (on ? '✓' : '') + '</span>' +
                 '<span class="stats-icon">' + mt.icon + '</span>' +
                 '<span class="stats-name"><span>' + esc(mt.name) + (mt.sub ? ' <small>' + esc(mt.sub) + '</small>' : '') + '</span>' +
-                '<a href="#' + esc(r.a) + '" title="לכרטיס של הפרויקט" aria-label="לכרטיס של ' + esc(mt.name) + '">↗</a></span>' +
+                '<a href="#' + esc(r.a) + '" title="לכרטיס של הפרויקט" aria-label="לכרטיס של ' + esc(mt.name) + '">↗</a>' +
+                (PAGES[r.a] ? '<button type="button" class="stats-expand" aria-expanded="' + !!expanded[r.a] + '">' +
+                    (expanded[r.a] ? 'הסתר דפים ▴' : 'דפים ▾') + '</button>' : '') + '</span>' +
                 '<svg class="stats-spark" viewBox="0 0 96 24" aria-hidden="true"><polyline points="' + spark(SERIES[r.a]) +
                 '" fill="none" stroke="' + c + '" stroke-width="1.5" stroke-linejoin="round"/></svg>' +
                 '<span class="stats-num">' + fmt.format(r.v) + '</span>' +
-                '<span class="stats-chg">' + (r.p === null ? '—' : change(r.v, r.p)) + '</span></li>';
+                '<span class="stats-chg">' + (r.p === null ? '—' : change(r.v, r.p)) + '</span></li>' +
+                (PAGES[r.a] && expanded[r.a] ? pagesList(r.a, c === '#475569' ? '#818cf8' : c) : '');
         }).join('');
         var rest = rows.length - shown.length;
         moreBtn.hidden = !open && rest <= 0;
         moreBtn.textContent = open ? 'הצג רק את הפעילים' : 'עוד ' + rest + ' פרויקטים';
         $('.stats-table-sum').textContent = 'צפיות ב-' + len + (len === 1 ? ' יום' : ' ימים') + ' · לחיצה על שורה מוסיפה או מורידה מהגרף';
+    }
+    // ── top pages of a site with its own analytics (pardespedia), for the window ──
+    var PAGES = {}, SITES = {}, expanded = {};
+    function pagesList(a, c) {
+        var top = PAGES[a].map(function (p) { return { t: p.t, u: p.u, v: sum(p.v, st.i0, st.i1) }; })
+            .filter(function (p) { return p.v > 0; })
+            .sort(function (p, q) { return q.v - p.v; }).slice(0, 15);
+        if (!top.length) return '<li class="stats-pages"><span class="stats-pages-empty">אין צפיות בטווח הזה</span></li>';
+        var mx = top[0].v;
+        return '<li class="stats-pages" style="--c:' + c + '"><ol>' + top.map(function (p) {
+            return '<li><a href="' + esc((SITES[a] || '') + p.u) + '" target="_blank" rel="noopener" title="' + esc(p.t) + '">' + esc(p.t) + '</a>' +
+                '<span class="bar" style="width:' + Math.max(4, p.v / mx * 100).toFixed(0) + '%"></span>' +
+                '<span class="n">' + fmt.format(p.v) + '</span></li>';
+        }).join('') + '</ol></li>';
     }
     function toggle(a) {
         var i = st.sel.indexOf(a);
@@ -1567,10 +1601,13 @@ window.vcStats = window.fetch ? fetch('projects_page/stats.json', { cache: 'no-c
     }
     rowsEl.addEventListener('click', function (e) {
         if (e.target.closest('a')) return;
+        var x = e.target.closest('.stats-expand');
+        if (x) { var xa = x.closest('.stats-row').dataset.a; expanded[xa] = !expanded[xa]; drawTable(); return; }
         var r = e.target.closest('.stats-row');
         if (r) toggle(r.dataset.a);
     });
     rowsEl.addEventListener('keydown', function (e) {
+        if (e.target.closest('.stats-expand')) return;   // the button's own click handles it
         var r = e.target.closest('.stats-row');
         if (r && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
@@ -1622,6 +1659,7 @@ window.vcStats = window.fetch ? fetch('projects_page/stats.json', { cache: 'no-c
         SERIES = {};
         Object.keys(s.daily.apps).forEach(function (a) { if (meta[a]) SERIES[a] = s.daily.apps[a]; });
         ANCH = Object.keys(SERIES);
+        PAGES = s.daily.pages || {}; SITES = s.sites || {};
         USERS = s.daily.users || D.map(function () { return 0; });
         SITE = D.map(function (_, i) {
             var t = (s.daily.home[i] || 0) + (s.daily.other[i] || 0);

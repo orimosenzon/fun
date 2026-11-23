@@ -19,7 +19,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 from build import DATA, ROOT, assign_anchors
 
@@ -29,6 +29,12 @@ SITE = "/fun/vibe_coding/"
 OUT = Path(__file__).resolve().parent / "stats.json"
 RANGES = [("d7", "6daysAgo"), ("d30", "29daysAgo"), ("all", SINCE)]
 KEY_FILE = Path.home() / ".config/vc-analytics/ga-reader.json"
+# Cards whose site lives elsewhere with a GA4 property of its own: card anchor →
+# property display name (the id is looked up, so the service account only needs
+# Viewer on it). All its views count for the card, and its users join the totals.
+# Its most viewed pages ship too, so the stats table can open a breakdown.
+EXTERNAL = {"pardespedia": ("pardespedia", "https://pardespedia.info")}  # GA property 549194549
+TOP_PAGES = 40
 
 
 def credentials():
@@ -42,16 +48,28 @@ def credentials():
     return service_account.Credentials.from_service_account_file(str(path), scopes=scopes)
 
 
-def run_report(session, dimensions, metrics):
+def clamped_ranges():
+    """RANGES with every start moved up to SINCE, for a property that was
+    tracking before this page was (so 30 days never exceeds "all")."""
+    since = datetime.strptime(SINCE, "%Y-%m-%d").date()
+    today = datetime.now(timezone.utc).date()
+    out = []
+    for n, s in RANGES:
+        start = today - timedelta(days=int(s[:-len("daysAgo")])) if s.endswith("daysAgo") else since
+        out.append((n, max(start, since).isoformat()))
+    return out
+
+
+def run_report(session, dimensions, metrics, prop=PROPERTY, ranges=RANGES):
     """One runReport over all RANGES. Returns rows as (dims, range index, values)."""
     body = {
-        "dateRanges": [{"startDate": s, "endDate": "today", "name": n} for n, s in RANGES],
+        "dateRanges": [{"startDate": s, "endDate": "today", "name": n} for n, s in ranges],
         "dimensions": [{"name": d} for d in dimensions],
         "metrics": [{"name": m} for m in metrics],
         "limit": 100000,
     }
     r = session.post(
-        f"https://analyticsdata.googleapis.com/v1beta/properties/{PROPERTY}:runReport",
+        f"https://analyticsdata.googleapis.com/v1beta/properties/{prop}:runReport",
         json=body, timeout=60,
     )
     r.raise_for_status()
@@ -65,7 +83,7 @@ def run_report(session, dimensions, metrics):
     return out
 
 
-def run_daily(session, dimensions, metrics):
+def run_daily(session, dimensions, metrics, prop=PROPERTY):
     """One runReport from SINCE to today, split by day. Rows as (YYYY-MM-DD, dims, values)."""
     body = {
         "dateRanges": [{"startDate": SINCE, "endDate": "today"}],
@@ -74,7 +92,7 @@ def run_daily(session, dimensions, metrics):
         "limit": 100000,
     }
     r = session.post(
-        f"https://analyticsdata.googleapis.com/v1beta/properties/{PROPERTY}:runReport",
+        f"https://analyticsdata.googleapis.com/v1beta/properties/{prop}:runReport",
         json=body, timeout=60,
     )
     r.raise_for_status()
@@ -110,6 +128,75 @@ def daily_series(session, prefixes):
         if d in at:
             users[at[d]] = u
     return {"dates": dates, "apps": apps, "home": home, "other": other, "users": users}
+
+
+def external_properties(session) -> dict:
+    """anchor → property id for the EXTERNAL cards the service account can read."""
+    r = session.get("https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=200", timeout=60)
+    r.raise_for_status()
+    by_name = {p["displayName"]: p["property"].split("/")[-1]
+               for a in r.json().get("accountSummaries", []) for p in a.get("propertySummaries", [])}
+    out = {}
+    for anchor, (name, _site) in EXTERNAL.items():
+        if name in by_name:
+            out[anchor] = by_name[name]
+        else:
+            print(f"warning: no access to GA property {name!r} ({anchor}); "
+                  "add the service account as Viewer on it", file=sys.stderr)
+    return out
+
+
+def top_pages(session, prop, at):
+    """The TOP_PAGES most viewed pages since SINCE, each with a daily series:
+    [{"t": title, "u": path, "v": [views per day]}]. Pages are merged by title:
+    GA sees /index.php?title=X, /wiki/X and the main page at /index.php, and
+    the title is what tells them apart."""
+    pages = {}
+    for d, (path, title), (views,) in run_daily(session, ["pagePath", "pageTitle"], ["screenPageViews"], prop):
+        if d not in at:
+            continue
+        t = title.rsplit(" – ", 1)[0].rsplit(" - ", 1)[0].strip() or unquote(path.split("?")[0])
+        pages.setdefault(t, [0] * len(at))[at[d]] += views
+    top = sorted(pages.items(), key=lambda kv: -sum(kv[1]))[:TOP_PAGES]
+    # MediaWiki serves every page at /wiki/<title>, whatever path GA saw
+    return [{"t": t, "u": "/wiki/" + quote(t.replace(" ", "_"), safe="/:()'_,-"), "v": v} for t, v in top]
+
+
+def add_external(session, stats):
+    """Fold the EXTERNAL sites into stats: their views become the card's, and
+    their views and users join the totals. Users are summed across properties,
+    so someone who visited both is counted twice (GA can't dedupe across them)."""
+    try:
+        props = external_properties(session)
+    except Exception as e:  # never let a side site break the page's stats
+        print(f"warning: external properties skipped: {e}", file=sys.stderr)
+        return
+    daily, at = stats["daily"], {d: i for i, d in enumerate(stats["daily"]["dates"])}
+    for anchor, prop in props.items():
+        try:
+            ranges = run_report(session, [], ["screenPageViews", "totalUsers"], prop, clamped_ranges())
+            days = run_daily(session, [], ["screenPageViews", "totalUsers"], prop)
+        except Exception as e:
+            print(f"warning: {anchor} skipped: {e}", file=sys.stderr)
+            continue
+        views = [0] * len(RANGES)
+        for _, i, (v, u) in ranges:
+            views[i] = v
+            stats["totals"]["views"][i] += v
+            stats["totals"]["users"][i] += u
+        stats["apps"][anchor] = views
+        series = [0] * len(at)
+        for d, _, (v, u) in days:
+            if d in at:
+                series[at[d]] = v
+                daily["users"][at[d]] += u
+        daily["apps"][anchor] = series
+        try:
+            daily.setdefault("pages", {})[anchor] = top_pages(session, prop, at)
+            stats.setdefault("sites", {})[anchor] = EXTERNAL[anchor][1]
+        except Exception as e:
+            print(f"warning: {anchor} pages skipped: {e}", file=sys.stderr)
+    stats["apps"] = dict(sorted(stats["apps"].items(), key=lambda kv: -kv[1][-1]))
 
 
 def normalize(path: str) -> str:
@@ -197,6 +284,8 @@ def main():
         "totals": totals,
         "daily": daily_series(session, prefixes),
     }
+    add_external(session, stats)
+    apps = stats["apps"]
     OUT.write_text(json.dumps(stats, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"wrote {OUT}: {len(apps)} apps, {totals['views'][-1]} views since {SINCE}")
     if args.print:
