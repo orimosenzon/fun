@@ -26,3 +26,4 @@ hood_maps/*
 drive_scan_cron.log
 cron_alert_state.json
 hood_maps/out/
+sweep_cron.log

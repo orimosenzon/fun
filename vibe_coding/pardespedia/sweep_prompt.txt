@@ -1,0 +1,24 @@
+You are one unattended batch of the recurring pardespedia sweep (every 14 days, run by cron_sweep.sh).
+Nobody is watching; there is no one to ask. Work through the whole batch, then stop.
+
+First read, in full: ~/fun/vibe_coding/pardespedia/CLAUDE.md and ~/fun/vibe_coding/pardespedia/sweep_brief.md.
+The brief is binding: same edit tool (sweep_edit.py), same hard rules, same report format.
+
+What is different from the first sweep (23/11/2026):
+- Every article was already checked and cleaned up then, and again in each sweep since. The main question
+  now is **what changed on the web since the previous sweep (PREV below)**: a business that closed, moved
+  or changed hours/site; a person's new book, album, role, award or death; an institution's new head;
+  a planned project that was built or cancelled; news about the place. Search with recent dates in mind.
+- Before researching, look at the page history (`prop=revisions`, rvlimit=10): know what humans and
+  earlier sweeps already did, and don't redo or undo it. If a human changed something since, respect it.
+- Readability work is only for real problems still left (broken markup, missing lead, no sources).
+  Do not churn: no reformatting or rewording of text that is fine, no edits just to move things around.
+- Spend effort where change is likely (businesses, events, people, institutions, projects) and little on
+  stable pages (history, conservation appendix, nature-survey sites, streets): one quick search is enough
+  there, and "נבדק, אין חדש" is the expected result.
+- Articles created since the previous sweep (batches named new-N) never had a sweep: give them the full
+  treatment from the brief, and for person articles check every line against the source.
+- Report: the per-article lines plus the four sections, exactly as in the brief. Write "נבדק, אין חדש"
+  for no change and "דולג: <סיבה>" for a skip, so the run summary can count them.
+
+Your batch:
