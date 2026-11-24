@@ -2855,6 +2855,12 @@ body.fly-balloon .fly-burner {
   box-shadow: inset 0 7px 0 #3a2310, inset 0 10px 0 #8a6238, 0 -6px 18px rgba(0, 0, 0, .35);
 }
 body:not(.fly-balloon) .fly-basket { display: none !important; }
+/* Once balloon.js has drawn the real one (body.fly-rig3d), this flat rim
+ * goes: it was only ever standing in for it. */
+body.fly-rig3d .fly-basket { display: none !important; }
+/* And in the clear view there is no basket of either kind: nothing between
+ * the eye and the ground. */
+body.fly-bare .fly-basket { display: none !important; }
 .fly-basket::before,
 .fly-basket::after {
   content: '';
@@ -3242,6 +3248,26 @@ body:not(.fly-balloon):not(.fly-bike) .fly-compass .rose-drift { display: none; 
   .fly-compass svg { width: 60px; height: 60px; }
   .fly-compass b { font-size: 11px; }
 }
+/* In the balloon you stand in, the top of the picture is the burner, and a
+ * compass over it is a compass you cannot read. So it comes down to the
+ * corner of the basket, where an instrument would be strapped to the rim. */
+/* And the gauges, which used to sit on sky, now sit on striped cloth and
+ * steel: a dark plate under them, the way an instrument has a face. */
+body.fly-rig3d .fly-readout {
+  padding: 5px 12px 6px;
+  margin: -5px -12px;
+  border-radius: 14px;
+  background: rgba(8, 12, 11, .46);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+body.fly-rig3d .fly-compass {
+  top: auto;
+  left: auto;
+  right: calc(22px + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: none;
+}
 
 .fly-x, .fly-help, .fly-snd, .fly-look {
   position: absolute;
@@ -3277,6 +3303,12 @@ body:not(.fly-balloon):not(.fly-bike) .fly-compass .rose-drift { display: none; 
   cursor: pointer;
 }
 .fly-model[hidden] { display: none; }
+/* The same fifth place, on the balloon: the basket, and the clear view
+ * without it. Struck through when the basket is off, the way the view's
+ * photo is. */
+.fly-cab .cab-off { display: none; }
+.fly-cab.off .cab-off { display: block; }
+.fly-cab.off .cab-on { opacity: .55; }
 .fly-model:hover { background: rgba(30, 44, 38, .78); }
 .fly-model svg { width: 21px; height: 21px; }
 .fly-model b {

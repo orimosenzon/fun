@@ -199,7 +199,8 @@ const Explore = (() => {
     SWAY_Z: 0.12,          // lightly damped, three or four swings before it settles
     SWAY_GAIN: 0.6,        // degrees of lean per m/s² of the wind pulling on the envelope
     SWAY_MAX: 6,
-    LAUNCH: 2.5            // seconds past the take-off that the burner is held for you
+    LAUNCH: 2.5,           // seconds past the take-off that the burner is held for you
+    GLANCE: 2.5            // degrees the picture lifts while you look up at the flame; the rig lifts far more (balloon.js)
   };
 
   /* ---------- the jet bike ----------
@@ -391,9 +392,28 @@ const Explore = (() => {
     pvx: 0, pvy: 0,          // last frame's velocity, for the acceleration the basket feels
     launch: 0,               // seconds of lift-off burn still to go
     burning: false,          // last frame's burner, for the moment it lights
+    venting: false,          // the valve line is being pulled, for the rig to show
     t: 0,                    // flight seconds, the clock the turbulence runs on
     seed: []                 // phases for the turbulence channels, drawn at take-off
   };
+
+  /* The balloon as a thing you can see: balloon.js draws the basket, the
+   * burner and the envelope on a canvas of its own over the map. Made on the
+   * first balloon flight, once three.js has arrived, and kept; until then,
+   * and if it never arrives, the flat rim in app.css stands in for it. */
+  const br = { rig: null, canvas: null, glance: 0 };
+
+  /* The clear view (Ori, 24/11/2026, the day the basket arrived): "a button
+   * that lets you fly the balloon with nothing in the way. This matters
+   * too." The basket is what makes it a balloon and it is also a quarter of
+   * the picture, and the mode exists to look at the ground. So one button,
+   * and B, takes all of it away - the rig, the flat rim that stands in for
+   * it, the lift of the eyes to the flame - and puts it back. Kept between
+   * visits, like the sound. */
+  const KEY_BARE = 'dk.fly.bare';
+  let bare = false;
+  try { bare = localStorage.getItem(KEY_BARE) === '1'; } catch (_) { /* fine */ }
+  let elCab = null;
 
   let restore = null;        // what to put back on the way out
 
@@ -983,6 +1003,7 @@ const Explore = (() => {
     // into its camera rather than into CSS, so it never needs material past
     // the edges, and it is a quarter the pixels of the map's square.
     if (bk.rig) bk.rig.resize(w, h, Math.min(devicePixelRatio || 1, PIXEL_CAP));
+    if (br.rig) br.rig.resize(w, h, Math.min(devicePixelRatio || 1, PIXEL_CAP));
   }
 
   /* ---------- the world, precomputed once per flight ----------
@@ -1358,7 +1379,7 @@ const Explore = (() => {
 
   function viewPitch() {
     const isBal = craft === 'balloon';
-    return clamp(basePitch() + pitchTrim - (isBal ? bal.pit : 0),
+    return clamp(basePitch() + pitchTrim - (isBal ? bal.pit - br.glance * BAL.GLANCE : 0),
                  isBal ? BAL.PITCH_MIN : PITCH_MIN, PITCH_MAX);
   }
 
@@ -1537,6 +1558,7 @@ const Explore = (() => {
     if (bal.launch > 0) bal.launch -= dt;
     const burnerOn = (keys.has('ArrowUp') || touchBurn || bal.launch > 0) && bal.dT < BAL.DT_MAX;
     const ventOpen = keys.has('ArrowDown') || touchVent;
+    bal.venting = ventOpen;
 
     // Heat. The burner feeds a plume, the plume becomes envelope heat over
     // MIX_T, the envelope loses heat to the air outside in proportion to
@@ -1628,6 +1650,70 @@ const Explore = (() => {
     // The bar under the gauges shows heat here, not throttle; see paintHud.
     throttle = bal.dT / BAL.DT_MAX;
     return burnerOn ? 1 : 0;
+  }
+
+  /** The basket, the burner and the envelope, made on the first balloon
+   *  flight and shown from then on. If three.js cannot be had the flight is
+   *  the same flight with the flat rim along the bottom. The promise is for
+   *  the take-off to wait on, and never fails: making the rig is a third of
+   *  a second of drawing textures on a desktop and more on a phone, and it
+   *  is better spent before the rise begins than as a stutter in the middle
+   *  of it. One frame is drawn here too, so the shaders are compiled by the
+   *  time the first real one is wanted. */
+  function useBalloonRig() {
+    if (typeof Balloon === 'undefined' || bare) return Promise.resolve();
+    return Balloon.load().then(() => {
+      if (!on || craft !== 'balloon' || bare) return;
+      // Shadows are the dear part, and a phone can fly without them.
+      if (!br.rig) br.rig = Balloon.makeRig(br.canvas, { shadows: matchMedia('(pointer: fine)').matches });
+      br.canvas.hidden = false;
+      br.rig.resize(innerWidth, innerHeight, Math.min(devicePixelRatio || 1, PIXEL_CAP));
+      document.body.classList.add('fly-rig3d');
+      paintRig(0);
+    }).catch((err) => console.error('balloon: the basket did not load, flying with the flat rim', err));
+  }
+
+  /** Put the clear view, or the basket, on the screen: the body's class,
+   *  the button's face, and the rig itself, which is made here if this is
+   *  the first time in the flight that it has been wanted. */
+  function applyBare(make = true) {
+    const isBal = on && craft === 'balloon';
+    document.body.classList.toggle('fly-bare', isBal && bare);
+    if (elCab) {
+      elCab.classList.toggle('off', bare);
+      elCab.setAttribute('aria-pressed', bare ? 'true' : 'false');
+      elCab.querySelector('b').textContent = bare ? 'בלי סל' : 'סל';
+    }
+    if (!isBal) return;
+    if (bare) {
+      if (br.canvas) br.canvas.hidden = true;
+      document.body.classList.remove('fly-rig3d');
+      br.glance = 0;
+    } else if (make) {
+      useBalloonRig();
+    }
+  }
+
+  /** B, or the basket button: the clear view on and off. */
+  function toggleBare() {
+    if (!on || craft !== 'balloon') return;
+    bare = !bare;
+    try { localStorage.setItem(KEY_BARE, bare ? '1' : '0'); } catch (_) { /* fine */ }
+    applyBare();
+  }
+
+  /** One frame of the rig: what the flight is doing, for it to show. The
+   *  look is the trim over its range, down to -1 leaning out over the rim
+   *  and up to +1 with the head tipped back. */
+  function paintRig(dt) {
+    if (!br.rig || br.canvas.hidden) return;
+    br.rig.update({
+      burn, burning: !flying || bal.burning, vent: flying && bal.venting,
+      roll: bal.roll, pit: bal.pit, rollV: bal.rollV, pitV: bal.pitV, bearing,
+      look: pitchTrim >= 0 ? pitchTrim / BAL.TRIM_UP : pitchTrim / BAL.TRIM_DOWN
+    }, dt);
+    br.glance = br.rig.state.glance || 0;
+    br.rig.render();
   }
 
   /* ---------- the bike's flight ----------
@@ -1876,6 +1962,7 @@ const Explore = (() => {
       if (isBal) {
         burn += (1 - burn) * clamp(8 * dt, 0, 1);
         if ((frame++ & 1) === 0) Engine.set(0, 1);
+        paintRig(dt);
       } else if (isBike && bk.rig) {
         bk.rig.advance(dt);
         if ((frame++ & 1) === 0) Engine.setBike(bikePower(), 0);
@@ -1946,6 +2033,7 @@ const Explore = (() => {
     }                 // but where it is on the screen has
     paintCards(pitch, fx, fy);
     paintHud(pitch);
+    if (isBal && !paused) paintRig(dt);
 
     // Every other frame is plenty for an automation timeline; the ramps are
     // smoothed on the audio thread anyway. The balloon's burner takes the
@@ -2345,6 +2433,7 @@ const Explore = (() => {
     }
     if (e.code === 'KeyM') { e.preventDefault(); setSound(Engine.toggle()); return; }
     if (e.code === 'KeyV') { e.preventDefault(); cycleView(); return; }
+    if (e.code === 'KeyB' && craft === 'balloon') { e.preventDefault(); if (!e.repeat) toggleBare(); return; }
     if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleIntro(); return; }
     if (craft === 'bike' && bk.rig) {
       // fable's one-shot keys. Not on repeat: a held Shift is one pulse, not
@@ -2694,6 +2783,7 @@ const Explore = (() => {
       <div class="fly-sky" id="fly-sky"><div class="fly-band" id="fly-band"></div></div>
       <div class="fly-world" id="fly-world"><div class="fly-haze" id="fly-haze"></div></div>
       <canvas class="fly-bike" id="fly-bike" hidden aria-hidden="true"></canvas>
+      <canvas class="fly-bike fly-rig" id="fly-rig" hidden aria-hidden="true"></canvas>
       <div class="fly-rush" id="fly-rush"></div>
       <div class="fly-burner" id="fly-burner"></div>
       <div class="fly-cone" id="fly-cone" aria-hidden="true"></div>
@@ -2742,6 +2832,17 @@ const Explore = (() => {
             <path d="M20 15.5H5.5m0 0l3.4-3.4m-3.4 3.4l3.4 3.4"/>
           </svg>
           <b>HOG</b>
+        </button>
+        <button class="fly-model fly-cab" id="fly-cab" hidden aria-label="מבט נקי: בלי הסל והמבער" title="מבט נקי: בלי הסל והמבער (B)">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <g class="cab-on">
+              <path d="M6 12.5h12l-1.3 6.2a1.6 1.6 0 01-1.6 1.3H8.9a1.6 1.6 0 01-1.6-1.3L6 12.5z"/>
+              <path d="M5 12.5h14M9.5 12.5v7.4M14.5 12.5v7.4M7 16.2h10"/>
+              <path d="M7.2 12.3L9.6 4M16.8 12.3L14.4 4M9 4h6"/>
+            </g>
+            <path class="cab-off" d="M3.5 3.5l17 17" stroke-width="2"/>
+          </svg>
+          <b>סל</b>
         </button>
         <button class="fly-look" id="fly-look" aria-label="תצוגה">
           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2810,16 +2911,18 @@ const Explore = (() => {
             <li><kbd>↓</kbd><span>פתח האוורור בקודקוד: משחרר אוויר חם, ויורדים</span></li>
             <li><kbd class="wide">לחיצה</kbd><span>הרוח: כל עוד הכפתור לחוץ נסחפים במלוא הרוח, וכשמשחררים היא נרגעת</span></li>
             <li><kbd class="wide">עכבר</kbd><span>לאן הסל פונה. הרוח מתיישרת אחריו, לאט</span></li>
-            <li><kbd>W</kbd><kbd>S</kbd><span>להביט מטה מעבר לדופן, ובחזרה למעלה</span></li>
+            <li><kbd>W</kbd><kbd>S</kbd><span>W: להישען החוצה ולהביט מטה מעבר לדופן. S: להרים את הראש אל המבער ואל פנים הכדור</span></li>
             <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
             <li><kbd>V</kbd><span>תצוגה: רגיל, נקי (בלי תמונות, כדי לראות את השטח), שבילים (מוארים חזק)</span></li>
+            <li><kbd>B</kbd><span>מבט נקי: בלי הסל והמבער, רק הנוף. לחיצה נוספת מחזירה אותם</span></li>
             <li><kbd>M</kbd><span>המבער</span></li>
             <li><kbd>Esc</kbd><span>יציאה</span></li>
           </ul>
           <p class="fly-intro-foot">הזזת העכבר סוגרת את הכרטיס הזה; <kbd>?</kbd> מחזיר אותו.
              הבערה קצרה כל עשרים שניות מחזיקה גובה. ככל שגבוה יותר, הרוח חזקה יותר.</p>
           <p class="fly-intro-touch">אצבע על המסך תופסת את הרוח. גרירה לצדדים פונה, גרירה למטה מבעירה,
-             גרירה למעלה מאווררת. הכדור מגיב באיחור, אז מבעירים מעט ומחכים.</p>
+             גרירה למעלה מאווררת. הכדור מגיב באיחור, אז מבעירים מעט ומחכים.
+             כפתור הסל למעלה מסתיר את הסל והמבער, למבט נקי על הנוף.</p>
         </div>
         <div class="fly-intro-card bike f5">
           <h2>אופנוע סילון: F-5</h2>
@@ -2929,7 +3032,10 @@ const Explore = (() => {
     elMsg = el('fly-msg');
     elModel = el('fly-model');
     elModel.addEventListener('click', (e) => { e.stopPropagation(); elModel.blur(); bikeSwap(); });
+    elCab = el('fly-cab');
+    elCab.addEventListener('click', (e) => { e.stopPropagation(); elCab.blur(); toggleBare(); });
     bk.canvas = el('fly-bike');
+    br.canvas = el('fly-rig');
     buildTouch(root);
     // The jet's HUD and panel live inside the instrument layer, over the
     // picture and under the buttons; built once, shown for the jet.
@@ -3009,6 +3115,8 @@ const Explore = (() => {
       bal.pvx = 0; bal.pvy = 0;
       bal.launch = 1.75 + BAL.LAUNCH;
       bal.burning = false;
+      bal.venting = false;
+      br.glance = 0;
       bal.t = 0;
       bal.seed = [];
       for (let i = 0; i < 5; i++) {
@@ -3021,6 +3129,7 @@ const Explore = (() => {
     elGG.hidden = isBal || isBike;
     elFcG.hidden = !isBike;
     elModel.hidden = !isBike;
+    elCab.hidden = !isBal;
     elLift.hidden = !isBike;
     elThrMark.hidden = !isBike;
     elMsg.className = 'fly-msg';
@@ -3040,6 +3149,7 @@ const Explore = (() => {
     document.body.classList.toggle('fly-balloon', isBal);
     document.body.classList.toggle('fly-bike', isBike);
     Cockpit.show(!isBal && !isBike);
+    applyBare(false);   // the class and the button; the rig itself is made below, with the take-off waiting on it
 
     // Full screen is asked for, never depended on: iOS refuses it outright and
     // the mode is perfectly good without it.
@@ -3135,7 +3245,12 @@ const Explore = (() => {
     // flight over a photograph of the place. The bike also waits for its
     // engine, Three.js, fetched on the first ride and kept; a fetch that
     // fails leaves the mode the way it came.
-    const ready = isBike ? loadBike() : Promise.resolve();
+    // The balloon waits for its basket the same way, but not for long and
+    // not on pain of anything: past two and a half seconds it takes off with
+    // the flat rim, and the basket arrives when it arrives.
+    const ready = isBike ? loadBike()
+      : isBal ? Promise.race([useBalloonRig(), new Promise((res) => setTimeout(res, 2500))])
+      : Promise.resolve();
     ready.then(() => {
       if (!on) return;
       if (baseIndex !== 1) {
@@ -3221,6 +3336,7 @@ const Explore = (() => {
     // map gets its ceilings back.
     map.off('render', onMapRender);
     if (bk.canvas) bk.canvas.hidden = true;
+    if (br.canvas) br.canvas.hidden = true;
     clearTouch();
     if (restore && restore.maxPitch !== undefined) {
       map.setMaxPitch(restore.maxPitch);
@@ -3231,7 +3347,7 @@ const Explore = (() => {
     worldEl.style.transform = '';
     sky.style.transform = '';
     elThr.style.background = '';
-    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-bike', 'fly-f5', 'fly-super');
+    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-rig3d', 'fly-bare', 'fly-bike', 'fly-f5', 'fly-super');
     Cockpit.show(false);
     delete document.body.dataset.flyView;
     coneEl.classList.remove('go');
@@ -3315,7 +3431,8 @@ const Explore = (() => {
       lit: near.filter((e) => e.line).map((e) => e.g),
       envelope: envelope(alt),
       balloon: { dT: bal.dT, plume: bal.plume, vz: bal.vz, drift: bal.drift, ride: bal.ride,
-                 roll: bal.roll, pit: bal.pit, launch: bal.launch },
+                 roll: bal.roll, pit: bal.pit, launch: bal.launch,
+                 rig: !!(br.rig && br.canvas && !br.canvas.hidden), glance: br.glance, bare },
       bike: p ? {
         x: p.pos.x, y: p.pos.y, z: p.pos.z, vx: p.vel.x, vy: p.vel.y, vz: p.vel.z,
         throttle: p.throttle, spoolRear: p.spoolRear, spoolLift: p.spoolLift, collective: p.collective,
@@ -3346,5 +3463,5 @@ const Explore = (() => {
   } : null);
 
   return { enter, exit, toggle, isOn, setCraft, getCraft, nextCraft, setView, cycleView,
-    getView, returnBase, place, debug };
+    getView, returnBase, place, debug, balloonRig: () => br.rig };
 })();

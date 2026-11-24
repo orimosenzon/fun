@@ -123,13 +123,24 @@ try:
         check('body carries fly-balloon', page.evaluate('() => document.body.classList.contains("fly-balloon")'))
         check('craft button hidden in flight', not craft.is_visible())
         check('vario gauge shown', page.locator('#fly-vsi-g').is_visible())
-        check('basket rim shown', page.locator('.fly-basket').is_visible())
+        # The balloon you stand in (balloon.js, 24/11/2026): three.js arrives
+        # during the take-off, the rig is made, and from then on its canvas
+        # is the basket; the flat rim was only standing in for it.
+        page.wait_for_function('() => Explore.debug().balloon.rig', timeout=20000)
+        check('the 3D basket is drawn', page.locator('#fly-rig').is_visible())
+        check('and the flat rim has gone', not page.locator('.fly-basket').is_visible())
+        rig = page.evaluate('''() => { const c = document.getElementById("fly-rig");
+            return { w: c.width, h: c.height, cw: c.clientWidth, ch: c.clientHeight }; }''')
+        check('rig canvas fills the window', rig['cw'] == 1440 and rig['ch'] == 900 and rig['w'] >= 1440, rig)
         check('compass shown, with the wind pointer', page.locator('#fly-compass').is_visible() and page.locator('#fly-drift').is_visible())
+        cb2 = page.locator('#fly-compass').bounding_box()
+        check('compass has come down off the burner to the corner of the basket', cb2['y'] > 600 and cb2['x'] > 1100, cb2)
         check('heading in words', any(w in page.evaluate('() => document.getElementById("fly-heading").textContent') for w in ('צפון', 'דרום', 'מזרח', 'מערב')))
         check('balloon intro shown, jet intro hidden',
               page.locator('.fly-intro-card.balloon').is_visible() and not page.locator('.fly-intro-card.jet').is_visible())
         page.screenshot(path=f'{OUT}/shot_intro.png')
         check('launch burn lit', d['balloon']['launch'] > 0 and d['burn'] > 0.3, d)
+        check('and you are looking up at it', dbg(page)['balloon']['glance'] > 0.5, dbg(page)['balloon'])
         check('burner gauge reads דולק', page.evaluate('() => document.querySelector("#fly-burn i").textContent') == 'דולק')
 
         # the launch burn: the roar is on, and the sound is measurable
@@ -162,6 +173,17 @@ try:
         check('silent once the burner is off', quiet < 0.002, quiet)
         check('climbing after the launch burn', s[-1]['balloon']['vz'] > 0.5 and s[-1]['alt'] > s[0]['alt'], (s[0]['alt'], s[-1]['alt'], s[-1]['balloon']['vz']))
         check('burner glow off', s[-1]['burn'] < 0.1)
+        # What the rig has drawn, once the eyes are back down from the launch
+        # burn (while it is lit they are up at the flame and the rim is out of
+        # the picture): the rim is along the bottom, so the canvas is opaque
+        # there, and the middle of the picture is clear air.
+        page.wait_for_function('() => Explore.debug().balloon.glance < 0.03', timeout=8000)
+        px = page.evaluate('''() => { const r = Explore.balloonRig();
+            const row = r.alphaAt([...Array(72).keys()].map((i) => [i / 71, 0.62]));
+            const [rim, air] = r.alphaAt([[0.5, 0.9], [0.5, 0.62]]);
+            return { rim, air, pole: Math.max(...row) }; }''')
+        check('rim along the bottom, clear air in the middle, an upright somewhere across',
+              px['rim'] > 200 and px['air'] < 30 and px['pole'] > 200, px)
 
         # ---- the wind, at altitude: hold the button, speed builds; let go, it fades slowly, never to nothing ----
         v0 = dbg(page)['speed']
@@ -235,6 +257,45 @@ try:
         page.screenshot(path=f'{OUT}/shot_balloon_down.png')
         time.sleep(2.5)
         page.screenshot(path=f'{OUT}/shot_balloon.png')
+
+        # ---- looking up: S tips the head back, up the flame into the envelope ----
+        look = lambda: page.evaluate('''() => { const r = Explore.balloonRig();
+            return { pitch: r.camera.rotation.x * 180 / Math.PI, fov: r.camera.fov, glance: r.state.glance }; }''')
+        l0 = look()
+        page.keyboard.down('KeyS'); time.sleep(2.2)
+        l1 = look()
+        page.screenshot(path=f'{OUT}/shot_balloon_up.png')
+        page.keyboard.up('KeyS'); time.sleep(2.2)
+        check('S tips the head back, through a longer lens', l1['pitch'] > l0['pitch'] + 25 and l1['fov'] < l0['fov'] - 8, (l0, l1))
+        check('and it comes back down', abs(look()['pitch'] - l0['pitch']) < 4, (l0, look()))
+        # ---- and a burn takes the eyes up to the flame while it lasts ----
+        page.keyboard.down('ArrowUp'); time.sleep(1.4)
+        l2 = look()
+        page.screenshot(path=f'{OUT}/shot_balloon_burn.png')
+        page.keyboard.up('ArrowUp'); time.sleep(3.2)
+        check('a burn is looked at', l2['glance'] > 0.8 and l2['pitch'] > l0['pitch'] + 10, (l0, l2))
+        check('and then the eyes come back to the ground', look()['glance'] < 0.15, look())
+
+        # ---- the clear view: B, or the basket button, takes the whole rig away and brings it back ----
+        cab = page.locator('#fly-cab')
+        check('basket button shown, saying the basket is on', cab.is_visible() and cab.inner_text().strip() == 'סל', cab.inner_text())
+        page.keyboard.press('KeyB'); time.sleep(0.3)
+        d = dbg(page)['balloon']
+        check('B: the rig is gone, and the flat rim does not come back in its place',
+              d['bare'] and not d['rig'] and not page.locator('#fly-rig').is_visible() and not page.locator('.fly-basket').is_visible(), d)
+        cb3 = page.locator('#fly-compass').bounding_box()
+        check('the compass is back at the top, where there is no burner now', cb3['y'] < 40 and abs(cb3['x'] + cb3['width'] / 2 - 720) < 4, cb3)
+        check('button says so, and it is remembered', cab.inner_text().strip() == 'בלי סל'
+              and page.evaluate('() => localStorage.getItem("dk.fly.bare")') == '1', cab.inner_text())
+        page.keyboard.down('ArrowUp'); time.sleep(1.0)
+        check('no lift of the eyes without a flame to look at', dbg(page)['balloon']['glance'] == 0, dbg(page)['balloon'])
+        page.keyboard.up('ArrowUp')
+        page.screenshot(path=f'{OUT}/shot_balloon_bare.png')
+        cab.click(); time.sleep(0.4)
+        d = dbg(page)['balloon']
+        check('the button brings the basket back', not d['bare'] and d['rig'] and page.locator('#fly-rig').is_visible()
+              and page.evaluate('() => localStorage.getItem("dk.fly.bare")') == '0', d)
+        time.sleep(2.5)
 
         # ---- ground: vent all the way down, land, and a burn lifts off again ----
         page.keyboard.down('ArrowDown')

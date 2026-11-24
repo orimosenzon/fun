@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- The balloon's rig on its own, over a still of the flight, for looking at
+     it without flying. Serve the project folder and open
+       tests/balloon_rig.html?burn=1&look=0&bearing=40&roll=3&t=2
+     burn 0..1, look -1 (W, over the rim) .. 1 (S, up the flame), bearing in
+     degrees, roll and pit in degrees, vent=1, t = seconds to run before the
+     picture is held (0 runs on). bg= another still. -->
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<title>balloon rig</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #223; }
+  #bg { position: fixed; inset: 0; background: center / cover no-repeat; }
+  #c { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="c"></canvas>
+<script src="../web/balloon.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const num = (k, d) => (q.has(k) ? +q.get(k) : d);
+document.getElementById('bg').style.backgroundImage = `url(${q.get('bg') || 'fixtures/balloon_backdrop.jpg'})`;
+window.__ready = false;
+Balloon.load().then(() => {
+  for (const k of Object.keys(Balloon.LENS)) {
+    if (q.has(k)) Balloon.LENS[k] = q.get(k).includes(',') ? q.get(k).split(',').map(Number) : +q.get(k);
+  }
+  const rig = Balloon.makeRig(document.getElementById('c'), { shadows: q.get('shadows') !== '0' });
+  window.rig = rig;
+  const fit = () => rig.resize(innerWidth, innerHeight, Math.min(devicePixelRatio || 1, 1.5));
+  addEventListener('resize', fit);
+  fit();
+  const s = {
+    burn: num('burn', 0), burning: num('burn', 0) > 0.5, vent: !!num('vent', 0),
+    roll: num('roll', 0), pit: num('pit', 0), rollV: 0, pitV: 0,
+    bearing: num('bearing', 60), look: num('look', 0)
+  };
+  const hold = num('t', 0);
+  let last = performance.now(), run = 0;
+  // settle the pendulums before the first picture
+  for (let i = 0; i < 240; i++) rig.update(s, 1 / 60);
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!hold || run < hold) { run += dt; rig.update(s, dt); }
+    rig.render();
+    if (!window.__ready && (!hold || run >= hold)) window.__ready = true;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}).catch((e) => { document.title = 'failed: ' + e; console.error(e); });
+</script>
+</body>
+</html>
