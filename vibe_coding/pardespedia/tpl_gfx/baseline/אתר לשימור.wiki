@@ -1,0 +1,42 @@
+<includeonly><div class="float-md-right ml-md-3" style="clear:left; box-sizing:border-box; width:max(290px, min(100%, calc((640px - 100%) * 999))); max-width:100%; margin-bottom:1em; border:1px solid #b9a48a; border-radius:6px; overflow:hidden; background:#fbf8f3; font-size:90%; direction:rtl; text-align:right">
+<div style="background:#7a4b2a; color:#fff; padding:7px 10px; display:flex; align-items:center; gap:8px"><span style="font-size:150%; line-height:1">🏛️</span><span style="flex:1 1 auto; font-weight:bold; font-size:110%">[[נספח השימור לתוכנית המתאר|<span style="color:#fff">אתר לשימור</span>]]</span><span style="background:#fff; color:#7a4b2a; border-radius:12px; padding:1px 9px; font-weight:bold; white-space:nowrap" title="מספר האתר ברשימת השימור">מס' {{{מספר}}}</span></div>
+{| style="width:100%; border-collapse:collapse; margin:0; background:transparent"
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#f1e8dc; border-top:1px solid #e0d3c1; font-weight:bold" | דרגת שימור
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #e0d3c1" | {{אתר לשימור/דרגה|{{{דרגה}}}=inline-flex}} {{{דרגה}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#f1e8dc; border-top:1px solid #e0d3c1; font-weight:bold" | נרטיב
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #e0d3c1" | {{אתר לשימור/נרטיב|{{{נרטיב}}}=inline}} {{{נרטיב}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#f1e8dc; border-top:1px solid #e0d3c1; font-weight:bold" | 📍 כתובת
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #e0d3c1" | {{{כתובת}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#f1e8dc; border-top:1px solid #e0d3c1; font-weight:bold" | 📐 גוש וחלקה
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #e0d3c1" | {{{גוש}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#f1e8dc; border-top:1px solid #e0d3c1; font-weight:bold" | 🏗️ הקמה
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #e0d3c1" | {{{הקמה}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#f1e8dc; border-top:1px solid #e0d3c1; font-weight:bold" | 🗺️ מיקום
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #e0d3c1" | {{{מיקום}}}
+|}
+</div>[[קטגוריה:מבנים לשימור]]</includeonly><noinclude>
+תבנית לערכים על אתרים מתוך [[נספח השימור לתוכנית המתאר]] של פרדס חנה-כרכור (2015).
+התבנית מציגה את מספר האתר ברשימת השימור ואת דרגת השימור שלו, ומוסיפה את הערך ל[[:קטגוריה:מבנים לשימור]].
+
+כל השדות חובה: הרחבה ParserFunctions אינה מותקנת באתר, ולכן שדה ריק יוצג כטקסט גולמי. כשאין מידע כותבים "—".
+
+ליד דרגת השימור מוצג מד של שתי משבצות (משבצת אחת ל"שימור רגיל", שתיים ל"שימור עם הגבלות מחמירות"), וליד הנרטיב אייקון. שניהם מופיעים רק כשהערך כתוב בדיוק כמו ברשימת הנספח; בכל ניסוח אחר מוצג הטקסט בלבד.
+
+<pre>
+{{אתר לשימור
+| מספר   = 3.3.18
+| דרגה   = שימור רגיל
+| נרטיב  = נרטיב המושבה
+| כתובת  = רחוב הנחילות, כרכור
+| גוש    = גוש 10071, חלקה 12
+| הקמה   = שנות ה-40
+| מיקום  = [https://www.google.com/maps/search/?api=1&query=32.48,34.98&hl=iw 32.48, 34.98]
+}}
+</pre>
+</noinclude>

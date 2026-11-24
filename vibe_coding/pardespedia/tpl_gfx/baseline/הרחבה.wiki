@@ -1,0 +1,14 @@
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; border:2px solid #c8a44d; background-color:#fbf6e9; padding:10px 12px; border-radius:5px; direction:rtl; text-align:right">
+<div style="font-size:24px; line-height:1">✍️</div>
+<div style="flex:1 1 240px"><span style="color:#7a5c00">'''ערך זה הוא קצרמר ומחכה להרחבה.'''</span><br>יש לכם מה להוסיף — זיכרון, תמונה, פרט שחסר? מוזמנים לערוך ולהשלים.</div>
+<div class="plainlinks" style="flex:0 0 auto"><span style="display:inline-block; background:#c8a44d; border-radius:20px; padding:4px 14px; font-weight:bold; white-space:nowrap">[{{fullurl:{{FULLPAGENAME}}|action=edit}} <span style="color:#3d2e00">✏️ להרחבת הערך</span>]</span></div>
+</div>
+<includeonly>[[קטגוריה:ערכים להרחבה]]</includeonly>
+
+<noinclude>
+תבנית לסימון ערכים קצרמריים. שימוש: <code><nowiki>{{הרחבה}}</nowiki></code>
+
+הכפתור פותח את דף העריכה של הערך שבו התבנית מוצגת.
+
+[[קטגוריה:תבניות]]
+</noinclude>

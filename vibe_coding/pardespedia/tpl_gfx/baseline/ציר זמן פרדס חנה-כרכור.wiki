@@ -1,0 +1,12 @@
+<includeonly><div style="clear:both; margin-top:1.5em; border:1px solid #aaa; background:#f9f9f9; font-size:90%; direction:rtl; text-align:right; border-radius:6px; overflow:hidden">
+<div style="background:#d8e8c8; color:#1b3610; text-align:center; padding:6px; font-size:105%; font-weight:bold; border-bottom:1px solid #aaa">[[תקופות בחיי פרדס חנה-כרכור|ציר הזמן ההיסטורי של פרדס חנה-כרכור]]</div>
+<div style="padding:8px 10px 6px">{{ציר זמן פרדס חנה-כרכור/פס|{{{כאן|{{PAGENAME}}}}}=visible}}</div>
+<div style="padding:5px 10px; border-top:1px solid #ddd">'''נושאי מפתח:''' [[העלייה הייקית|עליית היקים]] • [[תקופות בחיי פרדס חנה-כרכור|הטבלה המלאה]]</div>
+<div style="padding:5px 10px; border-top:1px solid #ddd; font-size:90%; color:#444">'''מקורות:''' [[בית הראשונים]] – המרכז לתולדות פרדס חנה-כרכור • אריה פיאלקוב (עורך), '''ספר פרדס חנה''' • פרסומי [[מועצה מקומית פרדס חנה-כרכור]] • דוד גרוסמן, '''הכפר הערבי ובנותיו''' • [[סקר ארץ ישראל המערבית]] (PEF) • [[ארגון יוצאי מרכז אירופה]] • ויקיפדיה העברית ונתוני הלמ"ס</div>
+</div></includeonly><noinclude>
+== תיעוד התבנית ==
+תבנית ניווט תחתונה המקשרת בין דפי ההיסטוריה של [[פרדס חנה-כרכור]] ומפרטת את המקורות המרכזיים. לשימוש יש להוסיף בתחתית הערך: <code><nowiki>{{ציר זמן פרדס חנה-כרכור}}</nowiki></code>
+
+הציר עצמו (סרגל העשורים ופס שש התקופות) נמצא בתבנית המשנה <code>/פס</code>. הדף שבו התבנית מוצגת מסומן על הציר במסגרת ובחץ, בלי שצריך לכתוב דבר בערך. כדי לסמן תקופה או עשור בערך ששמו שונה משם הדף שעל הציר, כותבים את שם הדף שעל הציר בפרמטר <code>כאן</code>, למשל <code><nowiki>{{ציר זמן פרדס חנה-כרכור|כאן=הקמת פרדס חנה וביסוס המושבות}}</nowiki></code>.
+[[קטגוריה:תבניות ניווט]]
+</noinclude>

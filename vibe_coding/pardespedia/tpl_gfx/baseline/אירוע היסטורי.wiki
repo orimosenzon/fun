@@ -1,0 +1,39 @@
+<includeonly>{| class="infobox" style="width: 22em; font-size: 90%; text-align: right; border: 1px solid #aaa; background-color: #f9f9f9; float: left; margin: 0 1em 1em 0; border-collapse: collapse;"
+|-
+! colspan="2" style="text-align: center; font-size: 120%; background-color: #d8e8c8; color: #1b3610; padding: 6px; border-bottom: 1px solid #aaa;" | {{{שם|{{PAGENAME}}}}}
+|-
+! style="background-color: #eef5e6; padding: 5px; border-top: 1px solid #ddd; width: 38%; vertical-align: top;" | 📅 תאריך
+
+| style="padding: 5px; border-top: 1px solid #ddd;" | {{{תאריך|לא צוין}}}
+|-
+! style="background-color: #eef5e6; padding: 5px; border-top: 1px solid #ddd; vertical-align: top;" | 📍 מיקום
+
+| style="padding: 5px; border-top: 1px solid #ddd;" | {{{מיקום|לא צוין}}}
+|-
+! style="background-color: #eef5e6; padding: 5px; border-top: 1px solid #ddd; vertical-align: top;" | 🧭 רקע / הקשר
+
+| style="padding: 5px; border-top: 1px solid #ddd;" | {{{רקע|לא צוין}}}
+|-
+! style="background-color: #eef5e6; padding: 5px; border-top: 1px solid #ddd; vertical-align: top;" | 👥 גורמים מעורבים
+
+| style="padding: 5px; border-top: 1px solid #ddd;" | {{{גורמים מעורבים|לא צוין}}}
+|-
+! style="background-color: #eef5e6; padding: 5px; border-top: 1px solid #ddd; vertical-align: top;" | 🎯 תוצאה / השפעה
+
+| style="padding: 5px; border-top: 1px solid #ddd;" | {{{תוצאה|לא צוין}}}
+|}</includeonly><noinclude>
+== תיעוד התבנית ==
+תבנית מידע לאירועים היסטוריים ב[[פרדס חנה-כרכור]].
+
+<pre>
+{{אירוע היסטורי
+| שם = 
+| תאריך = 
+| מיקום = 
+| רקע = 
+| גורמים מעורבים = 
+| תוצאה = 
+}}
+</pre>
+[[קטגוריה:תבניות מידע]]
+</noinclude>

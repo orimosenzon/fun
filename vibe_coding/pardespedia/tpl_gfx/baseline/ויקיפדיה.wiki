@@ -1,0 +1,10 @@
+<div style="display:flex; align-items:center; gap:12px; border:1px solid #c8ccd1; background-color:#f8f9fa; padding:10px 12px; border-radius:4px; margin:15px 0; direction:rtl; text-align:right">
+<div style="flex:0 0 auto; width:38px; height:38px; box-sizing:border-box; border-radius:50%; border:1px solid #a2a9b1; background:#fff; font-family:'Linux Libertine','Times New Roman',serif; font-size:26px; line-height:36px; text-align:center; color:#222" title="ויקיפדיה">W</div>
+<div style="flex:1 1 auto">חלק מהתוכן בדף זה מקורו בוויקיפדיה העברית, מהערך [https://he.wikipedia.org/wiki/{{PAGENAMEE:{{{1|}}}}} {{{1|}}}], והוא זמין תחת רישיון [https://creativecommons.org CC-BY-SA 4.0].</div>
+</div>
+<noinclude>
+תבנית זו נועדה להצגת קרדיט לערך המבוסס על ויקיפדיה העברית.
+
+יש להוסיף בתוך התבנית את שם ערך היעד בוויקיפדיה בצורה הזו <nowiki>{{ויקיפדיה|שם הערך הרצוי}}</nowiki>
+[[קטגוריה:תבניות]]
+</noinclude>

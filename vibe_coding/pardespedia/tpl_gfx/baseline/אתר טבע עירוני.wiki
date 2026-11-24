@@ -1,0 +1,35 @@
+<includeonly><div class="float-md-right ml-md-3" style="clear:left; box-sizing:border-box; width:max(290px, min(100%, calc((640px - 100%) * 999))); max-width:100%; margin-bottom:1em; border:1px solid #9db88a; border-radius:6px; overflow:hidden; background:#f7faf3; font-size:90%; direction:rtl; text-align:right">
+<div style="background:#3f6b2a; color:#fff; padding:7px 10px; display:flex; align-items:center; gap:8px"><span style="font-size:150%; line-height:1">🌿</span><span style="flex:1 1 auto; font-weight:bold; font-size:110%">[[סקר תשתיות טבע עירוני|<span style="color:#fff">אתר בסקר הטבע העירוני</span>]]</span><span style="background:#fff; color:#3f6b2a; border-radius:12px; padding:1px 9px; font-weight:bold; white-space:nowrap" title="מספר האתר בסקר">מס' {{{מספר}}}</span></div>
+{| style="width:100%; border-collapse:collapse; margin:0; background:transparent"
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#e6f0dc; border-top:1px solid #d3e2c5; font-weight:bold" | 🏷️ שם בסקר
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #d3e2c5" | {{{שם}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#e6f0dc; border-top:1px solid #d3e2c5; font-weight:bold" | 📏 שטח
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #d3e2c5" | {{{שטח}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#e6f0dc; border-top:1px solid #d3e2c5; font-weight:bold" | 🌳 אופי השטח
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #d3e2c5" | {{{אופי}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#e6f0dc; border-top:1px solid #d3e2c5; font-weight:bold" | 🌼 מיני דגל
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #d3e2c5" | {{{דגל}}}
+|-
+! style="width:40%; text-align:right; vertical-align:top; padding:5px 8px; background:#e6f0dc; border-top:1px solid #d3e2c5; font-weight:bold" | 🗺️ ייעוד בתוכנית המתאר
+| style="vertical-align:top; padding:5px 8px; border-top:1px solid #d3e2c5" | {{{ייעוד}}}
+|}
+</div>[[קטגוריה:טבע עירוני]][[קטגוריה:אתרי סקר הטבע העירוני]]</includeonly><noinclude>
+תבנית לערכים על אתרים מתוך [[סקר תשתיות טבע עירוני]] של פרדס חנה-כרכור (2014). היא מציגה את מספר האתר בסקר ואת עיקרי הכרטיס שלו, ומוסיפה את הערך ל[[:קטגוריה:טבע עירוני]] ול[[:קטגוריה:אתרי סקר הטבע העירוני]].
+
+כל השדות חובה: ההרחבה ParserFunctions אינה מותקנת באתר, ולכן שדה ריק יוצג כטקסט גולמי. כשאין מידע כותבים "אין".
+
+<pre>
+{{אתר טבע עירוני
+| מספר  = 31
+| שם    = שמורת אלון
+| שטח   = 22 דונם
+| אופי  = יער פארק של אלון התבור
+| דגל   = אלון התבור, צבעוני ההרים
+| ייעוד = שמורת טבע, קרקע חקלאית ודרך
+}}
+</pre>
+</noinclude>
