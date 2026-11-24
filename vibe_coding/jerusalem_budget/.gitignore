@@ -1,0 +1,4 @@
+# קובצי המקור מאתר העירייה (~680MB): יורדים מחדש עם tools/download.py
+src/20*/
+src/cache/
+__pycache__/

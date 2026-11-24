@@ -1,0 +1,5 @@
+/* תוספות לירושלים מעל style.css (שהועתק מ"לאן הולך הכסף" של פרדס חנה-כרכור) */
+.lede.data-link { margin-top: 8px; font-size: 0.95rem; }
+.lede.data-link a { color: var(--s1); text-decoration: none; border-bottom: 1px solid currentColor; }
+.controls { flex-wrap: wrap; }
+.year-note a { color: inherit; }

@@ -1284,6 +1284,45 @@
           ]
         },
         {
+          "title": "לאן הולך הכסף של ירושלים",
+          "icon": "🏛️",
+          "theme": "t-blue",
+          "dir": "jerusalem_budget",
+          "tags": [
+            "D3",
+            "pdfplumber",
+            "Playwright",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#60a5fa\">התקציב הרגיל של עיריית ירושלים 2016–2026 כעוגה שנכנסים לתוכה.</strong><br> אחות של תקציב פרדס חנה-כרכור, בשתי חלוקות: לפי נושא (חינוך, רווחה, ניקיון) ולפי מבנה העירייה (מינהל, אגף, יחידה), עד שורת התקציב, עם דברי ההסבר מהספר, גרף לאורך השנים וקישור לעמוד המדויק בספר של העירייה. כ-3,500 סעיפים בשנה מאקסל ומ-PDF, ו-1,898 שורות סה\"כ שנבדקו. ובדף \"על הנתונים\": מקורות, מגבלות, עדכניות, וכפתור שמסכם הכול מחדש בדפדפן מול הסכום הרשמי.",
+          "links": [
+            {
+              "href": "jerusalem_budget/web/index.html",
+              "style": "live",
+              "label": "▶ לאן הולך הכסף של ירושלים",
+              "external": false
+            },
+            {
+              "href": "jerusalem_budget/web/data.html",
+              "style": "secondary",
+              "label": "🔎 על הנתונים",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/jerusalem_budget",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "שכונות פרדס חנה-כרכור",
           "icon": "🗺️",
           "theme": "t-green",

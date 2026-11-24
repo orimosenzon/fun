@@ -1,0 +1,58 @@
+/* דף "על הנתונים" */
+.dq section { margin: 34px 0; }
+.dq h2 { margin-bottom: 8px; }
+.dq .sub { color: var(--text-2); margin-top: 0; }
+.dq a { color: var(--s1); }
+.kicker a { color: inherit; text-decoration: none; }
+
+.trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.trust { border: 1px solid var(--line, #ddd); border-top: 4px solid; border-radius: 10px; padding: 12px 14px; background: var(--surface); }
+.trust.high { border-top-color: var(--s3); } .trust.mid { border-top-color: var(--s4); } .trust.low { border-top-color: var(--s2); }
+.trust-t { font-size: .85rem; color: var(--text-2); }
+.trust-v { font-size: 1.25rem; font-weight: 700; margin: 2px 0 6px; }
+.trust p { margin: 0; font-size: .92rem; color: var(--text-2); }
+
+.fresh { display: grid; gap: 10px; }
+.fresh-row { display: grid; grid-template-columns: 200px 170px 1fr; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line, #e5e5e5); }
+.fresh-row .k { color: var(--text-2); } .fresh-row .v { font-weight: 700; } .fresh-row .d { color: var(--text-2); font-size: .92rem; }
+@media (max-width: 700px) { .fresh-row { grid-template-columns: 1fr; gap: 2px; } }
+
+.dq-fig { position: relative; margin: 0 0 12px; }
+.dq-chart svg { display: block; }
+.dq-fig figcaption { display: flex; gap: 18px; flex-wrap: wrap; font-size: .88rem; color: var(--text-2); }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-inline-end: 6px; vertical-align: -1px; }
+.sw.official { background: var(--s1); } .sw.expl { background: var(--s2); border-radius: 50%; }
+
+.table-wrap { overflow-x: auto; }
+.years-table, .chk-table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+.years-table th, .years-table td, .chk-table th, .chk-table td { padding: 7px 8px; text-align: start; border-bottom: 1px solid var(--line, #e5e5e5); white-space: nowrap; }
+.years-table th, .chk-table th { color: var(--text-2); font-weight: 500; }
+.years-table tr.yr { cursor: pointer; }
+.years-table tr.yr:hover, .years-table tr.yr:focus { background: color-mix(in srgb, var(--s1) 8%, transparent); outline: none; }
+.years-table tr.yr[aria-expanded="true"] td:first-child::after { content: ' ▾'; color: var(--text-2); }
+.years-table tr.yr-det td { white-space: normal; background: color-mix(in srgb, var(--s1) 5%, transparent); }
+.years-table tr.yr-det p { margin: 4px 0; max-width: 80ch; }
+.ok { color: var(--s3); font-weight: 500; } .diff { color: var(--s2); font-weight: 500; }
+
+.lvl { display: inline-block; font-size: .75rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; margin-inline-end: 8px; vertical-align: 1px; }
+.lvl.high { background: color-mix(in srgb, var(--s3) 18%, transparent); color: var(--s3); }
+.lvl.mid { background: color-mix(in srgb, var(--s4) 20%, transparent); color: var(--s4); }
+.lvl.low { background: color-mix(in srgb, var(--text-2) 15%, transparent); color: var(--text-2); }
+details.lim .lvl.high { background: color-mix(in srgb, var(--s2) 18%, transparent); color: var(--s2); }
+
+details.lim { border: 1px solid var(--line, #e5e5e5); border-radius: 10px; padding: 10px 14px; margin: 8px 0; }
+details.lim summary { cursor: pointer; font-weight: 500; }
+details.lim[open] summary { margin-bottom: 6px; }
+details.lim p, details.lim li { max-width: 80ch; color: var(--text-2); }
+
+.check-box { border: 1px solid var(--line, #e5e5e5); border-radius: 12px; padding: 14px; }
+.check-ctrls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.check-ctrls select { font: inherit; padding: 4px 8px; }
+.chk-out { margin-top: 8px; }
+.rand { border-inline-start: 4px solid var(--s1); padding: 6px 12px; }
+.rand-name { font-size: 1.15rem; font-weight: 700; }
+.rand-path { color: var(--text-2); font-size: .9rem; }
+.rand-num { margin: 6px 0; font-size: 1.05rem; }
+.muted { color: var(--text-2); }
+.steps li, .src-list li { margin: 6px 0; max-width: 85ch; }
+code { font-size: .9em; background: color-mix(in srgb, var(--text-2) 12%, transparent); padding: 0 4px; border-radius: 4px; }
