@@ -11,7 +11,7 @@
 // (quiz.closing). Links used to name the letters themselves (&b=, &a=, and &m= before that); those are read only
 // for a quiz from before letters were marked in quizzes, so that what Carmit sees in the admin is what is shown.
 import { loadQuiz, loadQuizzes, loadBundle, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl, saveRating, saveComment, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611231001';
+  hasHeading, fillHeading, safeUrl, saveRating, saveComment, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611251653';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -165,6 +165,11 @@ function pick(arr) {
 const riddle = () => RIDDLES[order[current]];
 const isImageAnswer = (r) => r.answerType === 'image';
 
+// Every screen opens at its top: the browser keeps the old scroll position when the page swaps
+// screens in place (results, the next riddle) and when a page is reloaded or reopened.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+const toTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
 function startQuiz() {
   order = RIDDLES.map((_, i) => i);
   if (SHUFFLE) {
@@ -183,6 +188,7 @@ function startQuiz() {
 }
 
 function showRiddle() {
+  toTop();
   const r = riddle();
   hintUsed = false;
   answered = false;
@@ -230,7 +236,7 @@ function showRiddle() {
   }
   // On a touch screen focusing the box would pop up the keyboard and hide most of the picture,
   // so there the player taps the box when ready to type. With a real keyboard, type straight away.
-  if (!isImageAnswer(r) && !fingerFirst()) answerInput.focus();
+  if (!isImageAnswer(r) && !fingerFirst()) answerInput.focus({ preventScroll: true });   // the picture stays in view
   else if (document.activeElement === answerInput) answerInput.blur();
 }
 
@@ -339,6 +345,7 @@ function thumb(src) {
 function showReport() {
   quizScreen.classList.add('hidden');
   reportScreen.classList.remove('hidden');
+  toTop();
   noteVisit({ finished: true });
   results = results.filter(Boolean);
   const score = results.filter((r) => r.correct).length;

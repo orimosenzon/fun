@@ -96,6 +96,22 @@ service cloud.firestore {
         && request.resource.data.get('finished', true) == true
         && request.resource.data.created == request.time;
     }
+    // "גבר גבר": what Carmit or Ori ask Claude to change in the app. They write a request (as themselves, status
+    // 'new') and can withdraw it while it is still new. The status after that, and Claude's answer, are written by
+    // tools/gever.py with Ori's gcloud token (a project owner is not bound by these rules), never from the page.
+    match /gever/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['by', 'text', 'image', 'followUp', 'status', 'created'])
+        && request.resource.data.by == request.auth.token.email
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 5000
+        && request.resource.data.image is string && request.resource.data.image.size() <= 400000
+        && request.resource.data.followUp is string && request.resource.data.followUp.size() <= 40
+        && request.resource.data.status == 'new'
+        && request.resource.data.created == request.time;
+      allow delete: if isAdmin() && resource.data.status == 'new';
+      allow update: if false;
+    }
     // A short link (orimosenzon.github.io/fun/carmit/?<code>): which quiz it opens (q), or which bundle (s, with q '').
     // Never changed once made, so a link that was sent always opens the same thing.
     match /links/{code} {

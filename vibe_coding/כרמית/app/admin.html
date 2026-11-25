@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611231001">
+<link rel="stylesheet" href="style.css?v=202611251653">
 </head>
 <body class="admin">
   <div id="app">
@@ -36,6 +36,7 @@
         <button class="tab" data-tab="pool" role="tab">מאגר החידות <span id="pool-count" class="count"></span></button>
         <button class="tab" data-tab="letters" role="tab">מכתבים <span id="all-letters-count" class="count"></span></button>
         <button class="tab" data-tab="stats" role="tab">סטטיסטיקה <span id="stats-count" class="count"></span></button>
+        <button class="tab" data-tab="gever" role="tab">גבר גבר <span id="gever-count" class="count"></span></button>
       </nav>
 
       <div id="tab-letters" class="hidden">
@@ -71,6 +72,22 @@
           </ul>
         </div>
         <div id="stats-body" class="stats-body"></div>
+      </div>
+
+      <div id="tab-gever" class="hidden">
+        <p class="help">כאן כותבים לקלוד, הגבר גבר, מה לשנות באפליקציה: משהו שמפריע, משהו שחסר, רעיון חדש. אפשר לצרף צילום מסך. קלוד בודק פעם בשעה, עושה את השינוי, ועונה כאן מה שינה ואיך לראות את זה. אם משהו לא ברור לו, הוא ישאל כאן.</p>
+        <form id="gever-form" class="pane gever-form">
+          <p id="gever-follow" class="gever-follow hidden"><span></span> <button type="button" id="gever-follow-cancel" class="link-btn muted">✕ בלי המשך</button></p>
+          <textarea id="gever-text" rows="5" maxlength="5000" placeholder="מה לשנות? כמה שיותר פרטים: איפה זה, מה קורה עכשיו, ומה היית רוצה שיקרה."></textarea>
+          <div class="gever-actions">
+            <label class="link-btn gever-attach">📎 צירוף צילום מסך<input type="file" id="gever-file" accept="image/*" hidden></label>
+            <span id="gever-img-box" class="gever-img-box hidden"><img id="gever-img" alt=""><button type="button" id="gever-img-remove" class="link-btn muted">✕</button></span>
+            <span class="gever-spacer"></span>
+            <button type="submit" id="gever-send" class="primary-btn small">שליחה לקלוד</button>
+          </div>
+          <div id="gever-error" class="feedback wrong hidden"></div>
+        </form>
+        <ul id="gever-list" class="gever-list"></ul>
       </div>
 
       <div id="tab-quizzes">
@@ -380,6 +397,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611231001"></script>
+  <script type="module" src="admin.js?v=202611251653"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 // Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>', '#bundle/<id>'.
-import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611231001';
+import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, loadGever, sendGever, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611251653';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -19,6 +19,7 @@ let letters = [];        // letters to send along with a quiz, before it or afte
 let categories = [];     // the categories of riddles, in the order they were made; "כללי" is built in, not one of them
 let poolCat = null;      // the pool's filter: null = every riddle, '' = "כללי", or a category's id
 let bundles = [];        // bundles (מקבצים): collections of quizzes, each with a link of its own
+let gever = [];          // requests to Claude in the "גבר גבר" tab, each with its answer once there is one
 let current = null;      // the quiz open in the quiz view
 let currentBundle = null;  // the bundle open in the bundle view
 let picked = new Set();  // riddle ids checked in the quiz list, to copy or move to another quiz
@@ -93,16 +94,19 @@ au.onAuthStateChanged(auth, async (user) => {
 });
 
 async function reload() {
-  [riddles, quizzes, letters, bundles, categories] = await Promise.all([loadRiddles(), loadQuizzes(),
+  [riddles, quizzes, letters, bundles, categories, gever] = await Promise.all([loadRiddles(), loadQuizzes(),
     loadLetters().catch((e) => { console.error(e); return []; }),
     loadBundles().catch((e) => { console.error(e); return []; }),
-    loadCategories().catch((e) => { console.error(e); return []; })]);
+    loadCategories().catch((e) => { console.error(e); return []; }),
+    loadGever().catch((e) => { console.error(e); return []; })]);
   byId = new Map(riddles.map((r) => [r.id, r]));
 }
 
 // ---------- routing ----------
 
 window.addEventListener('hashchange', route);
+// Every view opens at its top, also after a reload (the browser would restore the old position).
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 function route() {
   if (!auth.currentUser) return;
@@ -114,14 +118,17 @@ function route() {
   $('home-view').classList.toggle('hidden', !!(quiz || bundle));
   $('quiz-view').classList.toggle('hidden', !quiz);
   $('bundle-view').classList.toggle('hidden', !bundle);
+  scrollTo({ top: 0 });
   currentBundle = bundle || null;
   if (quiz) return openQuiz(quiz);
   current = null;
   if (bundle) return openBundle(bundle);
-  const tab = { '#pool': 'pool', '#bundles': 'bundles', '#path': 'path', '#letters': 'letters', '#stats': 'stats' }[location.hash] || 'quizzes';
+  const tab = { '#pool': 'pool', '#bundles': 'bundles', '#path': 'path', '#letters': 'letters', '#stats': 'stats', '#gever': 'gever' }[location.hash] || 'quizzes';
   setTab(tab);
   renderHome();
   if (tab === 'stats') loadStats();
+  if (tab === 'gever') renderGever();
+  geverBadge();
 }
 
 function setTab(tab) {
@@ -132,6 +139,7 @@ function setTab(tab) {
   $('tab-path').classList.toggle('hidden', tab !== 'path');
   $('tab-letters').classList.toggle('hidden', tab !== 'letters');
   $('tab-stats').classList.toggle('hidden', tab !== 'stats');
+  $('tab-gever').classList.toggle('hidden', tab !== 'gever');
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
   history.replaceState(null, '', t.dataset.tab === 'quizzes' ? location.pathname : `#${t.dataset.tab}`);
@@ -2075,4 +2083,145 @@ $('riddle-form').addEventListener('submit', async (e) => {
     $('save-btn').disabled = false;
     $('save-btn').textContent = 'שמירה';
   }
+});
+
+// ---------- "גבר גבר": requests to Claude ----------
+// Carmit writes what to change; once an hour tools/gever_cron.sh hands the new requests to Claude, who changes the
+// app and writes the answer on the request. A request can continue an earlier one (followUp), e.g. to answer a
+// question Claude asked; it then shows right under it.
+
+const GEVER_SEEN = 'carmit-gever-seen';
+const STATUS = {
+  new: 'ממתינה לקלוד (הוא בודק פעם בשעה)',
+  working: 'קלוד עובד על זה עכשיו',
+  done: '✓ טופלה',
+  question: 'לקלוד יש שאלה',
+};
+const personName = (email) => ({ 'carmitconsari@gmail.com': 'כרמית', 'orimosenzon@gmail.com': 'אורי' })[email] || email || '';
+const fmtWhen = (t) => (stamp(t) ? new Date(stamp(t)).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+let geverImage = '';
+let geverFollow = '';
+
+// The tab's count: answers that came since this browser last opened the tab.
+function geverBadge() {
+  let seen = 0;
+  try { seen = +localStorage.getItem(GEVER_SEEN) || 0; } catch { /* private mode */ }
+  const open = !$('tab-gever').classList.contains('hidden');
+  const fresh = gever.filter((g) => g.reply && stamp(g.replied) > seen).length;
+  $('gever-count').textContent = open || !fresh ? '' : `${fresh} חדש`;
+}
+
+function renderGever() {
+  try { localStorage.setItem(GEVER_SEEN, String(Date.now())); } catch { /* private mode */ }
+  const list = $('gever-list');
+  if (!gever.length) {
+    list.replaceChildren(el('li', 'help', 'עוד לא נכתבו בקשות. הבקשה הראשונה שתכתבי תופיע כאן, ואחריה התשובה של קלוד.'));
+    return;
+  }
+  // Threads: a request that continues another shows right under it; threads by their newest message, newest first.
+  const byIdG = new Map(gever.map((g) => [g.id, g]));
+  const root = (g) => { const seen = new Set(); while (g.followUp && byIdG.has(g.followUp) && !seen.has(g.id)) { seen.add(g.id); g = byIdG.get(g.followUp); } return g; };
+  const threads = Map.groupBy([...gever].sort((a, b) => stamp(a.created) - stamp(b.created)), (g) => root(g).id);
+  const last = (t) => Math.max(...t.map((g) => Math.max(stamp(g.created), stamp(g.replied))));
+  const items = [];
+  for (const t of [...threads.values()].sort((a, b) => last(b) - last(a))) {
+    t.forEach((g, i) => items.push(geverItem(g, i > 0)));
+  }
+  list.replaceChildren(...items);
+}
+
+function geverItem(g, followup) {
+  const li = el('li', `pane gever-item${followup ? ' followup' : ''}`);
+  const head = el('div', 'gever-head');
+  const status = g.status in STATUS ? g.status : 'new';
+  head.append(el('b', '', personName(g.by)), el('span', 'help', fmtWhen(g.created)), el('span', `gever-status ${status}`, STATUS[status]));
+  li.append(head, el('p', 'gever-text', g.text));
+  if (g.image) {
+    const img = el('img', 'gever-shot');
+    img.src = g.image;
+    img.alt = 'צילום מסך';
+    img.loading = 'lazy';
+    img.addEventListener('click', () => window.open().document.write(`<img src="${g.image}" style="max-width:100%">`));
+    li.appendChild(img);
+  }
+  if (g.reply) {
+    const box = el('div', 'gever-reply');
+    const rh = el('div', 'gever-head');
+    rh.append(el('span', 'who', 'קלוד'), el('span', 'help', fmtWhen(g.replied)));
+    box.append(rh, el('p', 'gever-text', g.reply));
+    li.appendChild(box);
+  }
+  const foot = el('div', 'gever-foot');
+  const more = el('button', 'link-btn', g.status === 'question' ? '↩ לענות לקלוד' : '↩ להמשיך את הבקשה הזאת');
+  more.addEventListener('click', () => setFollow(g));
+  foot.appendChild(more);
+  if (status === 'new') {
+    const del = el('button', 'link-btn del', 'ביטול הבקשה');
+    del.addEventListener('click', async () => {
+      if (!confirm('לבטל את הבקשה? קלוד עוד לא ראה אותה.')) return;
+      try { await fs.deleteDoc(fs.doc(db, 'gever', g.id)); }
+      catch (err) { return toast(`הביטול נכשל: ${err.message}`); }
+      gever = gever.filter((x) => x !== g);
+      renderGever();
+      toast('הבקשה בוטלה');
+    });
+    foot.appendChild(del);
+  }
+  li.appendChild(foot);
+  return li;
+}
+
+function setFollow(g) {
+  geverFollow = g ? g.id : '';
+  $('gever-follow').classList.toggle('hidden', !g);
+  if (g) {
+    const words = g.text.length > 60 ? `${g.text.slice(0, 60)}…` : g.text;
+    $('gever-follow').querySelector('span').textContent = `המשך ל: "${words}"`;
+    scrollTo({ top: 0 });
+    $('gever-text').focus();
+  }
+}
+$('gever-follow-cancel').addEventListener('click', () => setFollow(null));
+
+function setGeverImage(data) {
+  geverImage = data;
+  $('gever-img').src = data || '';
+  $('gever-img-box').classList.toggle('hidden', !data);
+}
+const geverError = (msg) => { $('gever-error').textContent = msg; $('gever-error').classList.toggle('hidden', !msg); };
+async function takeGeverImage(file) {
+  if (!file) return;
+  try { setGeverImage(await readImage(file)); geverError(''); } catch (err) { geverError(err.message); }
+}
+$('gever-file').addEventListener('change', (e) => { takeGeverImage(e.target.files[0]); e.target.value = ''; });
+$('gever-img-remove').addEventListener('click', () => setGeverImage(''));
+// A screenshot can also be pasted straight into the text box.
+$('gever-text').addEventListener('paste', (e) => {
+  const file = [...(e.clipboardData?.files || [])].find((f) => f.type.startsWith('image/'));
+  if (file) { e.preventDefault(); takeGeverImage(file); }
+});
+$('gever-text').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $('gever-form').requestSubmit(); }
+});
+
+$('gever-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = $('gever-text').value.trim();
+  if (!text) return geverError('מה לכתוב לקלוד? התיבה ריקה.');
+  $('gever-send').disabled = true;
+  try {
+    const by = (auth.currentUser?.email || '').toLowerCase();
+    const { id } = await sendGever({ by, text, image: geverImage, followUp: geverFollow });
+    gever.push({ id, by, text, image: geverImage, followUp: geverFollow, status: 'new', created: Date.now() });
+  } catch (err) {
+    return geverError(`השליחה נכשלה: ${err.message}`);
+  } finally {
+    $('gever-send').disabled = false;
+  }
+  $('gever-text').value = '';
+  setGeverImage('');
+  setFollow(null);
+  geverError('');
+  renderGever();
+  toast('נשלח. קלוד יענה כאן בתוך שעה בערך.');
 });

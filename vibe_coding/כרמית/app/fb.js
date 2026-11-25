@@ -222,3 +222,17 @@ export function isCorrect(userAnswer, riddle) {
   const u = normalize(userAnswer);
   return !!u && riddle.answers.some((a) => normalize(a) === u);
 }
+
+// "גבר גבר": what Carmit (or Ori) asks Claude to change in the app. Claude checks once an hour (tools/gever_cron.sh),
+// makes the change, and answers on the same document. A request:
+// { by (email), text, image (data URL or ''), followUp (id of an earlier request it continues, or ''), created,
+//   status: 'new' | 'working' | 'done' | 'question', reply, replied }. Only the first six are written here; the
+// status after 'new', the reply and its time are written by Claude's script (as the project owner, past the rules).
+export async function loadGever() {
+  const snap = await fs.getDocs(fs.collection(db, 'gever'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export function sendGever({ by, text, image = '', followUp = '' }) {
+  return fs.addDoc(fs.collection(db, 'gever'), { by, text, image, followUp, status: 'new', created: fs.serverTimestamp() });
+}

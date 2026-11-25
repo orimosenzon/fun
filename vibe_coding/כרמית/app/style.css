@@ -1276,3 +1276,35 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 .new-bundle { align-items: center; justify-content: center; gap: 6px; border-style: dashed; background: none; color: var(--muted); }
 .new-bundle .plus { font-family: var(--mono); font-size: 2.4rem; line-height: 1; color: var(--cyan); }
 .new-bundle:hover { color: var(--text); background: rgba(94, 231, 255, 0.04); }
+
+/* "גבר גבר": requests to Claude, each with Claude's answer under it, newest first */
+.gever-form textarea {
+  width: 100%; resize: vertical; min-height: 110px; padding: 12px 14px; border-radius: 12px;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+  font: inherit; font-size: 1.02rem; line-height: 1.6;
+}
+.gever-form textarea:focus { outline: none; border-color: var(--cyan); }
+.gever-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.gever-spacer { flex: 1; }
+.gever-attach { cursor: pointer; }
+.gever-img-box { display: inline-flex; align-items: center; gap: 4px; }
+.gever-img-box img { height: 48px; border-radius: 6px; border: 1px solid var(--line); }
+.gever-follow { margin: 0; color: var(--violet); font-size: 0.92rem; }
+.gever-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.gever-item { gap: 8px; }
+.gever-item.followup { margin-inline-start: 28px; }
+.gever-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.gever-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.02rem; line-height: 1.6; }
+.gever-shot { max-width: min(100%, 360px); border-radius: 8px; border: 1px solid var(--line); cursor: zoom-in; align-self: flex-start; }
+.gever-status { font-size: 0.8rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.gever-status.new { color: var(--amber); }
+.gever-status.working { color: var(--cyan); }
+.gever-status.done { color: var(--lime); }
+.gever-status.question { color: var(--violet); }
+.gever-reply {
+  background: rgba(94, 231, 255, 0.06); border: 1px solid rgba(94, 231, 255, 0.28); border-radius: 12px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+}
+.gever-reply .who { color: var(--cyan); font-weight: 700; }
+.gever-foot { display: flex; flex-wrap: wrap; gap: 14px; }
+#tab-gever { display: flex; flex-direction: column; gap: 14px; }
