@@ -1095,10 +1095,44 @@ dialog { color: var(--text); font: inherit; }
 
 .globe-traveler .avatar { border: 2px solid var(--accent); box-shadow: 0 3px 10px rgba(15, 42, 56, 0.35); }
 
+.traveler-body { position: relative; display: block; }
+
+/* Coming back down as an angel: a halo, a glow, and two wings that beat behind the picture. */
+.globe-traveler.angel { margin-top: -43px; }
+
+.traveler-gear.halo { display: flex; align-items: flex-end; justify-content: center; height: 26px; margin-bottom: -2px; filter: drop-shadow(0 0 5px rgba(255, 214, 92, 0.95)); }
+
+.traveler-gear.halo svg { width: 31px; height: 12px; overflow: visible; }
+
+.globe-traveler.angel .avatar { position: relative; z-index: 1; border-color: #eeb522; box-shadow: 0 0 0 3px rgba(255, 240, 180, 0.6), 0 0 20px 4px rgba(255, 224, 130, 0.85), 0 3px 10px rgba(15, 42, 56, 0.3); }
+
+.angel-wing { position: absolute; top: -16px; width: 52px; height: 43px; }
+
+.angel-wing.right { left: 26px; transform-origin: 0 70%; }
+
+.angel-wing.left { right: 26px; transform-origin: 100% 70%; }
+
+.wing-art { display: block; width: 100%; height: 100%; }
+
+.angel-wing.left .wing-art { transform: scaleX(-1); }
+
+.angel-wing svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: 5% 68%;
+  filter: drop-shadow(0 2px 3px rgba(15, 42, 56, 0.25));
+  animation: angel-flap 0.34s ease-in-out infinite alternate;
+}
+
+@keyframes angel-flap {
+  from { transform: rotate(-26deg) scaleY(1.06); }
+  to { transform: rotate(22deg) scaleY(0.86); }
+}
+
 .globe-ripple {
   position: absolute;
-  top: -22px;
-  left: -22px;
   z-index: 5;
   width: 44px;
   height: 44px;

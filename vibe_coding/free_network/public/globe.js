@@ -451,36 +451,66 @@ export function friendsGlobe({ me, friends, ui }) {
   const centre = (rect) => rect && { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   const settle = (node) => node?.animate([{ transform: 'scale(0.4)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
 
-  // The reader's picture floats between two points on the screen: down from the cloud under a
-  // parachute, or up to it under a balloon. It sways a little and lands with a bounce.
+  const shape = (tag, attributes, ...children) => {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+    node.append(...children);
+    return node;
+  };
+  const feather = (d) => shape('path', { d, fill: 'none', stroke: '#b7c8d6', 'stroke-width': 1.3, 'stroke-linecap': 'round' });
+  // One wing, drawn for the right side with its joint at the shoulder. The left one is its mirror.
+  const wing = (side) => el('span', { className: `angel-wing ${side}` }, el('span', { className: 'wing-art' }, shape('svg', { viewBox: '0 0 60 50' },
+    shape('path', {
+      d: 'M3 34 C8 14 28 2 57 3 C55 11 50 16 43 19 C49 20 52 23 51 28 C45 30 40 30 35 29 C39 32 40 36 37 40 C26 43 12 42 3 34 Z',
+      fill: '#fff', stroke: '#a9bccb', 'stroke-width': 1.4, 'stroke-linejoin': 'round',
+    }),
+    feather('M9 27 C16 16 28 9 45 7'), feather('M12 31 C22 23 33 19 44 18.5'), feather('M14 36 C22 31 30 29 37 29'))));
+  const halo = () => shape('svg', { viewBox: '0 0 30 12' },
+    shape('ellipse', { cx: 15, cy: 6, rx: 12, ry: 4, fill: 'none', stroke: '#eeb522', 'stroke-width': 3 }),
+    shape('ellipse', { cx: 15, cy: 5.6, rx: 12, ry: 4, fill: 'none', stroke: '#ffe98a', 'stroke-width': 1.3 }));
+
+  // The reader's picture floats between two points on the screen: up to the cloud under a
+  // balloon, or back down from it as an angel, beating its wings, with a halo that stays behind
+  // in the sky. It sways a little and lands with a bounce.
   function travel(from, to, down) {
     if (reduceMotion || !from || !to) return Promise.resolve();
     const base = root.getBoundingClientRect();
-    const gear = el('span', { className: 'traveler-gear' }, down ? '🪂' : '🎈');
-    const traveler = el('div', { className: 'globe-traveler', ariaHidden: 'true' }, gear, avatar(me, { small: true }));
+    const gear = el('span', { className: `traveler-gear${down ? ' halo' : ''}` }, down ? halo() : '🎈');
+    const wings = down ? [wing('left'), wing('right')] : [];
+    const traveler = el('div', { className: `globe-traveler${down ? ' angel' : ''}`, ariaHidden: 'true' }, gear,
+      el('span', { className: 'traveler-body' }, ...wings, avatar(me, { small: true })));
     root.append(traveler);
     const [x0, y0, x1, y1] = [from.x - base.left, from.y - base.top, to.x - base.left, to.y - base.top];
-    const steps = 40;
+    const steps = 60;
+    const duration = down ? 2600 : 1500;
     const frames = Array.from({ length: steps + 1 }, (_, i) => {
       const t = i / steps;
-      // Down: a small hop off the cloud, then a slow fall. Up: a slow start, then the balloon takes it.
+      // Down: a lift off the cloud, then a slow glide in a wide curve, rising a little with every
+      // beat of the wings. Up: a slow start, then the balloon takes it.
       const eased = down ? t * t * (3 - 2 * t) : t ** 1.6;
-      const hop = down ? -26 * Math.sin(Math.min(1, t * 3) * Math.PI) * (1 - t) : 0;
-      const sway = Math.sin(t * Math.PI * 4) * 16 * Math.sin(t * Math.PI);
+      const hop = down ? -22 * Math.sin(Math.min(1, t * 2.6) * Math.PI) * (1 - t) : 0;
+      const beat = down ? Math.sin(t * Math.PI * 2 * (duration / 680)) * 3 * Math.sin(t * Math.PI) : 0;
+      const sway = down ? Math.sin(t * Math.PI * 2) * 26 * Math.sin(t * Math.PI) : Math.sin(t * Math.PI * 4) * 16 * Math.sin(t * Math.PI);
       const x = x0 + (x1 - x0) * eased + sway;
-      const y = y0 + (y1 - y0) * eased + hop;
-      return { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${(sway * 0.9).toFixed(1)}deg)` };
+      const y = y0 + (y1 - y0) * eased + hop + beat;
+      return { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${(sway * (down ? 0.25 : 0.9)).toFixed(1)}deg)` };
     });
-    const flight = traveler.animate(frames, { duration: down ? 1700 : 1500, easing: 'linear', fill: 'forwards' });
+    const flight = traveler.animate(frames, { duration, easing: 'linear', fill: 'forwards' });
     gear.animate(down
-      ? [{ opacity: 0, transform: 'scale(0.3)' }, { opacity: 1, transform: 'scale(1)', offset: 0.18 }, { opacity: 1, transform: 'scale(1)', offset: 0.85 }, { opacity: 0, transform: 'translateY(-14px) scale(0.6)' }]
+      ? [{ opacity: 0, transform: 'scale(0.3)' }, { opacity: 1, transform: 'scale(1)', offset: 0.14 }, { opacity: 1, transform: 'scale(1)', offset: 0.86 }, { opacity: 0, transform: 'translateY(-18px) scale(0.7)' }]
       : [{ opacity: 0, transform: 'scale(0.3)' }, { opacity: 1, transform: 'scale(1.1)', offset: 0.25 }, { opacity: 1, transform: 'scale(1)', offset: 0.9 }, { opacity: 0 }],
-    { duration: down ? 1700 : 1500, fill: 'forwards' });
+    { duration, fill: 'forwards' });
+    // The wings open as the angel leaves the cloud, and fold away on the ground.
+    for (const one of wings) {
+      one.animate([{ opacity: 0, scale: 0.2 }, { opacity: 1, scale: 1, offset: 0.14 }, { opacity: 1, scale: 1, offset: 0.88 }, { opacity: 0, scale: 0.35 }], { duration, fill: 'forwards' });
+    }
     return flight.finished.then(() => {
       if (down) {
         // Landing: a ripple spreads on the ground where the picture touched it.
         const ripple = el('span', { className: 'globe-ripple' });
-        ripple.style.transform = `translate(${x1}px, ${y1}px)`;
+        // Placed by its corner, not by a transform: growing would carry a transform away with it.
+        ripple.style.left = `${x1 - 22}px`;
+        ripple.style.top = `${y1 - 22}px`;
         root.append(ripple);
         ripple.animate([{ opacity: 0.9, scale: 0.2 }, { opacity: 0, scale: 2.4 }], { duration: 700, easing: 'ease-out' }).finished.then(() => ripple.remove());
       }
@@ -526,10 +556,13 @@ export function friendsGlobe({ me, friends, ui }) {
     } catch (err) {
       travelling = false;
       tell(err.message);
+      renderControls();
     }
   }
 
   async function hide() {
+    // The place is erased from the server, and remembered on this device only, for the way back.
+    if (me.place) lastPlace(me.id, me.place);
     const pinned = pins.querySelector('.globe-pin.mine');
     const stageBefore = stage.getBoundingClientRect();
     const fromPin = centre(pinned?.getBoundingClientRect());
@@ -585,6 +618,14 @@ export function friendsGlobe({ me, friends, ui }) {
       checked: shared || choosing,
       onchange: () => {
         if (toggle.checked) {
+          // Whoever was on the earth before goes straight back to the same place. The place can
+          // be changed afterwards. Only someone new is asked where to stand.
+          const remembered = lastPlace(me.id);
+          if (remembered) {
+            toggle.disabled = true;
+            save(remembered);
+            return;
+          }
           choosing = true;
           renderControls();
         } else if (shared) {
