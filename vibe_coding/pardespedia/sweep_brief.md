@@ -107,11 +107,16 @@ so a crash leaves a partial report). Hebrew. Per article one line:
 Then sections:
 - `## לבירור אצל אורי`: suspected closures, contradictions, anything sensitive you didn't publish.
 - `## הצעות לדפים אחרים`: concrete proposed edits outside the batch.
-- `## רעיונות לערכים חדשים`: with a source each.
+- `## רעיונות לערכים חדשים`: with a source each. **Before proposing a new article, make sure it doesn't
+  already exist under another name**: `list=search` with `srwhat=text` (body text, not only titles) for the
+  name and its variants, and read the hits. If an existing article covers the subject, propose a redirect
+  or an addition to that article instead.
 - `## בעיות שחוזרות`: patterns you saw (so the next agents can fix them better).
 Final message to the coordinator: counts (edited / checked-no-change / skipped) + the 5 most important findings.
 
 ## Lessons from earlier batches
+- The 24/11/2026 smoke test proposed a new article "חצר השוק", but that is the name of the compound in
+  the existing article [[השוק הישן]] (it got a redirect instead). A title search alone misses such cases.
 - history-1 published a "moved to Kfar Saba" claim taken from a search summary; the article itself didn't say it.
   **Write a fact only after you opened the page and saw it there.**
 - Conservation-appendix buildings: the web rarely has post-2011 status. Don't spend more than 2 searches on that.
