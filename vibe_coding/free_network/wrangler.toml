@@ -6,7 +6,7 @@ compatibility_date = "2026-09-01"
 directory = "public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*", "/why", "/why.html"]
+run_worker_first = ["/api/*", "/why", "/why.html", "/.well-known/*"]
 
 [[d1_databases]]
 binding = "DB"
@@ -33,7 +33,7 @@ GOOGLE_CLIENT_ID = "499440299994-1jorad0ruokmg0hdlkrv60dmm314jqt2.apps.googleuse
 directory = "public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*", "/why", "/why.html"]
+run_worker_first = ["/api/*", "/why", "/why.html", "/.well-known/*"]
 
 [[env.live.d1_databases]]
 binding = "DB"

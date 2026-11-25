@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">הרשת החופשית</string>
+    <string name="provider_authority">il.pardes.freenetwork.fileprovider</string>
+    <!-- Chrome shows the site without an address bar only when the site vouches for this app, in
+         /.well-known/assetlinks.json (served by src/index.js), and the app names the site here. -->
+    <string name="asset_statements" translatable="false">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://free-network.orimosenzon.workers.dev\"}}]</string>
+</resources>

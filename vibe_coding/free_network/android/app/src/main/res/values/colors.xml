@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The same colours as theme-color and background_color in public/manifest.webmanifest. -->
+    <color name="bar">#F6E3C9</color>
+    <color name="background">#F6E3C9</color>
+</resources>

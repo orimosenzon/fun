@@ -1809,3 +1809,44 @@ dialog { color: var(--text); font: inherit; }
 @media (max-width: 640px) {
   .suggestions li { min-height: 44px; align-items: center; }
 }
+
+/* The app page (/app) and the card above the feed that leads to it. */
+.app-hero img { width: 96px; height: 96px; border-radius: 22px; box-shadow: var(--shadow); }
+
+.app-way h2 { display: flex; align-items: center; gap: 8px; margin-top: 0; }
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  margin: 4px 0 6px;
+  padding: 10px 26px;
+  color: var(--on-brand);
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--brand);
+  border-radius: 999px;
+}
+
+.button-link:hover { filter: brightness(1.07); }
+
+.app-steps { display: grid; gap: 10px; margin: 14px 0 4px; padding-inline-start: 22px; }
+
+.app-steps li { padding-inline-start: 4px; line-height: 1.55; }
+
+.app-steps li::marker { color: var(--accent); font-weight: 700; }
+
+.inline-icon { display: inline-grid; place-items: center; vertical-align: -4px; color: var(--brand); }
+
+.inline-icon .icon { width: 18px; height: 18px; }
+
+.app-hint { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+
+.app-hint > div:nth-child(2) { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+
+.app-hint .promise-icon { margin-top: 0; }
+
+.app-hint-actions { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+.app-hint-actions a { font-weight: 600; }

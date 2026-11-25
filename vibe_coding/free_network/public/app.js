@@ -42,7 +42,24 @@ const ICONS = {
   send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
   down: 'M6 9l6 6 6-6',
   edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z',
+  phone: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2',
+  download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+  square: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 8v8M8 12h8',
 };
+// Which phone this is, and whether the page already runs as the installed app: the Android app
+// opens the site with an android-app:// referrer, and both it and an iPhone home-screen icon
+// open it in standalone mode. The referrer is only there on the first page, so it is remembered.
+const PHONE = /Android/i.test(navigator.userAgent) ? 'android'
+  : /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios' : null;
+const INSTALLED = (() => {
+  try {
+    if (document.referrer.startsWith('android-app://')) sessionStorage.setItem('installed', '1');
+    if (sessionStorage.getItem('installed')) return true;
+  } catch {}
+  return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+})();
+const APP_HINT_KEY = 'app-hint-hidden';
+const APK = '/downloads/free-network.apk';
 let me = null;
 let inviteOnly = false;
 let googleLogin = false;
@@ -682,6 +699,7 @@ async function feedPage() {
   paint(...[
     side,
     news,
+    appHint(),
     await composer(route),
     el('p', { className: 'feed-rule' }, 'כל הפוסטים שלך ושל החברים שלך, מהחדש לישן. זה כל האלגוריתם.'),
     list,
@@ -1061,6 +1079,7 @@ async function profilePage(id) {
         rename,
         user.avatar ? remove('avatar', 'הסרת תמונת הפרופיל') : null,
         user.cover ? remove('cover', 'הסרת תמונת הכותרת') : null,
+        INSTALLED ? null : link('/app', 'אפליקציה לטלפון'),
         el('button', { className: 'plain phone-only', type: 'button', onclick: logout }, 'יציאה מהחשבון'))].filter(Boolean));
   } else if (friendship === 'friends') {
     body.append(el('div', { className: 'row' }, el('span', { className: 'chip friends' }, icon('check'), 'חברים'), messageLink(user, 'שליחת הודעה')));
@@ -1393,6 +1412,71 @@ function promise(picture, title, text) {
   return el('li', {}, el('span', { className: 'promise-icon' }, icon(picture)), el('div', {}, el('strong', {}, title), text));
 }
 
+function steps(...items) {
+  return el('ol', { className: 'app-steps' }, ...items.map((item) => el('li', {}, ...[item].flat())));
+}
+
+function androidSteps() {
+  return el('section', { className: 'card app-way' },
+    el('h2', {}, icon('phone'), 'אנדרואיד'),
+    el('a', { className: 'button-link', href: APK, download: 'free-network.apk' }, icon('download'), 'הורדת האפליקציה'),
+    steps(
+      'לוחצים על "הורדת האפליקציה" למעלה.',
+      'פותחים את הקובץ שירד, מההודעה שקופצת או מתיקיית ההורדות.',
+      ['אם הטלפון שואל, מאשרים לדפדפן ', el('strong', {}, 'להתקין אפליקציות לא מוכרות'), ' וחוזרים אחורה.'],
+      ['לוחצים ', el('strong', {}, 'התקנה'), '. אם מופיעה אזהרה של Play Protect, לוחצים "פרטים נוספים" ואז "להתקין בכל זאת".']),
+    el('p', { className: 'note' }, 'האזהרות מופיעות כי האפליקציה לא בחנות של גוגל. היא רק פותחת את הרשת במסך מלא, ומי שמחובר ב-Chrome מחובר גם בה.'));
+}
+
+function iosSteps() {
+  return el('section', { className: 'card app-way' },
+    el('h2', {}, icon('phone'), 'אייפון'),
+    el('p', { className: 'flush' }, 'באייפון מוסיפים את הרשת למסך הבית, והיא נפתחת משם כמו אפליקציה, במסך מלא.'),
+    steps(
+      ['פותחים את הרשת ב-', el('strong', {}, 'Safari'), '.'],
+      ['לוחצים על כפתור השיתוף ', el('span', { className: 'inline-icon' }, icon('share')), '. בגרסאות חדשות הוא בתפריט ', el('strong', {}, '⋯'), ' שליד הכתובת.'],
+      ['גוללים ובוחרים ', el('strong', {}, 'הוספה למסך הבית'), ' ', el('span', { className: 'inline-icon' }, icon('square')), '.'],
+      ['לוחצים ', el('strong', {}, 'הוסף'), '. האייקון של הרשת מופיע במסך הבית.']),
+    el('p', { className: 'note' }, 'אם האפליקציה מבקשת להתחבר, נכנסים עם Google, או עם הקישור שבמייל ההזמנה.'));
+}
+
+function appPage() {
+  const ways = PHONE === 'android' ? [androidSteps()] : PHONE === 'ios' ? [iosSteps()] : [androidSteps(), iosSteps()];
+  app.replaceChildren(el('section', { className: 'hero app-hero' },
+    el('img', { src: '/icon-192.png', alt: '' }),
+    el('h1', {}, 'הרשת בטלפון'),
+    el('p', {}, INSTALLED ? 'האפליקציה כבר מותקנת, ואתם בתוכה עכשיו.' : 'אייקון במסך הבית, נפתח במסך מלא, בלי לחפש את הכתובת.')),
+  ...(INSTALLED ? [] : ways),
+  ...(PHONE ? [] : [el('p', { className: 'feed-rule' }, 'כדאי לפתוח את הדף הזה בטלפון עצמו: ', el('span', { dir: 'ltr' }, `${location.host}/app`))]),
+  ...(me ? [] : [el('p', { className: 'feed-rule' }, el('a', { href: '/' }, 'לדף הכניסה'))]));
+}
+
+// A small card above the feed, on a phone that does not run the app yet, until it is put away.
+function appHint() {
+  let hidden = true;
+  try {
+    hidden = !!localStorage.getItem(APP_HINT_KEY);
+  } catch {}
+  if (!PHONE || INSTALLED || hidden) return null;
+  const card = el('aside', { className: 'card app-hint' },
+    el('span', { className: 'promise-icon' }, icon('phone')),
+    el('div', {}, el('strong', {}, 'הרשת כאפליקציה'),
+      el('span', { className: 'muted' }, PHONE === 'android' ? 'הורדה קטנה, ואייקון במסך הבית.' : 'אייקון במסך הבית, בשלושה צעדים.')),
+    el('div', { className: 'app-hint-actions' },
+      link('/app', 'איך?'),
+      el('button', {
+        className: 'plain',
+        type: 'button',
+        onclick: () => {
+          try {
+            localStorage.setItem(APP_HINT_KEY, '1');
+          } catch {}
+          card.remove();
+        },
+      }, 'לא עכשיו')));
+  return card;
+}
+
 function loginPage() {
   const email = el('input', { type: 'email', required: true, placeholder: 'כתובת מייל', dir: 'ltr' });
   const message = el('p', { className: 'muted' });
@@ -1424,7 +1508,8 @@ function loginPage() {
     promise('eye', 'החברים שלך באמת יראו', 'כל פוסט מגיע לפיד של כל החברים, בלי סינון.'),
     promise('comment', 'כל התגובות, לפי הסדר', 'בלי "הרלוונטיות ביותר" ובלי תגובות שנעלמות.'),
     promise('leaf', 'בלי פרסומות', 'פרויקט ללא מטרות רווח, שיעבור לעמותה. אין מי שמרוויח מהזמן שלך.')),
-  el('p', { className: 'feed-rule' }, el('a', { href: '/intro' }, 'סרטון קצר: מה זה ולמה'), ' · ', el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
+  el('p', { className: 'feed-rule' }, el('a', { href: '/intro' }, 'סרטון קצר: מה זה ולמה'), ' · ', el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?'),
+    INSTALLED ? null : ' · ', INSTALLED ? null : link('/app', 'אפליקציה לטלפון')));
 }
 
 function welcomeFlag(value) {
@@ -1574,6 +1659,7 @@ async function route() {
 
 async function show(post, profile, messages) {
   if (post) await postPage(post[1]);
+  else if (location.pathname === '/app') appPage();
   else if (!me) loginPage();
   else if (!me.name || welcomeFlag()) welcomePage();
   else if (profile) await profilePage(profile[1]);

@@ -95,6 +95,14 @@ https://free-network.orimosenzon.workers.dev, הרשת האמיתית והיחי
 ## טלפון
 עד 640px: סרגל ניווט תחתון, תיבת כתיבה מכווצת עד נגיעה, יעדי מגע של 44px, חזרה לאותו מקום בגלילה, שיתוף דרך `navigator.share`. אפשר להתקין למסך הבית (`manifest.webmanifest`, בלי service worker בכוונה). בדיקות מגע: אמולציית iPhone ב-Playwright, עוד לא בטלפון אמיתי. ה-CSP חוסם `wait_for_function` עם מחרוזת.
 
+## אפליקציות לטלפון (25/11/2026)
+החלטת אורי: הכי פשוט שאפשר, בלי חנויות בינתיים, ואין לו Mac.
+- **אנדרואיד**: `android/` הוא TWA (Trusted Web Activity, הרשת עצמה ב-Chrome במסך מלא) עם androidbrowserhelper, בלי קוד משלו. חבילה `il.pardes.freenetwork`. העוגיות משותפות עם Chrome, אז מי שמחובר ב-Chrome מחובר גם באפליקציה. שינויים ברשת מגיעים לאפליקציה מיד, APK חדש צריך רק כשמשנים משהו ב-`android/` (ואז `versionCode` +1). בנייה: `npm run android` → `public/downloads/free-network.apk` (700KB, נכנס לריפו), ואז `npm run deploy`.
+- **מפתח החתימה מחוץ לריפו**: `~/.config/free-network/android-release.jks` + `android-signing.properties`. אם הוא אובד, אי אפשר לעדכן את האפליקציה בלי הסרה. הטביעה שלו ב-`ANDROID_APP` ב-`src/index.js`, שמגיש `/.well-known/assetlinks.json` (בלעדיו Chrome מציג שורת כתובת).
+- **אייפון**: הוספה למסך הבית, עם הדרכה בדף `/app`. דף `/app` מזהה טלפון (אנדרואיד: הורדה + 4 צעדים, אייפון: 4 צעדים ב-Safari, מחשב: שניהם) ומזהה אם כבר רצים באפליקציה (`display-mode: standalone` או referrer `android-app://`). בפיד: כרטיס "הרשת כאפליקציה" בטלפון שלא מתקין, עם "לא עכשיו" (localStorage `app-hint-hidden`). קישור גם בדף האישי ובדף הכניסה.
+- סיכון לא בדוק: באייפון, אפליקציית מסך הבית לא חולקת עוגיות עם Safari, אז ייתכן שצריך להתחבר בה מחדש (Google עובד; קישור הזמנה נפתח ב-Safari).
+- נבדק באמולטור `dk_test` (צריך לעבור את מסך הפתיחה של Chrome בפעם הראשונה).
+
 ## הגנה מחריגת עלות
 ל-R2 אין תקרת הוצאה, והוא מחייב מעבר ל-10GB ולמיליון כתיבות בחודש. התראת תקציב של Cloudflare רק מודיעה, ובאיחור של יום. לכן השרת עוצר בעצמו: `STORAGE_LIMIT_BYTES` (8GB) ו-`UPLOADS_PER_DAY` (2000 לכל הרשת) ב-`src/index.js`. קריאות מ-R2 מוגבלות בעקיפין כל עוד הן עוברות רק דרך ה-Worker, אז **אסור לפתוח את הדלי לציבור** (r2.dev). הגיבוי ל-Backblaze יקרא גם הוא מ-R2, וצריך להיות מצטבר.
 ה-Worker ו-D1 בתוכנית החינמית מחזירים שגיאות בחריגה ולא מחייבים. לעבור ל-Workers Paid זו החלטה שמבטלת את ההגנה הזו.

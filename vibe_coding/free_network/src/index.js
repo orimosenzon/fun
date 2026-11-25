@@ -337,6 +337,18 @@ async function loadVisiblePost(c, id) {
 
 const app = new Hono();
 
+// The Android app (android/) shows the network without an address bar only because the site
+// vouches for it here, by the fingerprint of the key the APK is signed with.
+const ANDROID_APP = {
+  package: 'il.pardes.freenetwork',
+  fingerprint: '19:B0:34:EE:64:B7:F3:48:A6:DA:41:93:28:64:DC:87:06:F3:D5:FB:2C:2E:10:A7:62:70:E5:0B:BF:AB:B8:F0',
+};
+
+app.get('/.well-known/assetlinks.json', (c) => c.json([{
+  relation: ['delegate_permission/common.handle_all_urls'],
+  target: { namespace: 'android_app', package_name: ANDROID_APP.package, sha256_cert_fingerprints: [ANDROID_APP.fingerprint] },
+}]));
+
 // The philosophy on /why is public. The claims about Facebook have not been checked by a
 // lawyer yet, so only members see them: for everyone else they are cut out of the page.
 app.get('/why*', async (c) => {
