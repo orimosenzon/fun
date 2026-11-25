@@ -1046,6 +1046,31 @@ app.get('/api/youtube/:id/thumb', async (c) => {
   });
 });
 
+// Aerial pictures of the earth, for the globe seen from close up. They pass through this server,
+// so whoever holds the pictures never learns who looked at which place. Only members get them,
+// and only as far in as the pictures go.
+const TILE_ZOOM = [3, 17];
+const TILE_CACHE_SECONDS = 30 * 24 * 60 * 60;
+
+app.get('/api/tiles/:z/:x/:y', requireUser, async (c) => {
+  const [z, x, y] = ['z', 'x', 'y'].map((name) => parseId(c.req.param(name)));
+  const inside = z !== null && x !== null && y !== null && z >= TILE_ZOOM[0] && z <= TILE_ZOOM[1] && x < 2 ** z && y < 2 ** z;
+  if (!inside) return c.json({ error: 'לא נמצא' }, 404);
+  const origin = c.env.TILES_ORIGIN ?? 'https://server.arcgisonline.com';
+  const response = await fetch(`${origin}/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, {
+    cf: { cacheEverything: true, cacheTtl: TILE_CACHE_SECONDS },
+  }).catch(() => null);
+  const type = response?.ok ? response.headers.get('content-type') ?? '' : '';
+  if (!type.startsWith('image/')) return c.json({ error: 'התצלום לא הגיע' }, 502);
+  return new Response(response.body, {
+    headers: {
+      'Content-Type': type.split(';')[0],
+      'Cache-Control': `private, max-age=${TILE_CACHE_SECONDS}`,
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
+});
+
 app.get('/api/users', requireUser, async (c) => {
   const q = (c.req.query('q') ?? '').trim();
   if (q.length < 2) return c.json({ users: [] });

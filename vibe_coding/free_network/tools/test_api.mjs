@@ -21,6 +21,7 @@ const pictureRequests = [];
 const mailSent = [];
 const revoked = [];
 const peopleRequests = [];
+const tileRequests = [];
 
 // Stands in for YouTube, and records what the worker sends it.
 const fakeYoutube = createServer((request, response) => {
@@ -145,6 +146,21 @@ ${card('מאוחר יותר באותו יום')}
     pictureRequests.push(request.url);
     if (request.url.startsWith('/a-/photo')) response.end(phoneJpeg());
     else response.end(Buffer.from('\x89PNG letter'));
+    return;
+  }
+  // The aerial pictures of the globe: one tile exists, one address answers with a page of text.
+  if (request.url.startsWith('/ArcGIS/')) {
+    tileRequests.push(request);
+    if (request.url.endsWith('/tile/12/1664/2445')) {
+      response.setHeader('Content-Type', 'image/jpeg');
+      response.end(Buffer.from([0xff, 0xd8, 0xff, 0xd9]));
+    } else if (request.url.endsWith('/tile/12/1664/2446')) {
+      response.setHeader('Content-Type', 'text/html');
+      response.end('<h1>service is down</h1>');
+    } else {
+      response.statusCode = 404;
+      response.end();
+    }
     return;
   }
   youtubeRequests.push(request);
@@ -611,6 +627,24 @@ test('a video title and picture come through the server, without the reader', as
   assert.equal(Buffer.from(picture.bytes).length, 4);
   assert.equal(youtubeRequests.length, 2);
   for (const { headers } of youtubeRequests) assert.equal(headers.cookie, undefined);
+});
+
+test('aerial pictures of the globe come through the server, for members only', async () => {
+  const tile = await alice.call('GET', '/tiles/12/2445/1664');
+  assert.equal(tile.status, 200);
+  assert.equal(Buffer.from(tile.bytes).length, 4);
+  assert.equal(tileRequests.length, 1);
+  assert.equal(tileRequests[0].headers.cookie, undefined);
+  assert.equal((await anon('GET', '/tiles/12/2445/1664')).status, 401);
+  // What the source sends that is not a picture is never passed on.
+  assert.equal((await alice.call('GET', '/tiles/12/2446/1664')).status, 502);
+  assert.equal((await alice.call('GET', '/tiles/12/1/1')).status, 502);
+  // Only real tiles are asked for: within the world, and within the zooms that have pictures.
+  const asked = tileRequests.length;
+  for (const path of ['2/1/1', '18/1/1', '12/4096/0', '12/0/4096', '12/-1/0', '12/a/0', '12/1.5/0', '12/0/0/0']) {
+    assert.equal((await alice.call('GET', `/tiles/${path}`)).status, 404, path);
+  }
+  assert.equal(tileRequests.length, asked);
 });
 
 test('a missing video falls back quietly, and odd addresses are refused', async () => {
@@ -1371,7 +1405,7 @@ let failed = 0;
 try {
   await new Promise((resolve) => fakeYoutube.listen(YOUTUBE_PORT, resolve));
   const fake = `http://localhost:${YOUTUBE_PORT}`;
-  startServer(PORT, ['--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:${fake}`, '--var', `WIKI_HE_ORIGIN:${fake}`,
+  startServer(PORT, ['--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:${fake}`, '--var', `TILES_ORIGIN:${fake}`, '--var', `WIKI_HE_ORIGIN:${fake}`,
     '--var', `WIKI_EN_ORIGIN:${fake}`, '--var', `PARDESPEDIA_ORIGIN:${fake}`, '--var', `PLANS_URL:${fake}/plans.json`,
     ...['N12', 'C13', 'C14', 'KAN'].flatMap((name) => ['--var', `${name}_FEED:${fake}/feed/${name.toLowerCase()}.xml`])]);
   startServer(PROD_PORT, []);
