@@ -1286,6 +1286,9 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 .gever-form textarea:focus { outline: none; border-color: var(--cyan); }
 .gever-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .gever-spacer { flex: 1; }
+/* A quiet hint for keyboard users; on a phone there is no Ctrl and no pasting screenshots, so it would only crowd the send button. */
+.gever-tip { font-size: 0.8rem; opacity: 0.8; }
+@media (max-width: 640px) { .gever-tip { display: none; } }
 .gever-attach { cursor: pointer; }
 .gever-img-box { display: inline-flex; align-items: center; gap: 4px; }
 .gever-img-box img { height: 48px; border-radius: 6px; border: 1px solid var(--line); }

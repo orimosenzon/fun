@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611251653">
+<link rel="stylesheet" href="style.css?v=202611251657">
 </head>
 <body class="admin">
   <div id="app">
@@ -83,6 +83,7 @@
             <label class="link-btn gever-attach">📎 צירוף צילום מסך<input type="file" id="gever-file" accept="image/*" hidden></label>
             <span id="gever-img-box" class="gever-img-box hidden"><img id="gever-img" alt=""><button type="button" id="gever-img-remove" class="link-btn muted">✕</button></span>
             <span class="gever-spacer"></span>
+            <span class="help gever-tip">אפשר לשלוח גם עם <bdi dir="ltr"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></bdi>, ולהדביק צילום מסך ישר לתוך התיבה</span>
             <button type="submit" id="gever-send" class="primary-btn small">שליחה לקלוד</button>
           </div>
           <div id="gever-error" class="feedback wrong hidden"></div>
@@ -397,6 +398,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611251653"></script>
+  <script type="module" src="admin.js?v=202611251657"></script>
 </body>
 </html>

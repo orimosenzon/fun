@@ -37,6 +37,9 @@ with sync_playwright() as p:
     check("לקלוד יש שאלה" in items.nth(0).inner_text() and "לענות לקלוד" in items.nth(0).inner_text(), "a question asks for an answer")
     check("✓ טופלה" in items.nth(1).inner_text() and "הגדלתי" in items.nth(1).inner_text(), "a done request shows its answer")
 
+    tip = page.text_content(".gever-tip")
+    check(page.is_visible(".gever-tip") and "Ctrl" in tip and "Enter" in tip and "להדביק" in tip, f"a quiet tip by the send button: {tip!r}")
+
     # Empty: an error, nothing sent.
     page.click("#gever-send")
     check(page.is_visible("#gever-error"), "an empty request is not sent")
