@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611251728">
+<link rel="stylesheet" href="style.css?v=202611251827">
 </head>
 <body class="admin">
   <div id="app">
@@ -206,6 +206,12 @@
             <label class="seg"><input type="radio" name="quiz-ask" value="no"><span>לא</span></label>
           </div>
           <p class="help level-help">התשובות מופיעות בלשונית "סטטיסטיקה". את זה אפשר לשנות גם בחידון קבוע, כי זה לא משנה את החידות עצמן.</p>
+          <div class="order-row" role="radiogroup" aria-label="מאחורי החידות בקישור לשליחה">
+            <span class="order-label">להציג בקישור לשליחה את "מאחורי החידות" (ההסבר והסקיצה מדף הפתיחה):</span>
+            <label class="seg"><input type="radio" name="quiz-about" value="yes"><span>כן</span></label>
+            <label class="seg"><input type="radio" name="quiz-about" value="no"><span>לא</span></label>
+          </div>
+          <p class="help level-help">מופיע מתחת לכפתור "מתחילים". את זה אפשר לשנות גם בחידון קבוע.</p>
           <div class="heading-edit">
             <span class="order-label">הכותרת שמעל החידון. השורה הראשונה מודגשת, ואפשר להוסיף תמונה:</span>
             <div class="heading-row">
@@ -398,6 +404,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611251728"></script>
+  <script type="module" src="admin.js?v=202611251827"></script>
 </body>
 </html>

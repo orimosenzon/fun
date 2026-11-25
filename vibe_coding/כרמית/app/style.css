@@ -365,7 +365,7 @@ footer a:hover, .top-links a:hover { color: var(--cyan); }
 }
 .admin-btn:hover { background: rgba(182, 243, 107, 0.14); border-color: var(--lime); }
 /* a quiz sent on its own: nothing but the quiz */
-body.solo .about-sketch, body.solo .lede-top, body.solo #report-home-btn, body.solo #next-level-btn { display: none; }
+body.solo:not(.with-about) .about-sketch, body.solo .lede-top, body.solo #report-home-btn, body.solo #next-level-btn { display: none; }
 .link-as-btn { text-decoration: none; display: inline-block; }
 .header-end { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 
@@ -923,7 +923,7 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
   transition: opacity 0.2s, transform 0.2s;
   z-index: 60;
 }
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; cursor: pointer; }
 
 @media (max-width: 760px) {
   .panes { grid-template-columns: 1fr; }

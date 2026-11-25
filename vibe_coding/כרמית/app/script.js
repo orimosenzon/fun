@@ -11,7 +11,7 @@
 // (quiz.closing). Links used to name the letters themselves (&b=, &a=, and &m= before that); those are read only
 // for a quiz from before letters were marked in quizzes, so that what Carmit sees in the admin is what is shown.
 import { loadQuiz, loadQuizzes, loadBundle, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl, saveRating, saveComment, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611251728';
+  hasHeading, fillHeading, safeUrl, saveRating, saveComment, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611251827';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -563,6 +563,7 @@ try {
       noteVisit();
       SHUFFLE = !!quiz.shuffle;
       ASK_RATING = quiz.askRating !== false;
+      document.body.classList.toggle('with-about', !!quiz.showAbout);
       document.title = `${quiz.title} · חידות לכרמית`;
       $('quiz-intro').classList.remove('hidden');
       // Without a cover of its own the header logo already stands in for it.

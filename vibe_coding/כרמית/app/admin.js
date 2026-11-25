@@ -2,7 +2,7 @@
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>', '#bundle/<id>'.
 import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, loadGever, sendGever, markOwnDevice, dayKey, primaryAnswer, hasAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611251728';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611251827';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -58,13 +58,22 @@ function playUrl(q) {
   return new URL(`index.html?q=${q.id}`, location.href).href;
 }
 
+// Long enough to read (Carmit asked): about four seconds plus a little per word, kept while the pointer is on it,
+// and a click closes it sooner.
 function toast(msg) {
   const t = $('toast');
   t.textContent = msg;
   t.classList.add('show');
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => t.classList.remove('show'), 2200);
+  toast.ms = Math.min(15000, 4000 + msg.split(/\s+/).length * 350);
+  hideToastLater();
 }
+function hideToastLater() {
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => $('toast').classList.remove('show'), toast.ms);
+}
+$('toast').addEventListener('mouseenter', () => clearTimeout(toast.timer));
+$('toast').addEventListener('mouseleave', hideToastLater);
+$('toast').addEventListener('click', () => { clearTimeout(toast.timer); $('toast').classList.remove('show'); });
 
 // ---------- sign-in ----------
 
@@ -1105,6 +1114,7 @@ function openQuiz(q) {
   renderOrder();
   renderLevel();
   renderAsk();
+  renderAbout();
   renderQuiz();
   renderLock();
   scrollTo({ top: 0 });
@@ -1154,7 +1164,7 @@ $('quiz-clone').addEventListener('click', async () => {
   const q = current;
   const data = { title: `${q.title || 'חידון'} (עותק)`, cover: q.cover || '', riddleIds: [...q.riddleIds], level: levelOf(q),
     shuffle: !!q.shuffle, heading: q.heading || { text: '', image: '' }, opening: q.opening || '', closing: q.closing || '',
-    askRating: q.askRating !== false, by: auth.currentUser.email };
+    askRating: q.askRating !== false, showAbout: !!q.showAbout, by: auth.currentUser.email };
   try {
     const ref = await fs.addDoc(fs.collection(db, 'quizzes'), { ...data, created: fs.serverTimestamp() });
     quizzes.unshift({ id: ref.id, ...data });
@@ -1220,6 +1230,15 @@ function renderAsk() {
 }
 document.querySelectorAll('input[name="quiz-ask"]').forEach((r) => r.addEventListener('change', () => {
   saveQuiz({ askRating: r.value === 'yes' });
+}));
+
+// quiz.showAbout: whether the link sent on its own also shows "behind the riddles" from the opening page. Off unless
+// switched on, so links already sent stay as they were.
+function renderAbout() {
+  document.querySelector(`input[name="quiz-about"][value="${current.showAbout ? 'yes' : 'no'}"]`).checked = true;
+}
+document.querySelectorAll('input[name="quiz-about"]').forEach((r) => r.addEventListener('change', () => {
+  saveQuiz({ showAbout: r.value === 'yes' });
 }));
 
 $('cover-btn').addEventListener('click', () => $('cover-file').click());
