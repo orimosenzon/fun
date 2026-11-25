@@ -1,0 +1,693 @@
+<title>P מול NP בשתי תמונות</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; the diagram and its explanation panel sit side by side and stack on a phone. */
+:root {
+  --bg: #eceff3;
+  --surface: #fbfcfd;
+  --ink: #16202b;
+  --muted: #566473;
+  --line: #c5ced8;
+  --c-p: #1c8a5a;
+  --c-np: #2a66c8;
+  --c-npc: #b23678;
+  --c-hard: #b8700c;
+  --f-display: "Frank Ruhl Libre", "David Libre", "Times New Roman", serif;
+  --f-body: "IBM Plex Sans Hebrew", "Heebo", "Arial Hebrew", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #17202a; --ink: #e4ebf2; --muted: #93a2b2; --line: #2e3b49;
+    --c-p: #4ec78d; --c-np: #72a9ff; --c-npc: #ec7fb6; --c-hard: #f0b24a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #17202a; --ink: #e4ebf2; --muted: #93a2b2; --line: #2e3b49;
+  --c-p: #4ec78d; --c-np: #72a9ff; --c-npc: #ec7fb6; --c-hard: #f0b24a;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.7; }
+.page {
+  max-width: 1080px; margin-inline: auto; padding-block: 2.5rem 4rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 3.5rem;
+}
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; line-height: 1.2; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2.1rem, 6vw, 3.2rem); }
+h2 { font-size: 1.6rem; }
+h3 { font-size: 1.3rem; }
+p { margin: 0; }
+.m { font-family: var(--f-mono); font-size: .92em; unicode-bidi: isolate; white-space: nowrap; }
+.prose { max-width: 62ch; display: flex; flex-direction: column; gap: .9rem; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 58ch; }
+header { display: flex; flex-direction: column; gap: 1rem; }
+section { display: flex; flex-direction: column; gap: 1.25rem; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--c-np); outline-offset: 2px; }
+
+/* world switch */
+.worlds { display: inline-flex; align-self: flex-start; border: 1.5px solid var(--ink); border-radius: 999px; padding: 3px; gap: 3px; background: var(--surface); flex-wrap: wrap; }
+.worlds button { border: 0; background: transparent; border-radius: 999px; padding: .45rem 1.1rem; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.worlds button b { font-family: var(--f-mono); font-weight: 600; font-size: 1.1rem; unicode-bidi: isolate; direction: ltr; }
+.worlds button small { font-size: .78rem; color: var(--muted); }
+.worlds button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.worlds button[aria-pressed="true"] small { color: inherit; opacity: .8; }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 2rem; align-items: start; }
+@media (max-width: 860px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.board { display: flex; flex-direction: column; gap: .9rem; min-width: 0; }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: .5rem; }
+figcaption { font-size: .88rem; color: var(--muted); padding: .25rem .6rem .5rem; text-align: center; }
+#venn { display: block; width: 100%; height: auto; max-width: 100%; color: var(--ink); direction: ltr; touch-action: manipulation; }
+
+/* diagram marks */
+.f-hard { fill: color-mix(in srgb, var(--c-hard) 10%, var(--surface)); }
+.f-np { fill: color-mix(in srgb, var(--c-np) 9%, var(--surface)); }
+.f-p { fill: color-mix(in srgb, var(--c-p) 24%, var(--surface)); }
+.f-npc { fill: color-mix(in srgb, var(--c-npc) 9%, var(--surface)); }
+.hatch-line { stroke: var(--c-npc); stroke-width: 1.3; opacity: .6; }
+.outline { fill: none; stroke: currentColor; stroke-width: 2; }
+.hole-line { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-dasharray: 4 3; }
+.hl { opacity: 0; transition: opacity .18s; pointer-events: none; }
+.hl-H { fill: var(--c-hard); } .hl-N, .hl-I { fill: var(--c-np); } .hl-P { fill: var(--c-p); } .hl-C { fill: var(--c-npc); }
+#venn[data-hover="H"] .hl-H, #venn[data-hover="N"] .hl-N, #venn[data-hover="P"] .hl-P,
+#venn[data-hover="C"] .hl-C, #venn[data-hover="I"] .hl-I { opacity: .2; }
+#venn[data-sel="H"] .hl-H, #venn[data-sel="N"] .hl-N, #venn[data-sel="P"] .hl-P,
+#venn[data-sel="C"] .hl-C, #venn[data-sel="I"] .hl-I { opacity: .46; }
+.hole-fill { fill: color-mix(in srgb, var(--c-p) 24%, var(--surface)); transition: fill .18s; }
+#venn[data-hover="T"] .hole-fill { fill: color-mix(in srgb, var(--c-p) 42%, var(--surface)); }
+#venn[data-sel="T"] .hole-fill, #venn[data-sel="P"] .hole-fill { fill: color-mix(in srgb, var(--c-p) 62%, var(--surface)); }
+#venn[data-sel="N"] .hole-fill { fill: color-mix(in srgb, var(--c-np) 50%, var(--surface)); }
+.cls { font-family: var(--f-mono); font-weight: 600; font-size: 19px; fill: currentColor; text-anchor: middle;
+  paint-order: stroke; stroke: var(--surface); stroke-width: 5px; stroke-linejoin: round; cursor: pointer; }
+.cls.big { font-size: 24px; }
+.cls.sm { font-size: 15px; }
+.dot { cursor: pointer; }
+.dot .hit { fill: transparent; }
+.dot .pt { fill: currentColor; stroke: var(--surface); stroke-width: 1.5; }
+.dot.conj .pt { fill: var(--surface); stroke: currentColor; stroke-width: 2; }
+.dot .ring { fill: none; stroke: currentColor; stroke-width: 2; opacity: 0; }
+.dot.on .ring { opacity: 1; }
+.dot text { font-family: var(--f-body); font-size: 13px; font-weight: 500; fill: currentColor; text-anchor: middle;
+  paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.dot:focus-visible { outline: none; }
+.dot:focus-visible .ring { opacity: 1; stroke: var(--c-np); stroke-width: 3; }
+.triv text { font-family: var(--f-mono); font-size: 14px; font-weight: 600; fill: currentColor; text-anchor: middle; }
+
+@media (max-width: 560px) {
+  .cls { font-size: 27px; } .cls.big { font-size: 31px; } .cls.sm { font-size: 22px; }
+  .dot text { display: none; }
+  .dot.on text { display: block; font-size: 21px; font-weight: 600; stroke-width: 6px; }
+  .dot .pt { r: 7px; } .dot .ring { r: 13px; }
+  .triv text { font-size: 18px; }
+}
+.probs { display: none; }
+@media (max-width: 560px) { .probs { display: flex; } }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.chips .cap { font-size: .88rem; color: var(--muted); }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: .25rem .8rem; font-size: .92rem; display: inline-flex; align-items: center; gap: .45rem; }
+.chip i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--sw); flex: none; }
+.chip[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.key { font-size: .85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; }
+.key span { display: inline-flex; align-items: center; gap: .4rem; }
+.key i { width: .6rem; height: .6rem; border-radius: 50%; background: var(--ink); display: inline-block; }
+.key i.o { background: transparent; border: 2px solid var(--ink); }
+
+/* explanation panel */
+.panel { min-width: 0; display: flex; flex-direction: column; gap: .9rem; border-top: 3px solid var(--sw, var(--ink)); padding-top: 1rem; }
+.panel .kind { font-size: .8rem; letter-spacing: .04em; color: var(--muted); }
+.panel .en { font-size: .92rem; color: var(--muted); }
+.panel .world { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: .8rem 1rem; display: flex; flex-direction: column; gap: .3rem; }
+.panel .world .tag { font-size: .8rem; color: var(--muted); }
+.badges { display: flex; flex-wrap: wrap; gap: .4rem; }
+.badge { font-size: .85rem; border-radius: 4px; padding: .1rem .55rem; border: 1px solid var(--line); display: inline-flex; gap: .35rem; align-items: center; }
+.badge.yes { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.badge.no { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.badge.q { border-style: dashed; border-color: var(--ink); }
+
+/* check vs. find */
+.game { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+.nums { display: flex; flex-wrap: wrap; gap: .5rem; direction: ltr; }
+.num { font-family: var(--f-mono); font-size: 1.05rem; min-width: 4.2rem; padding: .5rem .4rem; border: 1.5px solid var(--line); background: var(--bg); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.num[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.tally { display: flex; flex-wrap: wrap; gap: .4rem 2rem; align-items: baseline; }
+.tally b { font-family: var(--f-mono); font-size: 1.5rem; font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
+.tally .state { font-weight: 600; }
+.tally .state.ok { color: var(--c-p); }
+.row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.btn { border: 1.5px solid var(--ink); background: transparent; border-radius: 4px; padding: .35rem .9rem; font-size: .95rem; }
+.btn.solid { background: var(--ink); color: var(--surface); }
+.proof { font-family: var(--f-mono); font-size: .95rem; direction: ltr; text-align: left; overflow-wrap: anywhere; }
+.scale { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem 2rem; }
+@media (max-width: 640px) { .scale { grid-template-columns: minmax(0, 1fr); } }
+.scale .cell { min-width: 0; display: flex; flex-direction: column; gap: .15rem; border-inline-start: 3px solid var(--sw); padding-inline-start: .8rem; }
+.scale .cell .lab { font-size: .85rem; color: var(--muted); }
+.scale .cell .val { font-family: var(--f-mono); font-size: .95rem; overflow-wrap: anywhere; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+.scale .cell .t { font-weight: 600; font-size: 1.15rem; }
+input[type="range"] { width: min(100%, 26rem); accent-color: var(--ink); }
+
+/* accuracy notes */
+.notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.notes li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: .5rem 1.25rem; padding-block: 1rem; border-top: 1px solid var(--line); }
+@media (max-width: 640px) { .notes li { grid-template-columns: minmax(0, 1fr); } }
+.notes .verdict { font-size: .85rem; font-weight: 600; align-self: start; justify-self: start; border-radius: 4px; padding: .1rem .6rem; border: 1.5px solid var(--sw); color: var(--sw); }
+.notes .body { display: flex; flex-direction: column; gap: .5rem; max-width: 62ch; }
+.notes h3 { font-family: var(--f-body); font-size: 1.05rem; font-weight: 600; }
+
+.polls { display: flex; flex-direction: column; gap: .45rem; max-width: 30rem; }
+.poll { display: grid; grid-template-columns: 3rem minmax(0, 1fr) 3rem; gap: .75rem; align-items: center; font-variant-numeric: tabular-nums; font-family: var(--f-mono); font-size: .92rem; }
+.poll .bar { height: .7rem; background: color-mix(in srgb, var(--ink) 12%, var(--surface)); border-radius: 2px; overflow: hidden; direction: rtl; }
+.poll .bar i { display: block; height: 100%; background: var(--ink); width: var(--w); }
+footer { font-size: .85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; max-width: 70ch; }
+@media (prefers-reduced-motion: reduce) { .hl, .hole-fill { transition: none; } }
+</style>
+
+<div class="page" dir="rtl" lang="he">
+
+<header>
+  <h1>P מול NP בשתי תמונות</h1>
+  <p class="lede">אותן ארבע מחלקות של בעיות חישוב, מצוירות פעמיים: פעם בעולם שבו <span class="m" dir="ltr">P ≠ NP</span> ופעם בעולם שבו <span class="m" dir="ltr">P = NP</span>. אף אחד עדיין לא יודע באיזה מהם אנחנו חיים. אפשר להחליף עולם, וללחוץ על כל אזור או נקודה כדי לראות מה יש שם.</p>
+</header>
+
+<section aria-labelledby="h-diagram">
+  <h2 id="h-diagram" hidden>הדיאגרמה</h2>
+  <div class="worlds" role="group" aria-label="בחירת עולם">
+    <button type="button" id="w-a" aria-pressed="true"><b>P ≠ NP</b><small>מה שרוב החוקרים מאמינים</small></button>
+    <button type="button" id="w-b" aria-pressed="false"><b>P = NP</b><small>אם יתברר אחרת</small></button>
+  </div>
+
+  <div class="stage">
+    <div class="board">
+      <figure>
+        <svg id="venn" viewBox="0 0 600 640" role="img" aria-label="דיאגרמת ון של המחלקות P, NP, NP-שלמות ו-NP-קשות. אם P שונה מ-NP, המחלקה P היא חלק קטן מ-NP, והבעיות ה-NP-שלמות הן החיתוך של NP עם NP-קשות. אם P שווה ל-NP, שלוש המחלקות מתלכדות כמעט לגמרי בתוך NP-קשות." data-sel="C" data-hover="">
+          <defs>
+            <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line class="hatch-line" x1="0" y1="0" x2="0" y2="7"></line>
+            </pattern>
+            <clipPath id="clipH"><ellipse data-s="H"></ellipse></clipPath>
+            <mask id="notHP" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="640">
+              <rect x="0" y="0" width="600" height="640" fill="#fff"></rect>
+              <ellipse data-s="H" fill="#000"></ellipse>
+              <ellipse data-s="P" fill="#000"></ellipse>
+            </mask>
+          </defs>
+          <ellipse data-s="H" class="f-hard"></ellipse>
+          <circle data-s="N" class="f-np"></circle>
+          <ellipse data-s="P" class="f-p"></ellipse>
+          <g clip-path="url(#clipH)">
+            <circle data-s="N" class="f-npc"></circle>
+            <circle data-s="N" fill="url(#hatch)"></circle>
+          </g>
+          <ellipse data-s="H" class="hl hl-H"></ellipse>
+          <circle data-s="N" class="hl hl-N"></circle>
+          <ellipse data-s="P" class="hl hl-P"></ellipse>
+          <g clip-path="url(#clipH)"><circle data-s="N" class="hl hl-C"></circle></g>
+          <g mask="url(#notHP)"><circle data-s="N" class="hl hl-I"></circle></g>
+          <circle data-s="hole" class="hole-fill"></circle>
+          <ellipse data-s="H" class="outline"></ellipse>
+          <circle data-s="N" class="outline"></circle>
+          <ellipse data-s="P" class="outline"></ellipse>
+          <circle data-s="hole" class="hole-line"></circle>
+
+          <text class="cls" data-item="H" x="300" y="84">NP-hard</text>
+          <g class="wa">
+            <text class="cls" data-item="C" x="300" y="324">NP-complete</text>
+            <text class="cls" data-item="N" x="176" y="484">NP</text>
+            <text class="cls" data-item="P" x="300" y="538">P</text>
+          </g>
+          <g class="wb">
+            <text class="cls big" data-item="N" x="300" y="338">P = NP</text>
+            <text class="cls sm" data-item="C" x="300" y="362">= NP-complete</text>
+            <g class="triv" data-item="T"><text x="289" y="550">∅</text><text x="311" y="550">Σ*</text></g>
+          </g>
+          <g id="dots"></g>
+        </svg>
+        <figcaption id="cap"></figcaption>
+      </figure>
+      <div class="chips" id="chips" role="group" aria-label="הדלקת מחלקה בציור"></div>
+      <div class="chips probs" id="probs" role="group" aria-label="בחירת בעיה"><span class="cap">בעיות:</span></div>
+      <div class="key"><span><i></i>בעיה שמקומה מוכח, בהינתן העולם</span><span><i class="o"></i>בעיה שמקומה משוער</span></div>
+    </div>
+    <div class="panel" id="panel" aria-live="polite"></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-game">
+  <h2 id="h-game">לבדוק מול למצוא</h2>
+  <div class="prose">
+    <p>כל הציור נשען על הבדל אחד: יש בעיות שקל לבדוק בהן תשובה מוצעת, וקשה למצוא אותה. הנה אחת כזאת, סכום תת-קבוצה: האם אפשר לבחור כמה מהמספרים כך שסכומם יהיה בדיוק היעד?</p>
+  </div>
+  <div class="game">
+    <div class="nums" id="nums" role="group" aria-label="המספרים לבחירה"></div>
+    <div class="tally">
+      <span>היעד: <b>2,783</b></span>
+      <span>הסכום שלך: <b id="sum">0</b></span>
+      <span class="state" id="state"></span>
+    </div>
+    <div class="row">
+      <button type="button" class="btn solid" id="reveal">תן לי פתרון מוכן</button>
+      <button type="button" class="btn" id="clear">נקה</button>
+    </div>
+    <p class="proof" id="proof" hidden></p>
+    <p id="proof-note" hidden>קיבלת פתרון מוכן ובדקת אותו בארבעה חיבורים. למצוא אותו לבד זה סיפור אחר: יש 1,024 דרכים לבחור מתוך עשרה מספרים, ורק אחת מהן נכונה.</p>
+  </div>
+  <div class="prose">
+    <p>עשרה מספרים זה עוד משחק. הבעיה מתחילה כשהרשימה מתארכת: כל מספר נוסף מכפיל את מספר האפשרויות, ואילו הבדיקה מתארכת רק בחיבור אחד.</p>
+  </div>
+  <div class="game">
+    <label for="n">כמה מספרים ברשימה: <b id="n-out" class="m" dir="ltr">60</b></label>
+    <input type="range" id="n" min="10" max="100" step="1" value="60">
+    <div class="scale">
+      <div class="cell" style="--sw: var(--c-p)">
+        <span class="lab">לבדוק פתרון מוצע</span>
+        <span class="val" id="v-check"></span>
+        <span class="t">מיידי</span>
+      </div>
+      <div class="cell" style="--sw: var(--c-npc)">
+        <span class="lab">לעבור על כל האפשרויות, מיליארד בשנייה</span>
+        <span class="val" id="v-find"></span>
+        <span class="t" id="t-find"></span>
+      </div>
+    </div>
+    <p style="font-size:.9rem;color:var(--muted)">יש שיטות חכמות יותר ממעבר על הכול, אבל גם הטובות ביותר שמכירים גדלות באופן מעריכי. השאלה אם <span class="m" dir="ltr">P = NP</span> היא השאלה אם קיימת שיטה שלא.</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-acc">
+  <h2 id="h-acc">האם התמונה המקורית מדויקת?</h2>
+  <div class="prose"><p>כן, במהות. זו גרסה של הדיאגרמה המוכרת מוויקיפדיה, והיא מציגה נכון את היחסים בין המחלקות. שני דברים בה לא מדויקים עד הסוף, ודבר אחד כדאי לזכור כשקוראים אותה.</p></div>
+  <ul class="notes">
+    <li>
+      <span class="verdict" style="--sw: var(--c-p)">מדויק</span>
+      <div class="body">
+        <h3>הצד של <span class="m" dir="ltr">P ≠ NP</span></h3>
+        <p><span class="m" dir="ltr">P</span> בתוך <span class="m" dir="ltr">NP</span>, הבעיות ה-NP-שלמות הן בדיוק החיתוך של <span class="m" dir="ltr">NP</span> עם NP-קשות, ו-<span class="m" dir="ltr">P</span> לא נוגעת ב-NP-קשות. גם השטח הלבן שנשאר ב-<span class="m" dir="ltr">NP</span> בלי שם נכון: משפט Ladner מ-1975 מוכיח שאם <span class="m" dir="ltr">P ≠ NP</span>, השטח הזה אינו ריק.</p>
+      </div>
+    </li>
+    <li>
+      <span class="verdict" style="--sw: var(--c-hard)">כמעט</span>
+      <div class="body">
+        <h3>הצד של <span class="m" dir="ltr">P = NP</span></h3>
+        <p>התמונה כותבת <span class="m" dir="ltr">P = NP = NP-complete</span>. בפועל שתי בעיות נשארות בחוץ: זו שהתשובה בה תמיד "לא" (<span class="m" dir="ltr">∅</span>) וזו שהתשובה בה תמיד "כן" (<span class="m" dir="ltr">Σ*</span>). שתיהן ב-<span class="m" dir="ltr">P</span>, אבל שום בעיה אחרת לא ניתנת לתרגום אליהן, ולכן הן לא NP-קשות. בציור שלמעלה זה העיגול המקווקו הקטן.</p>
+        <p>זה תלוי בהגדרת הרדוקציה. לפי ההגדרה המקובלת (רדוקציות Karp) הן בחוץ. לפי הגדרה מתירנית יותר (רדוקציות Cook) גם הן בפנים, והתמונה מדויקת לגמרי.</p>
+      </div>
+    </li>
+    <li>
+      <span class="verdict" style="--sw: var(--c-hard)">ניסוח רופף</span>
+      <div class="body">
+        <h3>הכיתוב <span class="m" dir="ltr" style="white-space:normal">every checkable problem becomes solvable</span></h3>
+        <p>חסרה המילה "ביעילות", פעמיים. כל בעיה ב-<span class="m" dir="ltr">NP</span> פתירה כבר היום: עוברים על כל הפתרונות האפשריים ובודקים כל אחד. מה שישתנה אם <span class="m" dir="ltr">P = NP</span> הוא המהירות: כל בעיה שאפשר לבדוק מהר, אפשר יהיה גם לפתור מהר.</p>
+      </div>
+    </li>
+    <li>
+      <span class="verdict" style="--sw: var(--c-np)">לזכור</span>
+      <div class="body">
+        <h3>גדלים וגבולות</h3>
+        <p>השטחים בציור לא אומרים כמה בעיות יש בכל מחלקה. והקו הסגור סביב NP-קשות מטעה מעט: המחלקה הזאת לא חסומה מלמעלה, והיא כוללת גם בעיות שאף מחשב לא יכול לפתור.</p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="h-poll">
+  <h2 id="h-poll">כמה בטוחים ש-<span class="m" dir="ltr">P ≠ NP</span>?</h2>
+  <div class="prose">
+    <p>אין הוכחה לאף אחד מהצדדים, ומכון Clay מציע מאז שנת 2000 מיליון דולר למי שיכריע. William Gasarch שאל חוקרים בשלושה סקרים מה הם מנחשים. החלק שענה <span class="m" dir="ltr">P ≠ NP</span>:</p>
+  </div>
+  <div class="polls" role="img" aria-label="שיעור החוקרים שענו P שונה מ-NP: 61 אחוז ב-2002, 83 אחוז ב-2012, 88 אחוז ב-2019">
+    <div class="poll"><span>2002</span><span class="bar"><i style="--w:61%"></i></span><span>61%</span></div>
+    <div class="poll"><span>2012</span><span class="bar"><i style="--w:83%"></i></span><span>83%</span></div>
+    <div class="poll"><span>2019</span><span class="bar"><i style="--w:88%"></i></span><span>88%</span></div>
+  </div>
+  <div class="prose">
+    <p>הנימוק העיקרי הוא ניסיון: אלפי בעיות NP-שלמות, מתחומים שונים לגמרי, ואחרי יותר מחמישים שנה לא נמצא אלגוריתם מהיר לאף אחת מהן. מספיק היה למצוא אחד.</p>
+  </div>
+</section>
+
+<footer>
+  מקורות: Cook (1971) ו-Levin (1973) על SAT; Karp (1972) על 21 הבעיות; Ladner (1975) על אזור הביניים; Fraenkel ו-Lichtenstein (1981) על שחמט; Agrawal, Kayal ו-Saxena (2002) על ראשוניות; Babai (2015) על איזומורפיזם של גרפים; סקרי Gasarch ב-SIGACT News.
+</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const L = s => '<span class="m" dir="ltr">' + s + '</span>';
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+  const svg = $("venn");
+
+  /* geometry of the two worlds: H = NP-hard ellipse, N = NP circle, P = P ellipse */
+  const GEO = {
+    a: { H: [300, 205, 215, 190], N: [300, 455, 165], P: [300, 552, 110, 48] },
+    b: { H: [300, 320, 240, 295], N: [300, 440, 155], P: [300, 440, 155, 155] }
+  };
+  const HOLE = { x: 300, y: 545, r: 26 };
+  let cur = { H: GEO.a.H.slice(), N: GEO.a.N.slice(), P: GEO.a.P.slice(), hole: 0 };
+
+  const ITEMS = {
+    P: {
+      sw: "--c-p", chip: "P", title: "P: בעיות שקל לפתור",
+      en: "באנגלית " + L("Polynomial time") + ", זמן פולינומי. פולינום הוא ביטוי כמו " + L("n²") + " או " + L("n³") + ".",
+      body: [
+        "כל הבעיות שמחשב פותר מהר: מספר הצעדים חסום בפולינום בגודל הקלט " + L("n") + ". \"מהר\" כאן הוא מונח טכני, וההפך שלו הוא גידול מעריכי כמו " + L("2ⁿ") + ".",
+        "כל בעיה ב-" + L("P") + " נמצאת גם ב-" + L("NP") + ": מי שיודע לפתור מהר יודע גם לבדוק תשובה מהר, פשוט פותר בעצמו ומשווה."
+      ],
+      a: "כאן " + L("P") + " היא פינה בתוך " + L("NP") + ", והיא לא נוגעת ב-NP-קשות. מספיקה בעיה NP-קשה אחת בתוך " + L("P") + " כדי שכל ההפרדה תקרוס.",
+      b: "כאן " + L("P") + " מתנפחת עד שהיא מתלכדת עם " + L("NP") + " כולה."
+    },
+    N: {
+      sw: "--c-np", chip: "NP", title: "NP: בעיות שקל לבדוק",
+      en: "באנגלית " + L("Nondeterministic Polynomial time") + ". השם בא ממכונה דמיונית, לא דטרמיניסטית, ש\"מנחשת\" פתרון ואז בודקת אותו מהר. זה לא קיצור של " + L("non-polynomial") + ", אף שרבים חושבים כך.",
+      body: [
+        "כל הבעיות שבהן אפשר לבדוק מהר תשובת \"כן\" כשמקבלים הוכחה קצרה. לוח סודוקו פתור בודקים בדקה, גם אם למצוא את הפתרון לקח שעה.",
+        "ההגדרה מדברת רק על בדיקה. היא לא אומרת שקשה לפתור, ולכן כל הבעיות הקלות של " + L("P") + " נמצאות כאן גם הן."
+      ],
+      a: "כאן " + L("NP") + " מתחלקת לשלושה חלקים: " + L("P") + " למטה, הבעיות ה-NP-שלמות למעלה, וביניהן אזור ביניים.",
+      b: "כאן אין הבדל בין לבדוק לבין לפתור. כל " + L("NP") + " היא " + L("P") + "."
+    },
+    C: {
+      sw: "--c-npc", chip: "NP-שלמות", title: "NP-שלמות: הקשות ביותר בתוך NP",
+      en: "באנגלית " + L("NP-complete") + ". המילה " + L("complete") + " פירושה \"שלם\": בעיה כזאת מכילה בתוכה את כל הקושי של " + L("NP") + ".",
+      body: [
+        "הבעיות שהן גם ב-" + L("NP") + " וגם NP-קשות, כלומר החיתוך של שתי הצורות בציור. אלגוריתם מהיר לאחת מהן נותן מיד אלגוריתם מהיר לכל בעיה ב-" + L("NP") + ".",
+        "Cook ו-Levin הראו בתחילת שנות השבעים ש-SAT היא כזאת, ו-Karp הוסיף ב-1972 עוד 21 בעיות. היום מכירים אלפים."
+      ],
+      a: "כאן אף אחת מהן לא ב-" + L("P") + ". לכן הוכחה שבעיה היא NP-שלמה נחשבת סימן מעשי: לא כדאי לחפש לה אלגוריתם מהיר ומדויק.",
+      b: "כאן כמעט כל בעיה ב-" + L("P") + " נעשית NP-שלמה, גם בעיה קלה כמו \"האם המספר זוגי\". כשהכול קל באותה מידה, \"הקשה ביותר\" מאבד את משמעותו."
+    },
+    H: {
+      sw: "--c-hard", chip: "NP-קשות", title: "NP-קשות: קשות לפחות כמו כל NP",
+      en: "באנגלית " + L("NP-hard") + ". המילה " + L("hard") + " פירושה \"קשה\": קשה לפחות כמו כל בעיה ב-" + L("NP") + ", ואולי הרבה יותר.",
+      body: [
+        "בעיה היא NP-קשה אם אפשר לתרגם אליה מהר כל בעיה ב-" + L("NP") + ". תרגום כזה נקרא רדוקציה: מי שפותר את הבעיה הקשה פותר דרכה גם את האחרות.",
+        "ההגדרה לא דורשת שהבעיה עצמה תהיה ב-" + L("NP") + ", ולכן הצורה נמשכת הרבה מעבר לה. יש בה בעיות שדורשות זמן מעריכי, ואפילו בעיות שאף מחשב לא יכול לפתור."
+      ],
+      a: "כאן רק הקצה התחתון שלה חופף ל-" + L("NP") + ". החפיפה הזאת היא הבעיות ה-NP-שלמות.",
+      b: "כאן היא בולעת את כל " + L("NP") + ", חוץ משתי בעיות. הבעיות שמחוץ ל-" + L("NP") + " לא נעשות קלות יותר: בעיית העצירה נשארת בלתי פתירה ושחמט מוכלל נשאר מעריכי."
+    },
+    I: {
+      sw: "--c-np", chip: "אזור הביניים", title: "אזור הביניים",
+      en: "באנגלית " + L("NP-intermediate") + ". המילה " + L("intermediate") + " פירושה \"שבאמצע\": לא קל כמו " + L("P") + " ולא קשה כמו NP-שלמות.",
+      body: [
+        "השטח שנשאר ב-" + L("NP") + " מחוץ ל-" + L("P") + " ומחוץ ל-NP-שלמות. בתמונה המקורית אין לו שם, אבל הוא לא שם במקרה: משפט Ladner מ-1975 מוכיח שאם " + L("P ≠ NP") + ", יש בו בעיות.",
+        "הבעיות ש-Ladner בנה מלאכותיות. המועמדות הטבעיות הן פירוק לגורמים ואיזומורפיזם של גרפים. אף אחד לא הוכיח שהן כאן, כי הוכחה כזאת הייתה מוכיחה גם ש-" + L("P ≠ NP") + "."
+      ],
+      a: "האזור קיים רק בעולם הזה.",
+      b: "האזור קיים רק בעולם הזה."
+    },
+    T: {
+      sw: "--c-p", chip: "שתי היוצאות מן הכלל", title: "שתי היוצאות מן הכלל",
+      en: "הסימן " + L("∅") + " הוא השפה הריקה, והסימן " + L("Σ*") + " הוא שפת כל המחרוזות. \"שפה\" היא השם הפורמלי לבעיית כן או לא: אוסף הקלטים שהתשובה עליהם \"כן\".",
+      body: [
+        "הבעיה שהתשובה בה תמיד \"לא\" והבעיה שהתשובה בה תמיד \"כן\". אין קל מהן, ושתיהן ב-" + L("P") + ".",
+        "אבל אי אפשר לתרגם אליהן שום בעיה אחרת. רדוקציה חייבת לשלוח קלט שתשובתו \"כן\" לקלט שתשובתו \"כן\", ובבעיה שתמיד עונה \"לא\" אין קלט כזה. לכן הן לא NP-קשות, וממילא לא NP-שלמות."
+      ],
+      a: "",
+      b: "בגללן השוויון " + L("P = NP = NP-complete") + " נכון רק כמעט. לפי רדוקציות Karp, שהן ההגדרה המקובלת, השתיים נשארות בחוץ. לפי רדוקציות Cook גם הן בפנים."
+    }
+  };
+
+  /* problems: position and region per world. regions: P, I (intermediate), C (complete), X (hard, outside NP) */
+  const PROBS = [
+    { id: "halt", label: "בעיית העצירה", title: "בעיית העצירה",
+      a: { x: 212, y: 168, r: "X" }, b: { x: 188, y: 190, r: "X" },
+      body: ["האם תוכנית נתונה תסיים לרוץ, או תרוץ לנצח? Turing הוכיח ב-1936 שאף אלגוריתם לא עונה על זה נכון לכל תוכנית.",
+             "היא NP-קשה, כי כל בעיה ב-" + L("NP") + " ניתנת לתרגום אליה. היא לא ב-" + L("NP") + ", כי אי אפשר לפתור אותה בשום זמן ריצה."],
+      wa: "דוגמה לכך ש-NP-קשה לא אומר \"ב-" + L("NP") + "\". זו הטעות הנפוצה ביותר בקריאת הציור.",
+      wb: "שום דבר לא משתנה. גם אם " + L("P = NP") + ", היא נשארת בלתי פתירה." },
+    { id: "chess", label: "שחמט מוכלל", title: "שחמט מוכלל",
+      a: { x: 394, y: 204, r: "X", conj: true, ov: { NP: "?", C: "?" } }, b: { x: 412, y: 206, r: "X" },
+      body: ["שחמט על לוח " + L("n×n") + ": האם ללבן יש ניצחון מובטח מהעמדה הנתונה? Fraenkel ו-Lichtenstein הוכיחו ב-1981 שהבעיה דורשת זמן מעריכי.",
+             "לכן היא בוודאות לא ב-" + L("P") + ", בשני העולמות. זו אחת הבעיות המעטות שיודעים להוכיח עליהן דבר כזה."],
+      wa: "מניחים שהיא גם מחוץ ל-" + L("NP") + ", אבל זה לא הוכח, ולכן הנקודה חלולה.",
+      wb: "כאן היא בוודאות מחוץ ל-" + L("NP") + ", כי " + L("NP") + " היא " + L("P") + " והבעיה לא ב-" + L("P") + "." },
+    { id: "tsp", label: "סוכן נוסע", title: "הסוכן הנוסע",
+      a: { x: 232, y: 352, r: "C" }, b: { x: 215, y: 395, r: "C" },
+      body: ["האם יש מסלול שעובר בכל הערים ואורכו לכל היותר " + L("k") + "? קל לבדוק מסלול מוצע: מחברים את המרחקים.",
+             "זו גרסת ההכרעה, והיא NP-שלמה. הגרסה \"מצא את המסלול הקצר ביותר\" אינה שאלת כן או לא, והיא NP-קשה."],
+      wa: "אין לה אלגוריתם מהיר ומדויק. בפועל מסתפקים בקירובים טובים.",
+      wb: "יש לה אלגוריתם מהיר ומדויק." },
+    { id: "sat", label: "SAT", title: "SAT: ספיקות",
+      a: { x: 300, y: 352, r: "C" }, b: { x: 300, y: 395, r: "C" },
+      body: ["נתונה נוסחה לוגית. האם אפשר לקבוע לכל משתנה אמת או שקר כך שהנוסחה כולה תצא אמת? " + L("SAT") + " הוא קיצור של " + L("satisfiability") + ", ספיקות.",
+             "זו הבעיה הראשונה שהוכחה כ-NP-שלמה, במשפט Cook–Levin. כל שאר הבעיות ה-NP-שלמות הוכחו ככאלה בשרשרת תרגומים שמתחילה בה."],
+      wa: "אין לה אלגוריתם מהיר שעובד תמיד, אף שתוכנות לפתרון SAT מצליחות יפה על מקרים מעשיים.",
+      wb: "יש לה אלגוריתם מהיר, ודרכו לכל בעיה ב-" + L("NP") + "." },
+    { id: "sudoku", label: "סודוקו", title: "סודוקו מוכלל",
+      a: { x: 368, y: 352, r: "C" }, b: { x: 385, y: 395, r: "C" },
+      body: ["לוח בגודל " + L("n²×n²") + " במקום " + L("9×9") + ": האם יש לו פתרון? לבדוק לוח מלא קל, ולמצוא פתרון NP-שלם (Yato ו-Seta, 2003).",
+             "הלוח הרגיל שבעיתון הוא בגודל קבוע, ולכן מבחינה פורמלית הוא בעיה קלה. הקושי מופיע רק כשהלוח גדל."],
+      wa: "", wb: "" },
+    { id: "factor", label: "פירוק לגורמים", title: "פירוק לגורמים",
+      a: { x: 265, y: 430, r: "I", conj: true, ov: { P: "?", C: "?", H: "?" } }, b: { x: 235, y: 450, r: "C" },
+      body: ["האם למספר " + L("N") + " יש מחלק קטן מ-" + L("k") + "? קל לבדוק מחלק מוצע בחילוק אחד, ולא ידוע אלגוריתם מהיר למציאתו במחשב רגיל.",
+             "על הקושי הזה נשענת הצפנת RSA. מחשב קוונטי גדול היה פותר אותה מהר, באלגוריתם של Shor."],
+      wa: "מועמדת לאזור הביניים: לא מאמינים שהיא ב-" + L("P") + ", וגם לא שהיא NP-שלמה. שני הדברים לא הוכחו.",
+      wb: "יש לה אלגוריתם מהיר, ו-RSA נשבר." },
+    { id: "gi", label: "איזומורפיזם גרפים", title: "איזומורפיזם של גרפים",
+      a: { x: 378, y: 462, r: "I", conj: true, ov: { P: "?", C: "?", H: "?" } }, b: { x: 365, y: 450, r: "C" },
+      body: ["האם שני גרפים הם בעצם אותו גרף, רק עם שמות אחרים לקודקודים? " + L("isomorphism") + " ביוונית: \"אותה צורה\".",
+             "Babai הציג ב-2015 אלגוריתם שרץ בזמן כמעט פולינומי. זה קרוב מאוד ל-" + L("P") + ", ומחזק את ההשערה שהבעיה אינה NP-שלמה."],
+      wa: "מועמדת לאזור הביניים, כמו פירוק לגורמים.",
+      wb: "" },
+    { id: "path", label: "מסלול קצר", title: "המסלול הקצר ביותר",
+      a: { x: 246, y: 552, r: "P" }, b: { x: 215, y: 505, r: "C" },
+      body: ["האם יש מסלול מעיר אחת לאחרת שאורכו לכל היותר " + L("k") + "? האלגוריתם של Dijkstra מ-1959 עונה מהר, וכך עובדת כל אפליקציית ניווט.",
+             "היא נשמעת דומה לסוכן הנוסע, ובכל זאת קלה. ההבדל הוא בין \"להגיע\" לבין \"לעבור בכולן\"."],
+      wa: "",
+      wb: "כאן היא NP-שלמה, בדיוק כמו SAT. לא כי נעשתה קשה, אלא כי SAT נעשתה קלה כמוה." },
+    { id: "prime", label: "ראשוניות", title: "בדיקת ראשוניות",
+      a: { x: 354, y: 552, r: "P" }, b: { x: 385, y: 505, r: "C" },
+      body: ["האם המספר " + L("N") + " ראשוני? במשך שנים חשדו שהבעיה שייכת לאזור הביניים, עד ש-Agrawal, Kayal ו-Saxena הוכיחו ב-2002 שהיא ב-" + L("P") + ".",
+             "שימו לב להבדל מפירוק לגורמים: אפשר לדעת מהר שמספר אינו ראשוני בלי לדעת מה הגורמים שלו."],
+      wa: "דוגמה לבעיה ש\"ירדה\" ל-" + L("P") + " כשנמצא האלגוריתם הנכון.",
+      wb: "" }
+  ];
+  const REGION_ITEM = { P: "P", I: "I", C: "C", X: "H" };
+  const MEMBER = {
+    P: { P: 1, NP: 1, C: 0, H: 0 }, I: { P: 0, NP: 1, C: 0, H: 0 },
+    C: { P: 0, NP: 1, C: 1, H: 1 }, X: { P: 0, NP: 0, C: 0, H: 1 }
+  };
+  const WORLD_NAME = { a: "בעולם שבו " + L("P ≠ NP"), b: "בעולם שבו " + L("P = NP") };
+  const CAPTION = {
+    a: "יש בעיות שקל לבדוק וקשה לפתור. האזור המקווקו הוא הבעיות שנמצאות בשתי הצורות גם יחד.",
+    b: "כל מה שקל לבדוק, קל גם לפתור. שלוש המחלקות הפנימיות מתלכדות, חוץ מהעיגול הקטן."
+  };
+
+  const state = { world: "a", t: 0, sel: { kind: "item", id: "C" } };
+
+  /* ---------- drawing ---------- */
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const shapes = { H: svg.querySelectorAll('[data-s="H"]'), N: svg.querySelectorAll('[data-s="N"]'), P: svg.querySelectorAll('[data-s="P"]'), hole: svg.querySelectorAll('[data-s="hole"]') };
+  const wa = svg.querySelector(".wa"), wb = svg.querySelector(".wb");
+  const dotEls = {};
+
+  function draw(t) {
+    const e = ease(t);
+    ["H", "N", "P"].forEach(k => { cur[k] = GEO.a[k].map((v, i) => lerp(v, GEO.b[k][i], e)); });
+    cur.hole = HOLE.r * clamp((e - .6) / .4);
+    shapes.H.forEach(el => { el.setAttribute("cx", cur.H[0]); el.setAttribute("cy", cur.H[1]); el.setAttribute("rx", cur.H[2]); el.setAttribute("ry", cur.H[3]); });
+    shapes.N.forEach(el => { el.setAttribute("cx", cur.N[0]); el.setAttribute("cy", cur.N[1]); el.setAttribute("r", cur.N[2]); });
+    shapes.P.forEach(el => { el.setAttribute("cx", cur.P[0]); el.setAttribute("cy", cur.P[1]); el.setAttribute("rx", cur.P[2]); el.setAttribute("ry", cur.P[3]); });
+    shapes.hole.forEach(el => { el.setAttribute("cx", HOLE.x); el.setAttribute("cy", HOLE.y); el.setAttribute("r", cur.hole); });
+    const oa = clamp(1 - 2.4 * e), ob = clamp(2.4 * e - 1.4);
+    wa.style.opacity = oa; wb.style.opacity = ob;
+    wa.style.pointerEvents = oa > .5 ? "auto" : "none";
+    wb.style.pointerEvents = ob > .5 ? "auto" : "none";
+    PROBS.forEach(p => {
+      dotEls[p.id].setAttribute("transform", "translate(" + lerp(p.a.x, p.b.x, e) + "," + lerp(p.a.y, p.b.y, e) + ")");
+    });
+  }
+
+  function mk(tag, attrs, parent) {
+    const el = document.createElementNS(NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(el);
+    return el;
+  }
+  PROBS.forEach(p => {
+    const g = mk("g", { class: "dot", tabindex: "0", role: "button", "aria-label": p.title }, $("dots"));
+    mk("circle", { class: "hit", r: 17 }, g);
+    mk("circle", { class: "ring", r: 10 }, g);
+    mk("circle", { class: "pt", r: 5 }, g);
+    mk("text", { y: 21 }, g).textContent = p.label;
+    dotEls[p.id] = g;
+    const pick = ev => { ev.stopPropagation(); select({ kind: "prob", id: p.id }); };
+    g.addEventListener("click", pick);
+    const c = document.createElement("button");
+    c.type = "button"; c.className = "chip"; c.id = "prob-" + p.id; c.textContent = p.label;
+    c.addEventListener("click", () => select({ kind: "prob", id: p.id }));
+    $("probs").appendChild(c);
+    g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(ev); } });
+  });
+
+  /* ---------- hit testing ---------- */
+  const inEll = (x, y, e) => { const dx = (x - e[0]) / e[2], dy = (y - e[1]) / e[3]; return dx * dx + dy * dy <= 1; };
+  function itemAt(x, y) {
+    const inH = inEll(x, y, cur.H), inN = inEll(x, y, [cur.N[0], cur.N[1], cur.N[2], cur.N[2]]), inP = inEll(x, y, cur.P);
+    if (cur.hole > 2 && Math.hypot(x - HOLE.x, y - HOLE.y) <= cur.hole) return "T";
+    if (inN && inH) return "C";
+    if (inP) return "P";
+    if (inN) return "I";
+    if (inH) return "H";
+    return null;
+  }
+  function svgPoint(ev) {
+    const m = svg.getScreenCTM(); if (!m) return null;
+    const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(m.inverse());
+    return p;
+  }
+  svg.addEventListener("pointermove", ev => {
+    if (ev.pointerType === "touch") return;
+    const p = svgPoint(ev); const it = p ? itemAt(p.x, p.y) : null;
+    svg.dataset.hover = it || ""; svg.style.cursor = it ? "pointer" : "default";
+  });
+  svg.addEventListener("pointerleave", () => { svg.dataset.hover = ""; });
+  svg.addEventListener("click", ev => {
+    const lab = ev.target.closest("[data-item]");
+    if (lab) { select({ kind: "item", id: lab.dataset.item }); return; }
+    const p = svgPoint(ev); const it = p ? itemAt(p.x, p.y) : null;
+    if (it) select({ kind: "item", id: it });
+  });
+
+  /* ---------- selection and panel ---------- */
+  function badge(name, v) {
+    const cls = v === "?" ? "q" : v ? "yes" : "no";
+    const mark = v === "?" ? "?" : v ? "✓" : "✗";
+    return '<span class="badge ' + cls + '"><span aria-hidden="true">' + mark + '</span>' + name + '</span>';
+  }
+  function renderPanel() {
+    const w = state.world, s = state.sel, panel = $("panel");
+    let html = "";
+    if (s.kind === "item") {
+      const it = ITEMS[s.id];
+      panel.style.setProperty("--sw", "var(" + it.sw + ")");
+      html += '<span class="kind">מחלקה</span><h3>' + it.title + '</h3><p class="en">' + it.en + '</p>';
+      it.body.forEach(t => { html += "<p>" + t + "</p>"; });
+      if (it[w]) html += '<div class="world"><span class="tag">' + WORLD_NAME[w] + '</span><p>' + it[w] + '</p></div>';
+    } else {
+      const p = PROBS.find(q => q.id === s.id), pos = p[w];
+      panel.style.setProperty("--sw", "var(" + ITEMS[REGION_ITEM[pos.r]].sw + ")");
+      const m = Object.assign({}, MEMBER[pos.r], w === "b" && pos.r === "C" ? { P: 1 } : {}, pos.ov || {});
+      html += '<span class="kind">בעיה</span><h3>' + p.title + '</h3>';
+      p.body.forEach(t => { html += "<p>" + t + "</p>"; });
+      html += '<div class="world"><span class="tag">' + WORLD_NAME[w] + '</span>';
+      if (p["w" + w]) html += "<p>" + p["w" + w] + "</p>";
+      html += '<div class="badges">' + badge(L("P"), m.P) + badge(L("NP"), m.NP) + badge("NP-שלמה", m.C) + badge("NP-קשה", m.H) + '</div></div>';
+    }
+    panel.innerHTML = html;
+  }
+  function renderChips() {
+    const ids = ["P", "N", "C", "H", state.world === "a" ? "I" : "T"];
+    const box = $("chips");
+    box.innerHTML = '<span class="cap">להדליק בציור:</span>';
+    ids.forEach(id => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.id = "chip-" + id;
+      b.style.setProperty("--sw", "var(" + ITEMS[id].sw + ")");
+      b.setAttribute("aria-pressed", String(state.sel.kind === "item" && state.sel.id === id));
+      b.innerHTML = "<i></i>" + (id === "P" || id === "N" ? L(ITEMS[id].chip) : ITEMS[id].chip);
+      b.addEventListener("click", () => select({ kind: "item", id: id }));
+      box.appendChild(b);
+    });
+  }
+  function refresh() {
+    const s = state.sel, w = state.world;
+    svg.dataset.sel = s.kind === "item" ? s.id : REGION_ITEM[PROBS.find(q => q.id === s.id)[w].r];
+    PROBS.forEach(p => {
+      dotEls[p.id].classList.toggle("on", s.kind === "prob" && s.id === p.id);
+      dotEls[p.id].classList.toggle("conj", !!p[w].conj);
+      $("prob-" + p.id).setAttribute("aria-pressed", String(s.kind === "prob" && s.id === p.id));
+    });
+    $("cap").textContent = CAPTION[w];
+    renderChips(); renderPanel();
+  }
+  function select(sel) { state.sel = sel; svg.dataset.hover = ""; refresh(); }
+
+  /* ---------- world switch ---------- */
+  let raf = 0;
+  function setWorld(w) {
+    if (w === state.world) return;
+    state.world = w;
+    $("w-a").setAttribute("aria-pressed", String(w === "a"));
+    $("w-b").setAttribute("aria-pressed", String(w === "b"));
+    if (state.sel.kind === "item") {
+      if (w === "b" && state.sel.id === "I") state.sel = { kind: "item", id: "T" };
+      if (w === "a" && state.sel.id === "T") state.sel = { kind: "item", id: "I" };
+    }
+    refresh();
+    const target = w === "a" ? 0 : 1;
+    cancelAnimationFrame(raf);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { state.t = target; draw(target); return; }
+    const from = state.t, t0 = performance.now(), dur = 900 * Math.abs(target - from);
+    (function step(now) {
+      const k = dur ? clamp((now - t0) / dur) : 1;
+      state.t = lerp(from, target, k); draw(state.t);
+      if (k < 1) raf = requestAnimationFrame(step);
+    })(t0);
+  }
+  $("w-a").addEventListener("click", () => setWorld("a"));
+  $("w-b").addEventListener("click", () => setWorld("b"));
+
+  draw(0); refresh();
+
+  /* ---------- check vs. find ---------- */
+  const NUMS = [127, 214, 358, 431, 562, 689, 743, 816, 905, 978], TARGET = 2783, SOLUTION = [358, 431, 562, 689, 743];
+  const picked = new Set(); let revealed = false;
+  const numBtns = NUMS.map(v => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "num"; b.textContent = v; b.id = "num-" + v;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => { picked.has(v) ? picked.delete(v) : picked.add(v); revealed = false; tally(); });
+    $("nums").appendChild(b); return b;
+  });
+  function tally() {
+    let sum = 0; picked.forEach(v => { sum += v; });
+    numBtns.forEach((b, i) => b.setAttribute("aria-pressed", String(picked.has(NUMS[i]))));
+    $("sum").textContent = sum.toLocaleString("en-US");
+    const st = $("state"), d = TARGET - sum;
+    st.className = "state" + (d === 0 ? " ok" : "");
+    st.textContent = picked.size === 0 ? "" : d === 0 ? "בדיוק!" : d > 0 ? "חסר " + d.toLocaleString("en-US") : "עודף של " + (-d).toLocaleString("en-US");
+    const show = d === 0;
+    $("proof").hidden = !show; $("proof-note").hidden = !(show && revealed);
+    if (show) $("proof").textContent = [...picked].sort((a, b) => a - b).join(" + ") + " = " + TARGET.toLocaleString("en-US");
+  }
+  $("reveal").addEventListener("click", () => { picked.clear(); SOLUTION.forEach(v => picked.add(v)); revealed = true; tally(); });
+  $("clear").addEventListener("click", () => { picked.clear(); revealed = false; tally(); });
+  tally();
+
+  const sig = x => Number(x.toPrecision(2)).toLocaleString("he-IL", { maximumFractionDigits: 1 });
+  function fmtTime(s) {
+    if (s < 1) return "פחות משנייה";
+    if (s < 60) return sig(s) + " שניות";
+    if (s < 3600) return sig(s / 60) + " דקות";
+    if (s < 86400) return sig(s / 3600) + " שעות";
+    if (s < 31557600) return sig(s / 86400) + " ימים";
+    const y = s / 31557600;
+    if (y < 1e3) return sig(y) + " שנים";
+    if (y < 1e6) return sig(y / 1e3) + " אלף שנים";
+    if (y < 1e9) return sig(y / 1e6) + " מיליון שנים";
+    if (y < 1.38e10) return sig(y / 1e9) + " מיליארד שנים";
+    return "פי " + sig(y / 1.38e10) + " מגיל היקום";
+  }
+  function scale() {
+    const n = Number($("n").value);
+    $("n-out").textContent = n;
+    $("v-check").textContent = "≤ " + (n - 1) + " חיבורים";
+    $("v-find").textContent = "2^" + n + " = " + (1n << BigInt(n)).toLocaleString("en-US");
+    $("t-find").textContent = fmtTime(Math.pow(2, n) / 1e9);
+  }
+  $("n").addEventListener("input", scale);
+  scale();
+})();
+</script>
