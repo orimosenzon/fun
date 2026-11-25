@@ -1433,6 +1433,11 @@ dialog { color: var(--text); font: inherit; }
 
 .face-badge .icon { width: 12px; height: 12px; }
 
+/* A feeling about something the reader wrote, in place of the round badge. */
+.face-badge.feeling { min-width: 0; width: 28px; height: 28px; padding: 1px; color: inherit; font-size: 17px; background: var(--card); }
+
+.face-feeling { display: block; width: 100%; height: 100%; }
+
 .face-name { max-width: 100%; overflow: hidden; font-size: 12.5px; font-weight: 650; white-space: nowrap; text-overflow: ellipsis; }
 
 .face-quote {
@@ -1850,3 +1855,447 @@ dialog { color: var(--text); font: inherit; }
 .app-hint-actions { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 
 .app-hint-actions a { font-weight: 600; }
+
+/* ---------- Feelings (reactions.js) ---------- */
+/* The paints of the drawings live in one empty SVG. It must not be display:none, or they stop working. */
+.rx-paints { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+
+.rx-art { display: block; width: 100%; height: 100%; overflow: visible; }
+
+.rx-emoji { display: grid; place-items: center; width: 100%; height: 100%; line-height: 1; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+
+/* Each moving part turns and grows around its own middle. The leaf swings from the stalk. */
+.rx-body, .rx-ground, .rx-eyes, .rx-eye, .rx-pupils, .rx-lids, .rx-brows, .rx-mouth, .rx-tear, .rx-steam, .rx-sparks, .rx-cheeks {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.rx-leaf { transform-origin: 50px 19px; }
+.rx-funny .rx-mouth, .rx-bored .rx-lids { transform-origin: center top; }
+.rx-surprise .rx-body, .rx-bored .rx-body { transform-origin: center bottom; }
+.rx-steam, .rx-sparks { opacity: 0; }
+
+/* A drawing moves while it is being chosen (.rx-live), once after a choice (.rx-once), and
+   under the pointer. Every feeling is one short scene of its own length. */
+.rx-once { --rx-times: 1; }
+
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art :is(.rx-body, .rx-ground, .rx-eyes, .rx-pupils, .rx-lids, .rx-brows, .rx-mouth, .rx-tear, .rx-steam, .rx-sparks, .rx-leaf, .rx-heat, .rx-gloss) {
+  animation-duration: var(--rx-length);
+  animation-iteration-count: var(--rx-times, infinite);
+  animation-delay: var(--rx-wait, 0s);
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+
+.rx-love { --rx-length: 1.5s; }
+.rx-funny { --rx-length: 1.9s; }
+.rx-surprise { --rx-length: 2.3s; }
+.rx-bored { --rx-length: 3.8s; }
+.rx-anger { --rx-length: 1.9s; }
+
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-love .rx-body { animation-name: rx-beat; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-love .rx-ground { animation-name: rx-beat-ground; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-love .rx-gloss { animation-name: rx-glint; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-funny .rx-body { animation-name: rx-laugh; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-funny .rx-ground { animation-name: rx-laugh-ground; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-funny .rx-mouth { animation-name: rx-laugh-mouth; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-funny .rx-tear-a { animation-name: rx-tear-a; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-funny .rx-tear-b { animation-name: rx-tear-b; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-funny .rx-leaf { animation-name: rx-leaf-laugh; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-surprise .rx-body { animation-name: rx-jump; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-surprise .rx-ground { animation-name: rx-jump-ground; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-surprise .rx-eyes { animation-name: rx-widen; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-surprise .rx-brows { animation-name: rx-brows-up; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-surprise .rx-mouth { animation-name: rx-gasp; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-surprise .rx-sparks { animation-name: rx-sparks; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-surprise .rx-leaf { animation-name: rx-leaf-pop; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-bored .rx-body { animation-name: rx-sigh; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-bored .rx-pupils { animation-name: rx-glance; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-bored .rx-lids { animation-name: rx-droop; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-bored .rx-leaf { animation-name: rx-leaf-droop; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-anger .rx-body { animation-name: rx-tremble; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-anger .rx-heat { animation-name: rx-heat; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-anger .rx-brows { animation-name: rx-scowl; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-anger .rx-steam-a { animation-name: rx-steam-a; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-anger .rx-steam-b { animation-name: rx-steam-b; }
+:is(.rx-live, .rx-once, .rx-pick:hover, .rx-pick:focus-visible, .rx-chip:hover) .rx-art.rx-anger .rx-leaf { animation-name: rx-leaf-shake; }
+
+/* A heart beats twice and rests. */
+@keyframes rx-beat {
+  0%, 46%, 100% { transform: scale(1); }
+  10% { transform: scale(1.15); }
+  20% { transform: scale(0.97); }
+  30% { transform: scale(1.09); }
+}
+@keyframes rx-beat-ground {
+  0%, 46%, 100% { transform: scale(1); }
+  10% { transform: scale(1.14, 1); }
+  30% { transform: scale(1.08, 1); }
+}
+@keyframes rx-glint {
+  0%, 46%, 100% { opacity: 1; }
+  10%, 30% { opacity: 0.72; }
+}
+
+/* Laughing: four hops that die down, the mouth opening with each, and a tear from each eye. */
+@keyframes rx-laugh {
+  0%, 16%, 32%, 48%, 64%, 100% { transform: translateY(0) rotate(0); }
+  8% { transform: translateY(-6%) rotate(-5deg); }
+  24% { transform: translateY(-6%) rotate(5deg); }
+  40% { transform: translateY(-4.5%) rotate(-4deg); }
+  56% { transform: translateY(-3%) rotate(3deg); }
+}
+@keyframes rx-laugh-ground {
+  0%, 16%, 32%, 48%, 64%, 100% { transform: scale(1); opacity: 1; }
+  8%, 24% { transform: scale(0.84); opacity: 0.7; }
+  40% { transform: scale(0.88); opacity: 0.78; }
+  56% { transform: scale(0.92); opacity: 0.85; }
+}
+@keyframes rx-laugh-mouth {
+  0%, 16%, 32%, 48%, 64%, 100% { transform: scaleY(1); }
+  8%, 24% { transform: scaleY(1.14); }
+  40% { transform: scaleY(1.1); }
+  56% { transform: scaleY(1.06); }
+}
+@keyframes rx-tear-a {
+  0%, 62%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+  5% { transform: translate(5px, -3px) scale(0.3); opacity: 0; }
+  16% { transform: translate(0, 0) scale(1); opacity: 1; }
+  44% { transform: translate(-7px, 13px) scale(0.9); opacity: 0; }
+  45% { transform: translate(5px, -3px) scale(0.3); opacity: 0; }
+}
+@keyframes rx-tear-b {
+  0%, 78%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+  21% { transform: translate(-5px, -3px) scale(0.3); opacity: 0; }
+  32% { transform: translate(0, 0) scale(1); opacity: 1; }
+  60% { transform: translate(7px, 13px) scale(0.9); opacity: 0; }
+  61% { transform: translate(-5px, -3px) scale(0.3); opacity: 0; }
+}
+@keyframes rx-leaf-laugh {
+  0%, 16%, 32%, 48%, 64%, 100% { transform: rotate(0); }
+  8%, 40% { transform: rotate(9deg); }
+  24%, 56% { transform: rotate(-9deg); }
+}
+
+/* Surprise: a crouch, a jump with the eyes wide and the leaf standing up, and a soft landing. */
+@keyframes rx-jump {
+  0%, 44%, 100% { transform: translateY(0) scale(1); }
+  7% { transform: translateY(0) scale(1.07, 0.9); }
+  18% { transform: translateY(-9%) scale(0.94, 1.08); }
+  27% { transform: translateY(-9%) scale(1, 1); }
+  35% { transform: translateY(0) scale(1.05, 0.94); }
+}
+@keyframes rx-jump-ground {
+  0%, 7%, 35%, 100% { transform: scale(1); opacity: 1; }
+  18%, 27% { transform: scale(0.72); opacity: 0.55; }
+}
+@keyframes rx-widen {
+  0%, 7%, 78%, 100% { transform: scale(1); }
+  18%, 62% { transform: scale(1.17); }
+}
+@keyframes rx-brows-up {
+  0%, 7%, 78%, 100% { transform: translateY(0); }
+  18%, 62% { transform: translateY(-3.4px); }
+}
+@keyframes rx-gasp {
+  0%, 78%, 100% { transform: scale(1); }
+  7% { transform: scale(0.55); }
+  18%, 62% { transform: scale(1.2); }
+}
+@keyframes rx-sparks {
+  0%, 9%, 52%, 100% { opacity: 0; transform: scale(0.6); }
+  18% { opacity: 1; transform: scale(1); }
+  34% { opacity: 0.9; transform: scale(1.14); }
+}
+@keyframes rx-leaf-pop {
+  0%, 7%, 78%, 100% { transform: rotate(0); }
+  18% { transform: rotate(-30deg); }
+  27% { transform: rotate(-16deg); }
+  36%, 62% { transform: rotate(-22deg); }
+}
+
+/* Boredom: a glance at something more interesting, a long sigh, and the eyes almost close. */
+@keyframes rx-glance {
+  0%, 12%, 48%, 100% { transform: translateX(0); }
+  20%, 40% { transform: translateX(-5.4px); }
+}
+@keyframes rx-droop {
+  0%, 52%, 96%, 100% { transform: scaleY(1); }
+  66%, 84% { transform: scaleY(1.72); }
+}
+@keyframes rx-sigh {
+  0%, 50%, 96%, 100% { transform: scale(1); }
+  60% { transform: scale(0.985, 1.025); }
+  72%, 84% { transform: scale(1.03, 0.955); }
+}
+@keyframes rx-leaf-droop {
+  0%, 52%, 96%, 100% { transform: rotate(0); }
+  72%, 84% { transform: rotate(13deg); }
+}
+
+/* Anger: it heats up from the top, trembles, and lets off steam on both sides. */
+@keyframes rx-tremble {
+  0%, 62%, 100% { transform: translateX(0); }
+  6%, 18%, 30%, 42%, 54% { transform: translateX(-2.2%); }
+  12%, 24%, 36%, 48% { transform: translateX(2.2%); }
+}
+@keyframes rx-heat {
+  0%, 100% { opacity: 0.25; }
+  30%, 56% { opacity: 1; }
+}
+@keyframes rx-scowl {
+  0%, 70%, 100% { transform: translateY(0); }
+  14%, 56% { transform: translateY(2.2px); }
+}
+@keyframes rx-steam-a {
+  0%, 8% { opacity: 0; transform: translate(9px, 10px) scale(0.3); }
+  26% { opacity: 0.95; transform: translate(0, 0) scale(1); }
+  52%, 100% { opacity: 0; transform: translate(-6px, -9px) scale(1.35); }
+}
+@keyframes rx-steam-b {
+  0%, 28% { opacity: 0; transform: translate(-9px, 10px) scale(0.3); }
+  46% { opacity: 0.95; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(6px, -9px) scale(1.35); }
+}
+@keyframes rx-leaf-shake {
+  0%, 62%, 100% { transform: rotate(0); }
+  6%, 18%, 30%, 42%, 54% { transform: rotate(-7deg); }
+  12%, 24%, 36%, 48% { transform: rotate(7deg); }
+}
+
+/* The button under a post or a comment, and the feeling it shows once one was chosen. */
+.rx-holder { position: relative; display: inline-flex; }
+
+.rx-button { gap: 7px; }
+
+.rx-button .icon { width: 19px; height: 19px; }
+
+.rx-button .rx-face { flex: none; width: 24px; height: 24px; margin-block: -3px; }
+
+.rx-button .rx-emoji { font-size: 20px; }
+
+.rx-holder.small .rx-button { gap: 5px; }
+
+.rx-holder.small .rx-button .rx-face { width: 19px; height: 19px; }
+
+.rx-holder.small .rx-button .rx-emoji { font-size: 16px; }
+
+.rx-holder .rx-button.chosen { font-weight: 650; }
+
+.rx-holder .rx-button.rx-is-love { color: #c72743; }
+
+.rx-holder .rx-button:is(.rx-is-funny, .rx-is-surprise) { color: #b3580f; }
+
+.rx-holder .rx-button.rx-is-bored { color: #8a6a2e; }
+
+.rx-holder .rx-button.rx-is-anger { color: #c0391f; }
+
+.rx-holder .rx-button.rx-is-emoji { color: var(--brand); }
+
+/* While the choice is open its card rises above its neighbours, and stays under the top bar. */
+.rx-open { position: relative; z-index: 1; }
+
+.rx-picker {
+  position: absolute;
+  z-index: 6;
+  bottom: calc(100% + 8px);
+  inset-inline-start: -10px;
+  display: flex;
+  gap: 2px;
+  padding: 9px 8px 6px;
+  background: var(--card);
+  border-radius: 26px;
+  box-shadow: 0 10px 30px rgba(90, 57, 16, 0.24), 0 0 0 1px rgba(116, 78, 28, 0.08);
+  transform: translateX(var(--rx-shift, 0px));
+  animation: rx-open 0.14s ease both;
+}
+
+.rx-picker.below { top: calc(100% + 8px); bottom: auto; }
+
+.rx-picker.measuring { position: fixed; inset: 0 auto auto 0; visibility: hidden; transform: none; }
+
+@keyframes rx-open { from { opacity: 0; } }
+
+.rx-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: min(54px, calc((100vw - 42px) / 6));
+  padding: 3px 0 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: none;
+  border-radius: 16px;
+  animation: rx-pick-in 0.36s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  animation-delay: var(--rx-wait, 0s);
+}
+
+@keyframes rx-pick-in { from { opacity: 0; transform: translateY(16px) scale(0.3); } }
+
+.rx-pick:hover, .rx-pick:focus-visible { --rx-times: infinite; color: var(--text); filter: none; }
+
+.rx-pick.chosen { color: var(--citrus-ink); font-weight: 650; background: var(--citrus-tint); }
+
+.rx-pick-art {
+  width: min(42px, 100%);
+  aspect-ratio: 1;
+  transform-origin: center bottom;
+  transition: transform 0.18s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.rx-pick:hover .rx-pick-art, .rx-pick:focus-visible .rx-pick-art { transform: scale(1.28) translateY(-3px); }
+
+.rx-more .rx-pick-art { display: grid; place-items: center; color: var(--muted); background: var(--thread); border-radius: 50%; transform: scale(0.8); transform-origin: center; }
+
+.rx-more:hover .rx-pick-art, .rx-more:focus-visible .rx-pick-art { color: var(--brand); transform: scale(0.9); }
+
+.rx-more .icon { width: 22px; height: 22px; }
+
+/* The chosen feeling, large for a moment above the button. */
+.rx-pop {
+  position: absolute;
+  z-index: 7;
+  bottom: 100%;
+  inset-inline-start: 50%;
+  width: 78px;
+  height: 78px;
+  margin-inline-start: -39px;
+  pointer-events: none;
+  --rx-wait: 0.14s;
+  animation: rx-pop 1.95s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.rx-holder.small .rx-pop { width: 62px; height: 62px; margin-inline-start: -31px; }
+
+.rx-pop .rx-emoji { font-size: 58px; }
+
+.rx-holder.small .rx-pop .rx-emoji { font-size: 46px; }
+
+.rx-pop .rx-art:is(.rx-funny, .rx-surprise, .rx-bored, .rx-anger) { --rx-length: 1.65s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-pop { display: none; }
+}
+
+@keyframes rx-pop {
+  0% { opacity: 0; transform: translateY(34px) scale(0.2); }
+  11% { opacity: 1; transform: translateY(-12px) scale(1.14); }
+  19%, 84% { opacity: 1; transform: translateY(-6px) scale(1); }
+  100% { opacity: 0; transform: translateY(-28px) scale(0.84); }
+}
+
+/* What was felt: a chip for each feeling with its count, then the names. */
+.rx-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+
+.rx-summary.small { gap: 5px; margin: 8px 0 -3px; }
+
+.rx-summary + .actions { margin-top: 10px; }
+
+.rx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 11px 0 9px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: var(--thread);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.thread .rx-chip { background: var(--field); }
+
+.rx-chip:hover { --rx-times: 1; filter: none; box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+.rx-chip.mine, .thread .rx-chip.mine { color: var(--citrus-ink); background: var(--citrus-tint); box-shadow: inset 0 0 0 1.5px var(--citrus); }
+
+.rx-chip .rx-face { flex: none; width: 21px; height: 21px; }
+
+.rx-chip .rx-emoji { font-size: 17px; }
+
+.rx-summary.small .rx-chip { height: 28px; padding: 0 9px 0 7px; font-size: 13px; }
+
+.rx-summary.small .rx-chip .rx-face { width: 18px; height: 18px; }
+
+.rx-summary.small .rx-chip .rx-emoji { font-size: 15px; }
+
+.rx-chip.bump { animation: rx-bump 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+
+@keyframes rx-bump {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+}
+
+.rx-summary .rx-who { display: block; flex: 0 1 auto; min-width: 0; padding: 4px 6px; overflow: hidden; font-size: 13.5px; white-space: nowrap; text-overflow: ellipsis; }
+
+/* Who felt what. */
+.rx-people h2 { margin: 0 0 10px; font-size: 19px; }
+
+.rx-people-list { max-height: 52dvh; margin-bottom: 16px; overflow-y: auto; }
+
+.rx-people-group { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+
+.rx-people-group:first-child { border-top: 0; }
+
+.rx-people-group .rx-face { flex: none; width: 36px; height: 36px; }
+
+.rx-people-group .rx-emoji { font-size: 29px; }
+
+.rx-people-group ul { display: grid; gap: 5px; margin: 6px 0 0; padding: 0; list-style: none; }
+
+/* Every other emoji. */
+.rx-all {
+  width: min(92vw, 430px);
+  max-width: 100vw;
+  height: min(78dvh, 540px);
+  padding: 0;
+  overflow: hidden;
+  background: var(--card);
+  border: 0;
+  border-radius: 22px;
+  box-shadow: 0 18px 50px rgba(15, 42, 56, 0.3);
+}
+
+.rx-all::backdrop { background: rgba(15, 42, 56, 0.4); }
+
+.rx-all[open] { animation: rise 0.18s ease both; }
+
+.rx-all-body { display: flex; flex-direction: column; height: 100%; }
+
+.rx-all-head { display: flex; align-items: center; gap: 6px; padding: 12px 10px 8px 6px; }
+
+.rx-all-head input { flex: 1; min-width: 0; }
+
+.rx-all-head .icon-button { align-self: center; }
+
+.rx-tabs { display: flex; padding: 0 8px 6px; border-bottom: 1px solid var(--line); }
+
+.rx-tab, .rx-key { padding: 0; color: inherit; line-height: 1; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; background: none; border-radius: 12px; }
+
+.rx-tab { flex: 1; height: 38px; font-size: 20px; }
+
+.rx-tab:hover, .rx-key:hover, .rx-key:focus-visible { background: var(--citrus-tint); filter: none; }
+
+.rx-list { flex: 1; padding: 0 10px 14px; overflow-y: auto; overscroll-behavior: contain; outline: none; }
+
+.rx-list h3 { position: sticky; top: 0; z-index: 1; margin: 0; padding: 10px 4px 6px; color: var(--muted); font-size: 13px; font-weight: 600; background: var(--card); }
+
+.rx-keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); }
+
+.rx-key { aspect-ratio: 1; font-size: 27px; }
+
+.rx-wait { padding: 28px 8px; text-align: center; }
+
+@media (max-width: 640px) {
+  .rx-all { width: 100%; height: 74dvh; max-height: none; margin: auto 0 0; border-radius: 22px 22px 0 0; }
+  .rx-all[open] { animation: rx-sheet 0.22s ease both; }
+  .rx-list { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+}
+
+@keyframes rx-sheet { from { opacity: 0; transform: translateY(30%); } }

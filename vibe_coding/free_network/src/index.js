@@ -242,7 +242,7 @@ async function importGooglePicture(c, userId, picture) {
   }
 }
 
-function serializePost(row, viewer) {
+function serializePost(row, viewer, reactions) {
   return {
     id: row.id,
     author: { id: row.author_id, name: row.author_name, avatar: row.author_avatar },
@@ -254,10 +254,11 @@ function serializePost(row, viewer) {
     commentCount: row.comment_count,
     images: JSON.parse(row.image_ids),
     mine: viewer?.id === row.author_id,
+    reactions: reactions?.get(row.id) ?? [],
   };
 }
 
-function serializeComment(row, viewer, post) {
+function serializeComment(row, viewer, post, reactions) {
   return {
     id: row.id,
     author: { id: row.author_id, name: row.author_name, avatar: row.author_avatar },
@@ -270,6 +271,7 @@ function serializeComment(row, viewer, post) {
     removedBy: row.removed_by,
     canEdit: !row.removed_by && viewer?.id === row.author_id,
     canRemove: !row.removed_by && !!viewer && (viewer.id === row.author_id || viewer.id === post.author_id),
+    reactions: reactions?.get(row.id) ?? [],
   };
 }
 
@@ -277,6 +279,58 @@ function serializeComment(row, viewer, post) {
 const UNUSED_IMAGE = `
   SELECT 1 FROM images WHERE id = ?1 AND owner_id = ?2 AND post_id IS NULL AND comment_id IS NULL AND message_id IS NULL
     AND NOT EXISTS (SELECT 1 FROM users WHERE avatar_id = ?1 OR cover_id = ?1)`;
+
+// The five feelings that the network draws itself. Anything else is a single standard emoji.
+const FEELINGS = ['love', 'funny', 'surprise', 'bored', 'anger'];
+// The emoji that say the same as a drawn feeling count as it, so they are shown and counted together.
+const SAME_FEELING = { '❤️': 'love', '😂': 'funny', '🤣': 'funny', '😮': 'surprise', '😲': 'surprise', '😑': 'bored', '🥱': 'bored', '😠': 'anger', '😡': 'anger' };
+// Built from a string because the bundler does not read the "v" flag yet.
+const ONE_EMOJI = new RegExp('^\\p{RGI_Emoji}$', 'v');
+const MAX_REACTION_NAMES = 60;
+
+function feelingKind(value) {
+  if (typeof value !== 'string' || value.length > 40) return null;
+  if (FEELINGS.includes(value)) return value;
+  return SAME_FEELING[value] ?? (ONE_EMOJI.test(value) ? value : null);
+}
+
+// What was felt about each of these posts (or comments), grouped by feeling, the most common
+// first. Whoever is not logged in sees the counts without the names.
+async function reactionsOf(db, column, ids, viewer) {
+  const byTarget = new Map(ids.map((id) => [id, []]));
+  if (!ids.length) return byTarget;
+  const { results } = await db
+    .prepare(`SELECT r.${column} AS target, r.kind, r.user_id, u.name FROM reactions r JOIN users u ON u.id = r.user_id
+      WHERE r.${column} IN (SELECT value FROM json_each(?)) ORDER BY r.created_at, r.rowid`)
+    .bind(JSON.stringify(ids))
+    .all();
+  for (const row of results) {
+    const groups = byTarget.get(row.target);
+    let group = groups.find((item) => item.kind === row.kind);
+    if (!group) groups.push(group = { kind: row.kind, count: 0, mine: false, people: [] });
+    group.count++;
+    if (viewer?.id === row.user_id) group.mine = true;
+    if (viewer && group.people.length < MAX_REACTION_NAMES) group.people.push({ id: row.user_id, name: row.name });
+  }
+  for (const groups of byTarget.values()) groups.sort((a, b) => b.count - a.count);
+  return byTarget;
+}
+
+const postReactions = (db, rows, viewer) => reactionsOf(db, 'post_id', rows.map((row) => row.id), viewer);
+
+// Sets, replaces or takes back the feeling of the member about one post or one comment.
+async function react(c, column, id) {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const clear = db.prepare(`DELETE FROM reactions WHERE ${column} = ? AND user_id = ?`).bind(id, user.id);
+  if (c.req.method === 'DELETE') await clear.run();
+  else {
+    const kind = feelingKind((await readJson(c)).kind);
+    if (!kind) return c.json({ error: 'אפשר לבחור רגש אחד, או אימוג׳י אחד' }, 400);
+    await db.batch([clear, db.prepare(`INSERT INTO reactions (${column}, user_id, kind, created_at) VALUES (?, ?, ?, ?)`).bind(id, user.id, kind, Date.now())]);
+  }
+  return c.json({ reactions: (await reactionsOf(db, column, [id], user)).get(id) });
+}
 
 const POST_SELECT = `
   SELECT p.*, u.name AS author_name, u.avatar_id AS author_avatar,
@@ -700,7 +754,8 @@ app.get('/api/feed', requireUser, async (c) => {
       ORDER BY p.id DESC LIMIT ?3`)
     .bind(user.id, before, PAGE_SIZE)
     .all();
-  return c.json({ posts: results.map((row) => serializePost(row, user)), hasMore: results.length === PAGE_SIZE });
+  const reactions = await postReactions(c.env.DB, results, user);
+  return c.json({ posts: results.map((row) => serializePost(row, user, reactions)), hasMore: results.length === PAGE_SIZE });
 });
 
 app.post('/api/posts', requireUser, async (c) => {
@@ -746,10 +801,27 @@ app.get('/api/posts/:id', async (c) => {
       WHERE m.post_id = ? ORDER BY m.id`)
     .bind(id)
     .all();
+  const [postFeelings, commentFeelings] = await Promise.all([
+    postReactions(c.env.DB, [post], viewer),
+    reactionsOf(c.env.DB, 'comment_id', results.filter((row) => !row.removed_by).map((row) => row.id), viewer),
+  ]);
   return c.json({
-    post: serializePost(post, viewer),
-    comments: results.map((row) => serializeComment(row, viewer, post)),
+    post: serializePost(post, viewer, postFeelings),
+    comments: results.map((row) => serializeComment(row, viewer, post, commentFeelings)),
   });
+});
+
+app.on(['PUT', 'DELETE'], '/api/posts/:id/reaction', requireUser, async (c) => {
+  const id = parseId(c.req.param('id'));
+  if (!id || !(await loadVisiblePost(c, id))) return c.json({ error: 'הפוסט לא נמצא' }, 404);
+  return react(c, 'post_id', id);
+});
+
+app.on(['PUT', 'DELETE'], '/api/comments/:id/reaction', requireUser, async (c) => {
+  const id = parseId(c.req.param('id'));
+  const comment = id && (await c.env.DB.prepare('SELECT post_id FROM comments WHERE id = ? AND removed_by IS NULL').bind(id).first());
+  if (!comment || !(await loadVisiblePost(c, comment.post_id))) return c.json({ error: 'התגובה לא נמצאה' }, 404);
+  return react(c, 'comment_id', id);
 });
 
 // Only the words of a post can change, and only by its writer. The audience stays as the
@@ -769,7 +841,7 @@ app.put('/api/posts/:id', requireUser, async (c) => {
     Object.assign(post, { body, youtube_id: findYoutubeId(body), edited_at: Date.now() });
     await c.env.DB.prepare('UPDATE posts SET body = ?, youtube_id = ?, edited_at = ? WHERE id = ?').bind(post.body, post.youtube_id, post.edited_at, id).run();
   }
-  return c.json({ post: serializePost(post, user) });
+  return c.json({ post: serializePost(post, user, await postReactions(c.env.DB, [post], user)) });
 });
 
 app.delete('/api/posts/:id', requireUser, async (c) => {
@@ -780,8 +852,10 @@ app.delete('/api/posts/:id', requireUser, async (c) => {
     .run();
   if (!result.meta.changes) return c.json({ error: 'הפוסט לא נמצא' }, 404);
 
-  // Deleting a post really deletes its images and those in its comments, not only the links.
+  // Deleting a post really deletes its images and those in its comments, not only the links,
+  // and what people felt about it and about its comments.
   const attached = 'post_id = ?1 OR comment_id IN (SELECT id FROM comments WHERE post_id = ?1)';
+  await c.env.DB.prepare(`DELETE FROM reactions WHERE ${attached}`).bind(id).run();
   const { results } = await c.env.DB.prepare(`SELECT id FROM images WHERE ${attached}`).bind(id).all();
   if (results.length) {
     await c.env.IMAGES.delete(results.map((image) => image.id));
@@ -908,7 +982,10 @@ app.delete('/api/comments/:id', requireUser, async (c) => {
 
   const removedBy = user.id === comment.author_id ? 'author' : user.id === comment.post_owner_id ? 'post_owner' : null;
   if (!removedBy) return c.json({ error: 'אין הרשאה' }, 403);
-  await c.env.DB.prepare('UPDATE comments SET body = NULL, removed_by = ? WHERE id = ?').bind(removedBy, id).run();
+  await c.env.DB.batch([
+    c.env.DB.prepare('UPDATE comments SET body = NULL, removed_by = ? WHERE id = ?').bind(removedBy, id),
+    c.env.DB.prepare('DELETE FROM reactions WHERE comment_id = ?').bind(id),
+  ]);
 
   const image = await c.env.DB.prepare('SELECT id FROM images WHERE comment_id = ?').bind(id).first();
   if (image) {
@@ -1007,10 +1084,11 @@ app.get('/api/users/:id', requireUser, async (c) => {
       ORDER BY p.id DESC LIMIT ?4`)
     .bind(id, before, seesAll ? 1 : 0, PAGE_SIZE)
     .all();
+  const reactions = await postReactions(c.env.DB, results, viewer);
   return c.json({
     user: person,
     friendship,
-    posts: results.map((row) => serializePost(row, viewer)),
+    posts: results.map((row) => serializePost(row, viewer, reactions)),
     hasMore: results.length === PAGE_SIZE,
   });
 });
@@ -1058,7 +1136,7 @@ app.get('/api/update', requireUser, async (c) => {
   // An expired line is erased, not just hidden.
   await db.prepare('UPDATE users SET status_text = NULL, status_at = NULL WHERE status_at <= ?').bind(now - STATUS_MS).run();
 
-  const [statuses, fresh, replies, moved, joined, quiet] = (await db.batch([
+  const [statuses, fresh, replies, felt, moved, joined, quiet] = (await db.batch([
     db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.status_text, u.status_at FROM users u
       WHERE ${friend} AND u.status_text IS NOT NULL ORDER BY u.status_at DESC LIMIT 8`).bind(me),
     // Posts the reader has not seen yet. What was seen is known only to their device, which says so
@@ -1073,6 +1151,14 @@ app.get('/api/update', requireUser, async (c) => {
       WHERE m.author_id <> ?1 AND m.removed_by IS NULL AND p.deleted_at IS NULL AND m.created_at > ?2
         AND (p.author_id = ?1 OR parent.author_id = ?1)
       ORDER BY m.id DESC LIMIT 4`).bind(me, now - 7 * DAY_MS),
+    // What others felt this week about the reader's posts and comments.
+    db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, r.kind, r.created_at, p.id AS post_id, r.post_id IS NOT NULL AS on_post
+      FROM reactions r JOIN users u ON u.id = r.user_id
+      LEFT JOIN comments m ON m.id = r.comment_id
+      JOIN posts p ON p.id = COALESCE(r.post_id, m.post_id)
+      WHERE r.user_id <> ?1 AND r.created_at > ?2 AND p.deleted_at IS NULL
+        AND ((r.post_id IS NOT NULL AND p.author_id = ?1) OR m.author_id = ?1)
+      ORDER BY r.created_at DESC, r.rowid DESC LIMIT 4`).bind(me, now - 7 * DAY_MS),
     db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.lat, u.lng, u.place_at FROM users u
       WHERE ${friend} AND u.lat IS NOT NULL AND u.place_at > ?2 ORDER BY u.place_at DESC LIMIT 3`).bind(me, now - 14 * DAY_MS),
     db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.created_at FROM users u
@@ -1090,6 +1176,7 @@ app.get('/api/update', requireUser, async (c) => {
       statuses: statuses.map((row) => ({ user: person(row), text: row.status_text, at: row.status_at })),
       fresh: fresh.map((row) => ({ user: person(row), count: row.n })),
       replies: replies.map((row) => ({ user: person(row), postId: row.post_id, at: row.created_at, onMine: !!row.on_mine })),
+      felt: felt.map((row) => ({ user: person(row), kind: row.kind, postId: row.post_id, at: row.created_at, onPost: !!row.on_post })),
       moved: moved.map((row) => ({ user: person(row), place: place(row), at: row.place_at })),
       joined: joined.map((row) => ({ user: person(row), at: row.created_at })),
       quiet: quiet.filter((row) => ![...moved, ...joined].some((other) => other.id === row.id))

@@ -3,6 +3,8 @@
 // opens to a short list with pictures. The reader's device remembers which circles they keep
 // open. Nothing here is ranked: each list is newest first.
 
+import { face, feelingLabel } from '/reactions.js';
+
 const BOARD_URL = 'https://pardespedia.info/wiki/עמוד_ראשי#אירועי_תרבות_ובילוי_קרובים';
 const PLANS_URL = 'https://orimosenzon.github.io/fun/vibe_coding/transparency/ma-bonim/';
 const HE_NEWS_URL = 'https://he.wikipedia.org/wiki/תבנית:חדשות_ואקטואליה';
@@ -112,7 +114,7 @@ export function updatePanel({ me, seen, ui, all = false, top = false }) {
   // A friend as a round picture, with what is new about them underneath.
   function bubble(user, { badge, mark, caption, quote, path, onclick }) {
     const content = [
-      el('span', { className: `face-ring${mark ? ` ${mark}` : ''}` }, avatar(user, { large: true }), badge ? el('span', { className: 'face-badge' }, badge) : null),
+      el('span', { className: `face-ring${mark ? ` ${mark}` : ''}` }, avatar(user, { large: true }), badge ? el('span', { className: `face-badge${badge.classList?.contains('face-feeling') ? ' feeling' : ''}` }, badge) : null),
       el('span', { className: 'face-name', dir: 'auto' }, user.name),
       quote ? el('span', { className: 'face-quote', dir: 'auto' }, quote) : null,
       caption ? el('span', { className: 'face-caption' }, caption) : null,
@@ -176,11 +178,15 @@ export function updatePanel({ me, seen, ui, all = false, top = false }) {
     return { bubble: wrap, form };
   }
 
-  function friendsRing({ statuses, fresh, replies, moved, joined, quiet }) {
+  function friendsRing({ statuses, fresh, replies, felt, moved, joined, quiet }) {
     const people = [
       ...replies.map((item) => [item.user, bubble(item.user, {
         badge: icon('comment'), mark: 'hot', path: `/p/${item.postId}`,
         caption: item.onMine ? 'הגיב לפוסט שלך' : 'ענה לתגובה שלך',
+      })]),
+      ...felt.map((item) => [item.user, bubble(item.user, {
+        badge: el('span', { className: 'face-feeling', title: feelingLabel(item.kind) }, face(item.kind)), mark: 'hot', path: `/p/${item.postId}`,
+        caption: item.onPost ? 'הגיב ברגש לפוסט שלך' : 'הגיב ברגש לתגובה שלך',
       })]),
       ...fresh.map((item) => [item.user, bubble(item.user, {
         badge: String(item.count), mark: 'hot',

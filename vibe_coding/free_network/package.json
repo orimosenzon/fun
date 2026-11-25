@@ -16,7 +16,10 @@
     "hono": "^4.13.16"
   },
   "devDependencies": {
+    "cldr-annotations-derived-full": "^49.0.0",
+    "cldr-annotations-full": "^49.0.0",
     "d3-geo": "^3.1.2",
+    "emojibase-data": "^18.0.0",
     "topojson-client": "^3.1.0",
     "world-atlas": "^2.0.2",
     "wrangler": "^4.158.0"

@@ -402,6 +402,74 @@ function phoneJpeg() {
 const upload = (user, data) => user.call('POST', '/images', data);
 const fetchImage = (user, id) => user('GET', `/images/${id}`);
 
+const kinds = (reactions) => reactions.map((item) => `${item.kind}:${item.count}`);
+
+test('a feeling is one per person: choosing again replaces it, and it can be taken back', async () => {
+  const { id } = (await alice.call('POST', '/posts', { body: 'מה דעתכם?', audience: 'friends' })).data;
+  assert.deepEqual((await bob.call('PUT', `/posts/${id}/reaction`, { kind: 'love' })).data.reactions,
+    [{ kind: 'love', count: 1, mine: true, people: [{ id: bob.id, name: 'bob' }] }]);
+  await alice.call('PUT', `/posts/${id}/reaction`, { kind: 'funny' });
+  await alice.call('PUT', `/posts/${id}/reaction`, { kind: 'love' });
+  // The feed carries the same thing, and tells each reader which feeling is theirs.
+  const inFeed = (await alice.call('GET', '/feed')).data.posts.find((post) => post.id === id).reactions;
+  assert.deepEqual(inFeed, [{ kind: 'love', count: 2, mine: true, people: [{ id: bob.id, name: 'bob' }, { id: alice.id, name: 'alice' }] }]);
+
+  assert.deepEqual(kinds((await bob.call('PUT', `/posts/${id}/reaction`, { kind: 'anger' })).data.reactions), ['love:1', 'anger:1']);
+  assert.deepEqual(kinds((await bob.call('DELETE', `/posts/${id}/reaction`)).data.reactions), ['love:1']);
+  assert.deepEqual(kinds((await bob.call('DELETE', `/posts/${id}/reaction`)).data.reactions), ['love:1']);
+  const seen = (await bob.call('GET', `/users/${alice.id}`)).data.posts.find((post) => post.id === id).reactions;
+  assert.deepEqual(seen.map((item) => item.mine), [false]);
+});
+
+test('a feeling follows the audience of the post, and a visitor sees counts without names', async () => {
+  const hidden = (await alice.call('POST', '/posts', { body: 'לחברים', audience: 'friends' })).data.id;
+  const open = (await alice.call('POST', '/posts', { body: 'לכולם', audience: 'public' })).data.id;
+  assert.equal((await carol.call('PUT', `/posts/${hidden}/reaction`, { kind: 'love' })).status, 404);
+  assert.equal((await carol.call('DELETE', `/posts/${hidden}/reaction`)).status, 404);
+  assert.equal((await anon('PUT', `/posts/${open}/reaction`, { kind: 'love' })).status, 401);
+  assert.equal((await carol.call('PUT', `/posts/${open}/reaction`, { kind: 'surprise' })).status, 200);
+  assert.deepEqual((await anon('GET', `/posts/${open}`)).data.post.reactions, [{ kind: 'surprise', count: 1, mine: false, people: [] }]);
+});
+
+test('any single emoji is a feeling, and nothing else is', async () => {
+  const { id } = (await alice.call('POST', '/posts', { body: 'אימוג׳י', audience: 'friends' })).data;
+  for (const kind of ['🌻', '👍🏽', '🇮🇱', '👨‍👩‍👧', '🫶']) {
+    assert.deepEqual(kinds((await bob.call('PUT', `/posts/${id}/reaction`, { kind })).data.reactions), [`${kind}:1`]);
+  }
+  for (const kind of ['', 'like', 'a', '7', '🌻🌻', '🌻 ', '<b>', 'אהבתי', null, 5, ['love'], 'x'.repeat(500)]) {
+    assert.equal((await bob.call('PUT', `/posts/${id}/reaction`, { kind })).status, 400, String(kind));
+  }
+  assert.equal((await bob.call('PUT', `/posts/${id}/reaction`)).status, 400);
+  // An emoji that says what a drawn feeling says is counted with it.
+  await alice.call('PUT', `/posts/${id}/reaction`, { kind: 'funny' });
+  assert.deepEqual(kinds((await bob.call('PUT', `/posts/${id}/reaction`, { kind: '😂' })).data.reactions), ['funny:2']);
+  assert.deepEqual(kinds((await bob.call('PUT', `/posts/${id}/reaction`, { kind: '❤️' })).data.reactions), ['funny:1', 'love:1']);
+});
+
+test('a comment gathers feelings of its own, until it is removed or its post is deleted', async () => {
+  const { id } = (await alice.call('POST', '/posts', { body: 'פוסט עם תגובות', audience: 'friends' })).data;
+  const first = (await bob.call('POST', `/posts/${id}/comments`, { body: 'תגובה' })).data.id;
+  const second = (await alice.call('POST', `/posts/${id}/comments`, { body: 'עוד אחת' })).data.id;
+  assert.deepEqual(kinds((await alice.call('PUT', `/comments/${first}/reaction`, { kind: 'bored' })).data.reactions), ['bored:1']);
+  await bob.call('PUT', `/comments/${second}/reaction`, { kind: '🌻' });
+  await bob.call('PUT', `/posts/${id}/reaction`, { kind: 'love' });
+  assert.equal((await carol.call('PUT', `/comments/${first}/reaction`, { kind: 'love' })).status, 404);
+  assert.equal((await alice.call('PUT', '/comments/999999/reaction', { kind: 'love' })).status, 404);
+  const read = async () => (await bob.call('GET', `/posts/${id}`)).data;
+  assert.deepEqual((await read()).comments.map((item) => kinds(item.reactions)), [['bored:1'], ['🌻:1']]);
+  assert.deepEqual((await read()).comments[1].reactions[0].mine, true);
+  assert.deepEqual(kinds((await read()).post.reactions), ['love:1']);
+
+  // A removed comment loses what was felt about it, and takes no more.
+  await bob.call('DELETE', `/comments/${first}`);
+  assert.deepEqual((await read()).comments.map((item) => kinds(item.reactions)), [[], ['🌻:1']]);
+  assert.equal((await alice.call('PUT', `/comments/${first}/reaction`, { kind: 'love' })).status, 404);
+
+  await alice.call('DELETE', `/posts/${id}`);
+  assert.equal((await bob.call('PUT', `/posts/${id}/reaction`, { kind: 'love' })).status, 404);
+  assert.equal((await bob.call('PUT', `/comments/${second}/reaction`, { kind: 'love' })).status, 404);
+});
+
 test('location data never survives an upload', async () => {
   const { status, data } = await upload(alice, phoneJpeg());
   assert.equal(status, 201);
@@ -698,6 +766,16 @@ test('the update tells what friends did: new posts, replies, a new place, a new 
   assert.deepEqual(friends.joined.map((item) => item.user.id), [dana.id]);
   assert.deepEqual(friends.quiet, []);
   assert.equal((await eli.call('GET', '/update')).data.friends.fresh[0].count, 2);
+
+  // What others felt about my post and about my comment, not what I felt myself, newest first.
+  const answer = (await eli.call('GET', `/posts/${mine}`)).data.comments.at(-1).id;
+  await dana.call('PUT', `/posts/${mine}/reaction`, { kind: 'love' });
+  await stranger.call('PUT', `/comments/${answer}/reaction`, { kind: '🌻' });
+  await eli.call('PUT', `/posts/${mine}/reaction`, { kind: 'funny' });
+  await eli.call('PUT', `/posts/${first}/reaction`, { kind: 'funny' });
+  const felt = (await eli.call('GET', '/update')).data.friends.felt;
+  assert.deepEqual(felt.map((item) => [item.user.id, item.kind, item.postId, item.onPost]), [[stranger.id, '🌻', mine, false], [dana.id, 'love', mine, true]]);
+  assert.deepEqual((await dana.call('GET', '/update')).data.friends.felt.map((item) => [item.user.id, item.kind, item.postId]), [[eli.id, 'funny', first]]);
 
   // Nothing about people who are not friends, and nothing once the place is switched off.
   const outside = (await stranger.call('GET', '/update')).data.friends;

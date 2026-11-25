@@ -1,6 +1,7 @@
 import { friendsGlobe } from '/globe.js';
 import { updatePanel } from '/update.js';
 import { messenger } from '/messages.js';
+import { feelings } from '/reactions.js';
 
 const app = document.getElementById('app');
 // Beside the feed: the update on the left once there is room for it, and the globe on the
@@ -42,6 +43,7 @@ const ICONS = {
   send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
   down: 'M6 9l6 6 6-6',
   edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z',
+  feel: 'M12 22a10 10 0 1 0 0-20a10 10 0 0 0 0 20M8 14s1.5 2.2 4 2.2 4-2.2 4-2.2M9 9.5h.01M15 9.5h.01',
   phone: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2',
   download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
   square: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 8v8M8 12h8',
@@ -454,11 +456,15 @@ function editBox(words, { maxLength, label, save, close }) {
   return form;
 }
 
+const feelingUi = () => ({ el, icon, api, tell, go, link });
+
 function postCard(post, options = {}) {
   const { onDeleted } = options;
   const url = `/p/${post.id}`;
   const count = !post.commentCount ? 'להגיב' : post.commentCount === 1 ? 'תגובה אחת' : `${post.commentCount} תגובות`;
-  const actions = el('div', { className: 'actions' }, link(url, labelled('comment', count)));
+  // What people felt about the post. Only members who chose a name can add a feeling of their own.
+  const feel = feelings({ path: `/posts/${post.id}/reaction`, reactions: post.reactions, me: me?.name ? me : null, ui: feelingUi() });
+  const actions = el('div', { className: 'actions' }, me?.name ? feel.button : null, link(url, labelled('comment', count)));
   if (post.audience === 'public') {
     const copy = el('button', { className: 'plain', type: 'button' }, labelled(navigator.share ? 'share' : 'link', navigator.share ? 'שיתוף' : 'העתקת קישור'));
     copy.addEventListener('click', () => shareLink(new URL(url, location.origin).href, copy));
@@ -488,6 +494,7 @@ function postCard(post, options = {}) {
     words,
     post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
+    feel.summary,
     actions);
   if (post.mine) {
     let box = null;
@@ -753,7 +760,10 @@ function comment(item, reload, onReply) {
   if (words) bubble.append(words);
   if (item.image) bubble.append(gallery([item.image]));
   if (item.youtubeId) bubble.append(video(item.youtubeId));
+  const feel = feelings({ path: `/comments/${item.id}/reaction`, reactions: item.reactions, me: me?.name ? me : null, ui: feelingUi(), small: true });
+  bubble.append(feel.summary);
   const actions = el('div', { className: 'comment-actions' });
+  if (me?.name) actions.append(feel.button);
   if (onReply) actions.append(el('button', { className: 'plain', type: 'button', onclick: onReply }, labelled('reply', 'הגבה')));
   if (item.canEdit) {
     let box = null;
