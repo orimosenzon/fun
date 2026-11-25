@@ -126,7 +126,8 @@ const VIEW_NAMES = { streets: 'רחובות', sat: 'לוויין', '3d': 'תלת
 function paintBasemapButton() {
   const now = BASEMAPS[baseIndex];
   el('basemap-img').src = `img/bg-${now.id}.webp`;
-  document.querySelectorAll('.view-tile').forEach((t) => {
+  // Its own tiles only: the aircraft's picker further down wears the same class.
+  document.querySelectorAll('#view-tiles .view-tile').forEach((t) => {
     const on = +t.dataset.i === baseIndex;
     t.classList.toggle('on', on);
     t.setAttribute('aria-pressed', on);
@@ -190,7 +191,7 @@ const SEL_KEY = 'sel';
  * joined the four above:
  *
  *     panel=off        the list is folded away (desktop) or pulled down (phone)
- *     craft=jet        the aircraft on the flight button: balloon, jet, bike
+ *     craft=jet        the aircraft on the flight button: balloon, jet, bike, f5, car
  *     fly=clean        in flight, and in which view: normal, clean, trails
  *     legend=1         the key is open
  *
@@ -3926,7 +3927,7 @@ function repaint() {
 async function boot() {
   // Before wireControls paints the flight buttons.
   if (OPENED_WITH.get(CRAFT_KEY) && typeof Explore !== 'undefined') {
-    Explore.setCraft(OPENED_WITH.get(CRAFT_KEY));
+    Explore.setCraft(OPENED_WITH.get(CRAFT_KEY), true);
   }
   const wantedBg = urlBasemap();
   if (wantedBg) setBasemap(wantedBg);
@@ -4583,28 +4584,49 @@ function wireControls() {
   // Needs WebGL and a map to fly over, so it goes away with the other two.
   if (map) {
     el('explore').addEventListener('click', () => Explore.enter());
-    // The small button on the flight button's shoulder steps through the
-    // aircraft: balloon, jet, bike, and round again (Ori, 18/9/2026). The
-    // big button shows the one you will fly; the small one, the next.
-    const CRAFT_IMG = { balloon: 'img/balloon.svg', jet: 'img/f16.svg', bike: 'img/bike.svg' };
-    const CRAFT_NAME = { balloon: 'כדור פורח', jet: 'מטוס קרב F-16', bike: 'אופנוע סילון' };
+    // The small button on the flight button's shoulder opens the choice of
+    // aircraft, all five by name (25/11/2026; it used to step through
+    // them). The big button wears the one chosen, and takes off in it.
+    const CRAFT_IMG = { balloon: 'img/balloon.svg', jet: 'img/f16.svg', bike: 'img/bike.svg', f5: 'img/f5.svg', car: 'img/car.svg' };
+    // Short names for under a small picture; the full ones are the titles.
+    const CRAFT_SHORT = { balloon: 'כדור פורח', jet: 'F-16', bike: 'אופנוע סילון', f5: 'אופנוע F-5', car: 'מכונית מעופפת' };
+    const pop = el('craft-pop');
+    const btn = el('craft');
+    el('craft-tiles').innerHTML = Explore.PICKS.map((p) =>
+      `<button class="view-tile craft-tile" data-craft="${p.id}" title="${p.name}"><img src="${CRAFT_IMG[p.id]}" alt="">${CRAFT_SHORT[p.id]}</button>`).join('');
     const paintCraft = () => {
       const c = Explore.getCraft();
-      const next = Explore.nextCraft(c);
-      for (const k of Object.keys(CRAFT_IMG)) document.body.classList.toggle('craft-' + k, k === c);
+      const pick = Explore.PICKS.find((p) => p.id === c);
+      for (const p of Explore.PICKS) document.body.classList.toggle('craft-' + p.id, p.id === c);
       el('explore').querySelector('img').src = CRAFT_IMG[c];
-      const fly = `מצב תעופה: ${CRAFT_NAME[c]}`;
+      const fly = `מצב תעופה: ${pick.name}`;
       el('explore').title = fly;
       el('explore').setAttribute('aria-label', fly);
-      const other = `מעבר ל${CRAFT_NAME[next]}`;
-      el('craft').title = other;
-      el('craft').setAttribute('aria-label', other);
+      document.querySelectorAll('.craft-tile').forEach((t) => {
+        const on = t.dataset.craft === c;
+        t.classList.toggle('on', on);
+        t.setAttribute('aria-pressed', on);
+      });
+    };
+    const showCraft = (on) => {
+      pop.hidden = !on;
+      btn.setAttribute('aria-expanded', on);
     };
     paintCraft();
-    el('craft').addEventListener('click', () => {
-      Explore.setCraft(Explore.nextCraft());
+    btn.addEventListener('click', (e) => { e.stopPropagation(); showCraft(pop.hidden); });
+    el('craft-tiles').addEventListener('click', (e) => {
+      const t = e.target.closest('.craft-tile');
+      if (!t) return;
+      Explore.setCraft(t.dataset.craft);
       paintCraft();
+      showCraft(false);
+      scheduleSync();
     });
+    // Anywhere else closes it: the map, the list, another button.
+    document.addEventListener('pointerdown', (e) => {
+      if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) showCraft(false);
+    }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') showCraft(false); });
   } else {
     el('explore').hidden = true;
     el('craft').hidden = true;

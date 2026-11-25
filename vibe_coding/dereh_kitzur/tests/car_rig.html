@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- The flying car's rig on its own, over a still of the flight, for looking
+     at it without flying. Serve vibe_coding/ and open
+       dereh_kitzur/tests/car_rig.html?cam=1&alt=30&v=40&bank=20&t=2
+     cam 0 chase / 1 inside, alt metres, v m/s, turn -1..1 held, t = seconds
+     to fly before the picture is held (0 runs on). Any key of CAB in
+     car_rig.js cannot be set from here; edit the file. -->
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<title>car rig</title>
+<script type="importmap">
+{ "imports": { "three": "../../jetbikes/foehn/lib/three.module.min.js" } }
+</script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #223; }
+  #bg { position: fixed; inset: 0; background: center / cover no-repeat; }
+  #c { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="c"></canvas>
+<script type="module">
+import { makeRig, yawFor } from '../web/car_rig.js';
+const q = new URLSearchParams(location.search);
+const num = (k, d) => (q.has(k) ? +q.get(k) : d);
+document.getElementById('bg').style.backgroundImage = `url(${q.get('bg') || 'fixtures/balloon_backdrop.jpg'})`;
+const TUNE = { camBack: 8.5, camBackV: 0.05, camUp: 2.6, camUpV: 0.012, camDip: 8, camFollow: 5, grain: 0.22 };
+const rig = makeRig(document.getElementById('c'), TUNE);
+window.rig = rig;
+const fit = () => rig.resize(innerWidth, innerHeight, Math.min(devicePixelRatio || 1, 1.5));
+addEventListener('resize', fit);
+fit();
+rig.setCamMode(num('cam', 0));
+rig.place(0, 0, yawFor(num('bearing', 0)));
+const p = rig.phys;
+const alt = num('alt', 0), v = num('v', 0), turn = num('turn', 0), hold = num('t', 0);
+const VFOV = num('fov', 42);
+const want = {};
+let last = performance.now(), run = 0;
+function fly(dt) {
+  p.vert = p.pos.y < alt - 0.5 ? 1 : p.pos.y > alt + 0.5 ? -0.5 : 0;
+  p.throttle = v / rig.V_MAX;
+  p.steer = run > 1.5 ? turn : 0;
+  p.input.boostRear = !!num('boost', 0);
+  rig.advance(dt);
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (!hold || run < hold) { run += dt; fly(dt); }
+  rig.wantCamera(dt, want);
+  // the map cannot look above 8 degrees under the horizon; neither does this
+  const dip = Math.max(Math.asin(-want.dy), 8 * Math.PI / 180);
+  const h = Math.hypot(want.dx, want.dz) || 1;
+  const dx = want.dx / h * Math.cos(dip), dz = want.dz / h * Math.cos(dip), dy = -Math.sin(dip);
+  rig.setCamera(want.x, want.y, want.z, dx, dy, dz, num('cam', 0) ? want.roll : want.roll * 0.3, VFOV);
+  rig.render();
+  if (!window.__ready && (!hold || run >= hold)) window.__ready = true;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

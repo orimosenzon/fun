@@ -46,6 +46,12 @@
  * Shift and Z and X are the reaction thrusters; and the mouse is the lean
  * too, both axes, with the button on the throttle, so one hand can fly it.
  * It can land, and it can crash. See `bikeControls`.
+ *
+ * Since 25/11/2026 there are five on the button, and the fifth is a car:
+ * the Tesla Roadster of the roadster project, flying on the F-5's fusion
+ * core (car_rig.js, car_core.js). To this file it is a third bike - the
+ * same rig, the same hands, the same chase camera - and its second view is
+ * the driver's seat.
  */
 'use strict';
 
@@ -342,7 +348,7 @@ const Explore = (() => {
    * there on the small button for whoever wants it. index.html and its
    * titles start from the same choice. */
   const KEY_CRAFT = 'dk.fly.craft';
-  const CRAFTS = ['balloon', 'jet', 'bike'];   // the order the small button cycles them in
+  const CRAFTS = ['balloon', 'jet', 'bike'];   // the bikes and the car are all 'bike': see PICKS
   let craft = 'balloon';
   try { const c = localStorage.getItem(KEY_CRAFT); if (CRAFTS.includes(c)) craft = c; } catch (_) { /* private mode */ }
 
@@ -370,10 +376,31 @@ const Explore = (() => {
    * stands, and the choice is remembered. `?bike=f5` in the address asks
    * for the new one outright. */
   const KEY_MODEL = 'dk.bikeModel.v2';   // v1 was written while the F-5 was the default
-  const MODELS = ['f5', 'hog'];
+  /* And since 25/11/2026 a third thing stands where the bikes stand: the
+   * flying car (car.js). It is a model here because everything about how
+   * it is held is a bike's - a rig on a canvas, a chase camera, fable's
+   * keys. It is not one of the two the ⇄ button swaps between; it is chosen
+   * where every aircraft is chosen, on the map (see PICKS). */
+  const MODELS = ['f5', 'hog', 'car'];
+  const BIKES = ['f5', 'hog'];
   try { const m = localStorage.getItem(KEY_MODEL); if (MODELS.includes(m)) bk.model = m; } catch (_) { /* private mode */ }
   { const m = new URLSearchParams(location.search).get('bike'); if (MODELS.includes(m)) bk.model = m; }
-  const bikeLib = (m = bk.model) => (m === 'f5' ? Bike5 : Bike);
+
+  /* What the picker on the map offers (Ori, 25/11/2026: "when you press the
+   * button, you simply choose the aircraft you will fly"). Five things to
+   * the visitor, three aircraft and a model to this file: the two bikes and
+   * the car are all `craft === 'bike'`. The ids are what the address bar
+   * says (craft=...); 'bike' stays the first bike's, as it was while there
+   * was one. */
+  const PICKS = [
+    { id: 'balloon', craft: 'balloon', name: 'כדור פורח' },
+    { id: 'jet', craft: 'jet', name: 'מטוס קרב F-16' },
+    { id: 'bike', craft: 'bike', model: 'hog', name: 'אופנוע סילון' },
+    { id: 'f5', craft: 'bike', model: 'f5', name: 'אופנוע F-5' },
+    { id: 'car', craft: 'bike', model: 'car', name: 'מכונית מעופפת' }
+  ];
+  const pickOf = (c, m) => (c === 'bike' ? (m === 'f5' ? 'f5' : m === 'car' ? 'car' : 'bike') : c);
+  const bikeLib = (m = bk.model) => (m === 'f5' ? Bike5 : m === 'car' ? CarFly : Bike);
 
   const tb = {               // the touch controls, fable's: a joystick and hold buttons
     steer: 0, pitch: 0,
@@ -1756,36 +1783,42 @@ const Explore = (() => {
   function useRig() {
     const m = bk.model;
     if (!bk.canvases.hog) bk.canvases.hog = el('fly-bike');
-    if (!bk.canvases.f5) {
+    for (const k of MODELS) {
+      if (bk.canvases[k]) continue;
       const c = bk.canvases.hog.cloneNode(false);
-      c.id = 'fly-bike-f5';
+      c.id = 'fly-bike-' + k;
       c.hidden = true;
       bk.canvases.hog.after(c);
-      bk.canvases.f5 = c;
+      bk.canvases[k] = c;
     }
     for (const k of MODELS) bk.canvases[k].hidden = k !== m;
     bk.canvas = bk.canvases[m];
     if (!bk.rigs[m]) bk.rigs[m] = bikeLib().makeRig(bk.canvas);
     bk.rig = bk.rigs[m];
     document.body.classList.toggle('fly-f5', m === 'f5');
-    if (elModel) elModel.querySelector('b').textContent = m === 'f5' ? 'F-5' : 'HOG';
+    document.body.classList.toggle('fly-car', m === 'car');
+    if (elModel) {
+      elModel.querySelector('b').textContent = m === 'f5' ? 'F-5' : 'HOG';
+      elModel.hidden = m === 'car';     // the car is not one of the two this swaps
+    }
   }
 
   /** The bike's code, for the model chosen. If the F-5 cannot be had (it is
    *  imported from FÖHN's own folder), the first bike flies instead. */
   function loadBike() {
-    if (bk.model !== 'f5') return Bike.load();
-    return Bike5.load().catch((err) => {
-      console.error('bike: the F-5 did not load, flying the first bike', err);
+    if (bk.model === 'hog') return Bike.load();
+    const was = bk.model;
+    return bikeLib().load().catch((err) => {
+      console.error(`bike: the ${was} did not load, flying the first bike`, err);
       bk.model = 'hog';
-      bk.fellBack = true;
+      bk.fellBack = was;
       return Bike.load();
     });
   }
 
   /** N, or the model button: the other bike, standing where this one is. */
   function bikeSwap() {
-    if (!on || craft !== 'bike' || !bk.rig || bk.swapping) return;
+    if (!on || craft !== 'bike' || !bk.rig || bk.swapping || bk.model === 'car') return;
     const to = bk.model === 'f5' ? 'hog' : 'f5';
     const lib = bikeLib(to);
     bk.swapping = true;
@@ -1815,6 +1848,10 @@ const Explore = (() => {
       say('ב־F-5 מחשב הטיסה תמיד פועל: בלי כנפיים ובלי גלגלים, הוא מה שמחזיק אותו באוויר', 3000);
       return;
     }
+    if (bk.model === 'car') {
+      say('במכונית מחשב הטיסה תמיד פועל: הוא מחלק את האוויר בין חמשת הנחירים', 3000);
+      return;
+    }
     const p = bk.rig.phys;
     p.assist = !p.assist;
     say(p.assist ? 'מחשב טיסה: פועל. הגובה נשמר אוטומטית'
@@ -1838,7 +1875,7 @@ const Explore = (() => {
     bk.rig.setCamMode(bk.cam);
     bk.camRoll = 0;
     fitFrame();
-    say(bk.cam ? 'מהאוכף' : 'מצלמת מעקב', 900);
+    say(bk.cam ? (bk.model === 'car' ? 'מתוך המכונית' : 'מהאוכף') : (bk.model === 'car' ? 'מבט מאחור' : 'מצלמת מעקב'), 900);
   }
 
   /** The bike, one frame. Sets pos, alt, bearing and speed from the
@@ -2110,7 +2147,9 @@ const Explore = (() => {
       elLiftMark.style.insetInlineStart = `${(p.collective / 1.25 * 100).toFixed(0)}%`;
       elFc.textContent = p.assist ? 'פועל' : 'ידני';
       elFcG.classList.toggle('off', !p.assist);
-      rushEl.style.opacity = clamp((speed / BIKE.RUSH_V - 0.35) * 0.55, 0, 0.3);
+      // The streaks are drawn over everything, and from the car's seat
+      // everything includes the dashboard.
+      rushEl.style.opacity = bk.model === 'car' && bk.cam ? 0 : clamp((speed / BIKE.RUSH_V - 0.35) * 0.55, 0, 0.3);
       // The burner is on the screen, in three dimensions, two metres behind
       // the saddle; the glow at the bottom is only its light on the ground.
       burnerEl.style.opacity = burn * 0.45;
@@ -2977,6 +3016,34 @@ const Explore = (() => {
           <p class="fly-intro-touch">ג'ויסטיק משמאל מטה את הגוף (למטה מרים את האף). מימין: מצערת,
              עלייה וירידה, שלושה פולסים, ומבער. הגובה נשמר אוטומטית.</p>
         </div>
+        <div class="fly-intro-card bike car">
+          <h2>מכונית מעופפת</h2>
+          <p>אתה ברודסטר של טסלה, על הקרקע בפרדס חנה־כרכור. הרודסטר האמיתי מרחף כמה שניות
+             על אוויר דחוס, ואז המכלים מתרוקנים. כאן כופפנו את המציאות: במקום המכלים יש לו ליבת
+             ההיתוך של אופנוע ה־F-5, שמחממת אוויר ודוחפת אותו דרך ארבעה נחירים בפינות ונחירים
+             מאחור. מחשב הטיסה מחלק ביניהם את האוויר: אתה מבקש מהירות, פנייה וטיפוס, והוא עושה
+             את השאר. אפשר לנחות על כל שביל, ואפשר להתרסק. דרכי הקיצור נדלקות כשמתקרבים אליהן,
+             והתמונות שלהן תלויות באוויר מעל השביל.</p>
+          <ul class="fly-keys">
+            <li><kbd>C</kbd><span>המבט: מאחור, שרואים את כל המכונית, או מתוך המכונית, מהמושב של הנהג</span></li>
+            <li><kbd class="wide">עכבר</kbd><span>לצדדים לפנייה, למטה לטיפוס, למעלה לירידה</span></li>
+            <li><kbd class="wide">לחיצה</kbd><span>מאיץ כל עוד הכפתור לחוץ; כשמשחררים מאט</span></li>
+            <li><kbd>W</kbd><kbd>S</kbd><span>מנוף המהירות: נשאר איפה שעזבו. S כשהמנוף סגור הוא בלם</span></li>
+            <li><kbd>E</kbd><kbd>D</kbd><span>עלייה וירידה. מהקרקע: E מרים, או פשוט W</span></li>
+            <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd><span>אותו דבר במקשים; חץ למטה מטפס</span></li>
+            <li><kbd class="wide">רווח</kbd><span>דחף־יתר</span></li>
+            <li><kbd>Z</kbd><kbd>X</kbd><kbd class="wide">Shift</kbd><span>צעד הצידה שמאלה, ימינה, וניתור</span></li>
+            <li><kbd>R</kbd><span>יישור</span></li>
+            <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
+            <li><kbd>V</kbd><span>תצוגה: רגיל, נקי, שבילים</span></li>
+            <li><kbd>M</kbd><span>המנוע</span></li>
+            <li><kbd>Esc</kbd><span>יציאה</span></li>
+          </ul>
+          <p class="fly-intro-foot">הזזת העכבר סוגרת את הכרטיס הזה ותופסת את ההגה; <kbd>?</kbd> מחזיר אותו.
+             הסמן במרכז המסך הוא טיסה ישרה. אחרי ריסוק מתחילים מאותו מקום.</p>
+          <p class="fly-intro-touch">ג'ויסטיק משמאל: לצדדים פונה, למטה מטפס. מימין: מהירות, עלייה
+             וירידה, צעדים הצידה, ודחף־יתר. כפתור המצלמה מחליף בין המבט מאחור למבט מתוך המכונית.</p>
+        </div>
       </div>
       <div class="fly-view" id="fly-view" hidden>
         <button class="fly-view-x" aria-label="סגירה">&times;</button>
@@ -3128,7 +3195,7 @@ const Explore = (() => {
     elMachG.hidden = isBal || isBike;
     elGG.hidden = isBal || isBike;
     elFcG.hidden = !isBike;
-    elModel.hidden = !isBike;
+    elModel.hidden = !isBike || bk.model === 'car';
     elCab.hidden = !isBal;
     elLift.hidden = !isBike;
     elThrMark.hidden = !isBike;
@@ -3234,8 +3301,8 @@ const Explore = (() => {
       intro.hidden = false;
       introTimer = setTimeout(dismissIntro, 9000);
       if (isBike && bk.fellBack) {
+        say(`${bk.fellBack === 'car' ? 'המכונית לא נטענה' : 'ה־F-5 לא נטען'}, טסים על האופנוע הרגיל`, 3200);
         bk.fellBack = false;
-        say('ה־F-5 לא נטען, טסים על האופנוע הרגיל', 3200);
       }
       last = performance.now();
       raf = requestAnimationFrame(step);
@@ -3347,7 +3414,7 @@ const Explore = (() => {
     worldEl.style.transform = '';
     sky.style.transform = '';
     elThr.style.background = '';
-    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-rig3d', 'fly-bare', 'fly-bike', 'fly-f5', 'fly-super');
+    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-rig3d', 'fly-bare', 'fly-bike', 'fly-f5', 'fly-car', 'fly-super');
     Cockpit.show(false);
     delete document.body.dataset.flyView;
     coneEl.classList.remove('go');
@@ -3397,7 +3464,7 @@ const Explore = (() => {
       land();
     }
 
-    if (craftNext) { craft = craftNext; craftNext = null; }
+    if (craftNext) { craft = craftNext.craft; if (craftNext.model) bk.model = craftNext.model; craftNext = null; }
 
     if (opts.keepPlace) return;
   }
@@ -3407,23 +3474,32 @@ const Explore = (() => {
 
   /** Which aircraft the next take-off uses. Kept across visits; a flight
    *  already in the air keeps the one it took off in. */
-  let craftNext = null;
-  function setCraft(c) {
-    if (!CRAFTS.includes(c)) c = 'jet';
-    try { localStorage.setItem(KEY_CRAFT, c); } catch (_) { /* fine */ }
-    if (on) craftNext = c; else craft = c;
-    return c;
+  let craftNext = null;      // { craft, model } chosen during a flight, for the next one
+  /** Takes any of the picker's ids. From the picker, 'bike' is the first
+   *  bike. From a link (`fromLink`) it keeps whichever of the two bikes is
+   *  already chosen: that is what the word meant in every link written
+   *  before the picker, where the model came separately (?bike=f5) or from
+   *  the last ride. */
+  function setCraft(id, fromLink = false) {
+    const pick = PICKS.find((p) => p.id === id) || PICKS[1];
+    let model = pick.model || null;
+    if (fromLink && pick.id === 'bike' && BIKES.includes(bk.model)) model = bk.model;
+    try {
+      localStorage.setItem(KEY_CRAFT, pick.craft);
+      if (model) localStorage.setItem(KEY_MODEL, model);
+    } catch (_) { /* fine */ }
+    if (on) craftNext = { craft: pick.craft, model };
+    else { craft = pick.craft; if (model) bk.model = model; }
+    return getCraft();
   }
-  const getCraft = () => craftNext || craft;
-  /** The aircraft after this one on the small button: the order is the
-   *  balloon, the jet, the bike, and round again. */
-  const nextCraft = (c) => CRAFTS[(CRAFTS.indexOf(c || getCraft()) + 1) % CRAFTS.length];
+  /** The picker's id of what the next take-off flies. */
+  const getCraft = () => (craftNext ? pickOf(craftNext.craft, craftNext.model || bk.model) : pickOf(craft, bk.model));
 
   /** The flight model's state, for the tests. */
   const debug = () => {
     const p = bk.rig && bk.rig.phys;
     return {
-      on, flying, craft, alt, speed, bearing, bank, pitch: map ? map.getPitch() : 0,
+      on, flying, craft, pick: getCraft(), alt, speed, bearing, bank, pitch: map ? map.getPitch() : 0,
       burn, throttle, mach, gee, buffet, sonic, booms, yaw, armed, stickGain, intro: !!(intro && !intro.hidden),
       view, views: viewsNow(), hasTrails,
       cards: [...cards.values()].filter((n) => !n.hidden).length,
@@ -3441,6 +3517,7 @@ const Explore = (() => {
         w: [p.angVel.x, p.angVel.y, p.angVel.z].map((v) => +v.toFixed(2)),
         cam: bk.cam, camRoll: bk.camRoll, want: { ...bk.want }, pose: bk.pose, crashes: bk.crashes,
         visible: bk.rig.bike.group.visible, canvas: !!(bk.canvas && !bk.canvas.hidden),
+        cabLook: bk.rig.cabLook ? bk.rig.cabLook() : null,
         mapCam: on && craft === 'bike' ? mapCamera() : null, msg: bk.msg,
         wind: { x: p.wind.W.x, z: p.wind.W.z, speed: p.wind.speed }
       } : null
@@ -3462,6 +3539,6 @@ const Explore = (() => {
     pitch: restore ? restore.pitch : map.getPitch()
   } : null);
 
-  return { enter, exit, toggle, isOn, setCraft, getCraft, nextCraft, setView, cycleView,
-    getView, returnBase, place, debug, balloonRig: () => br.rig };
+  return { enter, exit, toggle, isOn, setCraft, getCraft, PICKS, setView, cycleView,
+    getView, returnBase, place, debug, balloonRig: () => br.rig, carRig: () => bk.rigs.car || null };
 })();

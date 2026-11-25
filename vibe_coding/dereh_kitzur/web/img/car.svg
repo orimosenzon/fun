@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<!-- The flying car from the side, nose to the left, off the ground: the same
+     yellow on the same green roundel as the other aircraft, with the green
+     showing through the gaps - the canopy, the wheel arches, the hubs. The
+     flames are the one thing in another colour, and they are the pale blue
+     of the fusion core's air, as on the F-5: one under each wheel, where
+     the lift nozzles are, and one behind. -->
+<!-- the lift flames, and the one at the back -->
+<path fill="#9fe0ff" d="M22 68h14l-3.4 15.5L29 93l-3.6-9.5zM62 68h14l-3.4 15.5L69 93l-3.600-9.5z"/>
+<path fill="#e9f8ff" d="M26 68h6l-1.400 10L29 84l-1.600-6zM66 68h6l-1.400 10L69 84l-1.600-6z"/>
+<path fill="#9fe0ff" d="M86 52c5-1.500 9-.5 12 3-3 3.500-7 4.500-12 3z"/>
+<!-- the body: a low wedge, the canopy's bubble, a wing on two struts -->
+<path fill="#fdcd01" d="M6 60c0-4 3-6.500 8-7.500l18-3.500c6-7 14-10.500 23-10.500 9 0 16 3 21 8.500l8 1.500c4 1 6 3.500 6 7v6c0 2-1.500 3.500-3.500 3.500H10c-2.500 0-4-1.500-4-3.500z"/>
+<path fill="#fdcd01" d="M76 36h18v3.600H76zM80 39h3v9h-3zM87 39h3v10h-3z"/>
+<!-- the canopy -->
+<path fill="#009f67" d="M37 49c5-5 11-7.500 18-7.500 6.500 0 12 2 16 6l1.500 1.500z"/>
+<path fill="#fdcd01" d="M54 41h2.600v8.500H54z"/>
+<!-- the wheels, hanging in their arches -->
+<circle fill="#009f67" cx="29" cy="64" r="10.500"/>
+<circle fill="#009f67" cx="69" cy="64" r="10.500"/>
+<circle fill="#fdcd01" cx="29" cy="65" r="7.600"/>
+<circle fill="#fdcd01" cx="69" cy="65" r="7.600"/>
+<circle fill="#009f67" cx="29" cy="65" r="2.800"/>
+<circle fill="#009f67" cx="69" cy="65" r="2.800"/>
+<!-- the light bar at the nose -->
+<path fill="#009f67" d="M8 57.500h9v2H8z"/>
+</svg>

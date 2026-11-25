@@ -89,27 +89,27 @@ try:
         time.sleep(1)
         page.evaluate('() => { const w = document.getElementById("welcome-sheet"); if (w) w.hidden = true; }')
 
-        # ---- the small button goes round: balloon, jet, bike, balloon ----
+        # ---- the small button opens the choice of aircraft (25/11/2026; it used to step through them) ----
         craft = page.locator('#craft')
         img = lambda: page.evaluate('() => document.querySelector("#explore img").getAttribute("src")')
-        shown = lambda cls: page.evaluate(f'() => getComputedStyle(document.querySelector("#craft .{cls}")).display')
-        check('starts as balloon, small button shows the jet',
-              page.evaluate('() => Explore.getCraft()') == 'balloon' and shown('craft-jet') == 'block' and shown('craft-bike') == 'none')
-        craft.click()
-        check('one press: jet; small button shows the bike',
-              page.evaluate('() => Explore.getCraft()') == 'jet' and img() == 'img/f16.svg' and shown('craft-bike') == 'block' and shown('craft-bal') == 'none')
+        def pick(c):
+            craft.click()
+            page.click(f'.craft-tile[data-craft="{c}"]')
+        check('starts as balloon, the picker closed',
+              page.evaluate('() => Explore.getCraft()') == 'balloon' and not page.locator('#craft-pop').is_visible())
+        pick('jet')
+        check('picked the jet: the big button wears it, and the picker closes',
+              page.evaluate('() => Explore.getCraft()') == 'jet' and img() == 'img/f16.svg' and not page.locator('#craft-pop').is_visible())
         check('body says jet', page.evaluate('() => document.body.classList.contains("craft-jet") && !document.body.classList.contains("craft-balloon")'))
-        craft.click()
-        check('two presses: bike; small button shows the balloon',
-              page.evaluate('() => Explore.getCraft()') == 'bike' and img() == 'img/bike.svg' and shown('craft-bal') == 'block' and shown('craft-jet') == 'none')
-        check('titles say bike, and balloon next',
-              'אופנוע' in page.locator('#explore').get_attribute('title') and 'כדור' in craft.get_attribute('title'))
+        pick('bike')
+        check('picked the bike', page.evaluate('() => Explore.getCraft()') == 'bike' and img() == 'img/bike.svg')
+        check('the title says bike', 'אופנוע' in page.locator('#explore').get_attribute('title'))
         check('bike choice is kept', page.evaluate('() => localStorage.getItem("dk.fly.craft")') == 'bike')
         ex = page.locator('#explore').bounding_box()
         page.screenshot(path=f'{OUT}/shot_fab_bike.png', clip={'x': ex['x'] - 40, 'y': ex['y'] - 20, 'width': 120, 'height': 100})
-        craft.click()
-        check('three presses: round to the balloon', page.evaluate('() => Explore.getCraft()') == 'balloon' and img() == 'img/balloon.svg')
-        craft.click(); craft.click()
+        pick('balloon')
+        check('and back to the balloon', page.evaluate('() => Explore.getCraft()') == 'balloon' and img() == 'img/balloon.svg')
+        pick('bike')
         check('back to the bike', page.evaluate('() => Explore.getCraft()') == 'bike')
         check('three.js not fetched before a flight', not page.evaluate('() => Bike.ready()'))
 

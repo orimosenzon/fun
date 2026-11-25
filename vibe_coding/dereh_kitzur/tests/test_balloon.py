@@ -89,6 +89,9 @@ try:
 
         # ---- the small button ----
         craft = page.locator('#craft')
+        def pick(c):   # the small button opens the choice of aircraft (25/11/2026; it used to step through them)
+            craft.click()
+            page.click(f'.craft-tile[data-craft="{c}"]')
         check('craft button visible', craft.is_visible())
         ex = page.locator('#explore').bounding_box(); cb = craft.bounding_box()
         check('craft button sits on the jet\'s lower-left shoulder',
@@ -99,17 +102,17 @@ try:
         check('big button starts with the balloon, before and after app.js',
               page.evaluate('() => document.querySelector("#explore img").getAttribute("src")') == 'img/balloon.svg'
               and page.evaluate('() => document.body.classList.contains("craft-balloon")'))
-        craft.click()
-        check('click swaps to jet', page.evaluate('() => Explore.getCraft()') == 'jet')
+        pick('jet')
+        check('picking the jet swaps to it', page.evaluate('() => Explore.getCraft()') == 'jet')
         check('big button shows the jet, title says F-16',
               page.evaluate('() => document.querySelector("#explore img").getAttribute("src")') == 'img/f16.svg'
               and 'F-16' in page.locator('#explore').get_attribute('title'))
         check('jet choice is kept', page.evaluate('() => localStorage.getItem("dk.fly.craft")') == 'jet')
         page.screenshot(path=f'{OUT}/shot_fab_jet.png', clip={'x': ex['x'] - 40, 'y': ex['y'] - 20, 'width': 120, 'height': 100})
-        craft.click()
-        check('second click: the bike (since 18/9/2026 the button goes round three)', page.evaluate('() => Explore.getCraft()') == 'bike')
-        craft.click()
-        check('third click swaps back to balloon', page.evaluate('() => Explore.getCraft()') == 'balloon')
+        pick('bike')
+        check('the bike is there too (since 18/9/2026)', page.evaluate('() => Explore.getCraft()') == 'bike')
+        pick('balloon')
+        check('and picking the balloon swaps back to it', page.evaluate('() => Explore.getCraft()') == 'balloon')
         check('big button shows the balloon', page.evaluate('() => document.querySelector("#explore img").getAttribute("src")') == 'img/balloon.svg')
         check('choice is kept', page.evaluate('() => localStorage.getItem("dk.fly.craft")') == 'balloon')
         check('title says balloon', 'כדור' in page.locator('#explore').get_attribute('title'))
@@ -316,7 +319,7 @@ try:
         time.sleep(1.2)
         check('fly-balloon class gone', not page.evaluate('() => document.body.classList.contains("fly-balloon")'))
         check('craft button back', craft.is_visible())
-        craft.click()
+        pick('jet')
         check('swap back to jet', page.evaluate('() => Explore.getCraft()') == 'jet')
         page.click('#explore')
         page.wait_for_function('() => Explore.debug().flying', timeout=15000)

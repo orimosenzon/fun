@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<!-- The F-5, FÖHN's bike, from the side, nose to the left: a motorcycle
+     with no wheels. Where the wheels would be there is a hub with a lift
+     nozzle, and under each a pale blue flame, the fusion core's air; a
+     third leaves the rear nozzle. The same yellow on the same green roundel
+     as the other aircraft, and the same rider as on the first bike. -->
+<!-- the flames -->
+<path fill="#9fe0ff" d="M17 71h14l-3.400 13L24 93l-3.600-9zM62 71h14l-3.400 13L69 93l-3.600-9z"/>
+<path fill="#e9f8ff" d="M21 71h6l-1.400 9L24 85l-1.600-5zM66 71h6l-1.400 9L69 85l-1.600-5z"/>
+<path fill="#9fe0ff" d="M80 51c6-2 11-1 16 3.500-5 4.500-10 5.500-16 3.500z"/>
+<!-- the two hubs, and the axle line between them -->
+<circle fill="#fdcd01" cx="24" cy="63" r="9"/>
+<circle fill="#fdcd01" cx="69" cy="63" r="9"/>
+<circle fill="#009f67" cx="24" cy="63" r="3.400"/>
+<circle fill="#009f67" cx="69" cy="63" r="3.400"/>
+<!-- the frame: fairing up front, the core between the knees, the tail and its nozzle -->
+<path fill="#fdcd01" d="M20 56c1-9 6-15 14-16h13c4 0 6.500 3.500 8 6h12c6 0 11 3 14 8v6H28z"/>
+<circle fill="#009f67" cx="46" cy="55" r="5"/>
+<circle fill="#fdcd01" cx="46" cy="55" r="2.200"/>
+<path fill="#009f67" d="M72 53h9v2.400h-9z"/>
+<!-- the screen and the bars -->
+<path fill="none" stroke="#fdcd01" stroke-width="3.400" stroke-linecap="round" d="M30 38l-5 9M29 35l10 2.200"/>
+<!-- the rider, hunched over the bars -->
+<circle fill="#fdcd01" cx="47" cy="21" r="7.500"/>
+<path fill="#009f67" d="M40 19h7.500v3.400H40z"/>
+<path fill="#fdcd01" d="M41 30c6-4 14-2 18 4l8 11H53l-6-7c-5-2-7-5-6-8z"/>
+<path fill="none" stroke="#fdcd01" stroke-width="4" stroke-linecap="round" d="M44 32l-8 5.500M60 43l3 8"/>
+</svg>
