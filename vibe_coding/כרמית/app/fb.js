@@ -30,8 +30,8 @@ export async function loadQuiz(id) {
   if (!snap.exists()) return null;
   const quiz = { id: snap.id, ...snap.data() };
   const docs = await Promise.all(quiz.riddleIds.map((rid) => fs.getDoc(fs.doc(db, 'riddles', rid))));
-  // A riddle deleted from the pool simply drops out of the quiz.
-  quiz.riddles = docs.filter((d) => d.exists()).map((d) => ({ id: d.id, ...d.data() }));
+  // A riddle deleted from the pool simply drops out of the quiz, and so does one saved before it has an answer.
+  quiz.riddles = docs.filter((d) => d.exists()).map((d) => ({ id: d.id, ...d.data() })).filter(hasAnswer);
   return quiz;
 }
 
@@ -204,6 +204,11 @@ export async function watchAdmin(cb) {
 
 // Shown wherever a quiz has no cover of its own.
 export const DEFAULT_COVER = 'logo.jpg';
+
+// A riddle can be saved while still in the making, before it has an answer; players don't get it until it has one.
+export function hasAnswer(r) {
+  return r.answerType === 'image' ? !!r.answerImage : (r.answers || []).length > 0;
+}
 
 export function primaryAnswer(r) {
   return r.answerType === 'text' ? (r.answers[r.primary] ?? r.answers[0] ?? '') : '';

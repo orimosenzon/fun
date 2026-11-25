@@ -455,6 +455,8 @@ fieldset.field legend { width: 100%; margin-bottom: 6px; }
   border-radius: 999px;
   padding: 1px 8px;
 }
+/* A riddle saved before it has an answer: players skip it, so it should catch the eye in the admin. */
+.tag.no-answer { color: var(--amber, #f5b942); border-color: rgba(245, 185, 66, 0.5); }
 
 @media (max-width: 480px) {
   .riddle-card { padding: 16px; }

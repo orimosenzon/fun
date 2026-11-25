@@ -1,8 +1,8 @@
 // Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>', '#bundle/<id>'.
-import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, loadGever, sendGever, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611251657';
+import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, loadGever, sendGever, markOwnDevice, dayKey, primaryAnswer, hasAnswer, DEFAULT_COVER, levelOf, levelLabel,
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611251728';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -37,7 +37,9 @@ const el = (tag, cls, text) => {
   return e;
 };
 const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
-const riddleLabel = (r) => (r.answerType === 'image' ? 'תשובה בתמונה' : primaryAnswer(r));
+const riddleLabel = (r) => (!hasAnswer(r) ? 'בלי תשובה עדיין' : r.answerType === 'image' ? 'תשובה בתמונה' : primaryAnswer(r));
+// The label's class: a riddle without an answer stands out, since players skip it until it gets one.
+const labelClass = (r) => (!hasAnswer(r) ? 'tag no-answer' : r.answerType === 'image' ? 'tag' : 'ans');
 const quizRiddles = (q) => q.riddleIds.map((id) => byId.get(id)).filter(Boolean);
 const quizzesWith = (rid) => quizzes.filter((q) => q.riddleIds.includes(rid));
 // A riddle's category id, or '' for "כללי": no category, or one that was deleted since.
@@ -868,7 +870,7 @@ function renderPool() {
     img.src = r.image;
     img.alt = '';
     const body = el('div', 'tile-body');
-    body.appendChild(el('b', r.answerType === 'image' ? 'tag' : 'ans', riddleLabel(r)));
+    body.appendChild(el('b', labelClass(r), riddleLabel(r)));
     if (r.hint) body.appendChild(el('div', 'sub', `רמז: ${r.hint}`));
     if (r.aiImage) body.appendChild(el('div', 'sub ai-mark', 'התמונה נוצרה בבינה מלאכותית'));
     const cat = el('select', 'cat-select');
@@ -1671,7 +1673,7 @@ function renderQuizList(rs) {
     img.src = r.image;
     img.alt = '';
     const meta = el('div', 'meta');
-    meta.appendChild(el('b', r.answerType === 'image' ? 'tag' : 'ans', riddleLabel(r)));
+    meta.appendChild(el('b', labelClass(r), riddleLabel(r)));
     if (catId(r)) meta.appendChild(el('span', 'cat-tag', catName(catId(r))));
     if (r.hint || r.question) meta.appendChild(el('div', 'sub', [r.question, r.hint && `רמז: ${r.hint}`].filter(Boolean).join(' · ')));
     const edit = el('button', 'link-btn', 'עריכה');
@@ -1814,7 +1816,7 @@ function renderSidePool() {
     img.src = r.image;
     img.alt = '';
     const n = quizzesWith(r.id).length;
-    item.append(img, el('span', r.answerType === 'image' ? 'tag' : 'ans', riddleLabel(r)),
+    item.append(img, el('span', labelClass(r), riddleLabel(r)),
       el('span', 'uses', n ? `ב-${plural(n, 'חידון אחד', 'חידונים')}` : 'חדשה'), el('span', 'add', '+'));
     item.addEventListener('click', () => { setIds([...current.riddleIds, r.id]); toast('נוספה לסוף החידון'); });
     item.addEventListener('dragstart', (e) => {
@@ -1968,6 +1970,7 @@ function setType(type) {
   document.querySelector(`input[name="answer-type"][value="${type}"]`).checked = true;
   $('text-answers').classList.toggle('hidden', type !== 'text');
   $('image-answer').classList.toggle('hidden', type !== 'image');
+  showError('');
 }
 
 function resetForm() {
@@ -2040,8 +2043,7 @@ $('riddle-form').addEventListener('submit', async (e) => {
   });
 
   if (!image) return showError('צריך לבחור תמונה לחידה.');
-  if (type === 'text' && !answers.length) return showError('צריך לכתוב לפחות תשובה אחת.');
-  if (type === 'image' && !answerImage) return showError('צריך לבחור תמונה לתשובה.');
+  // No answer yet is fine: the riddle is saved as a work in progress, and players skip it until it has one.
   if (type === 'image') { answers = []; primary = 0; }
 
   const data = {
@@ -2056,13 +2058,14 @@ $('riddle-form').addEventListener('submit', async (e) => {
     answerImage: type === 'image' ? answerImage : '',
     by: auth.currentUser.email,
   };
+  const unanswered = hasAnswer(data) ? '' : '. בלי תשובה השחקנים לא יראו אותה';
   $('save-btn').disabled = true;
   $('save-btn').textContent = 'שומרים…';
   try {
     if (editing) {
       await fs.updateDoc(fs.doc(db, 'riddles', editing), { ...data, updated: fs.serverTimestamp() });
       Object.assign(byId.get(editing), data);
-      toast('החידה עודכנה');
+      toast(`החידה עודכנה${unanswered}`);
     } else {
       const ref = await fs.addDoc(fs.collection(db, 'riddles'), { ...data, created: fs.serverTimestamp() });
       const r = { id: ref.id, ...data };
@@ -2070,9 +2073,9 @@ $('riddle-form').addEventListener('submit', async (e) => {
       byId.set(r.id, r);
       if (addToQuiz && addToQuiz === current) {
         await saveQuiz({ riddleIds: [...current.riddleIds, r.id] });
-        toast('החידה נשמרה ונוספה לחידון');
+        toast(`החידה נשמרה ונוספה לחידון${unanswered}`);
       } else {
-        toast('החידה נשמרה במאגר');
+        toast(`החידה נשמרה במאגר${unanswered}`);
       }
     }
     dialog.close();
