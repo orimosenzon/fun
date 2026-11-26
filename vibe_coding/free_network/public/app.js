@@ -46,6 +46,7 @@ const ICONS = {
   feel: 'M12 22a10 10 0 1 0 0-20a10 10 0 0 0 0 20M8 14s1.5 2.2 4 2.2 4-2.2 4-2.2M9 9.5h.01M15 9.5h.01',
   phone: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2',
   download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+  repost: 'M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3',
   square: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 8v8M8 12h8',
 };
 // Which phone this is, and whether the page already runs as the installed app: the Android app
@@ -197,6 +198,19 @@ function dialogBox(message, { confirmLabel = 'אישור', cancelLabel = 'ביט
 
 const ask = (message, confirmLabel, danger = true) => dialogBox(message, { confirmLabel, danger });
 const tell = (message) => dialogBox(message, { confirmLabel: 'הבנתי', cancelLabel: null });
+
+// A short line at the bottom of the screen that leaves by itself, with something to do about it.
+function toast(message, ...actions) {
+  document.querySelector('.toast')?.remove();
+  const box = el('div', { className: 'toast', role: 'status' }, el('span', {}, message), ...actions);
+  let timer;
+  const wait = () => { timer = setTimeout(() => box.remove(), 7000); };
+  box.addEventListener('pointerenter', () => clearTimeout(timer));
+  box.addEventListener('pointerleave', wait);
+  document.body.append(box);
+  wait();
+  return box;
+}
 
 // Pictures open over the page, so reading a post never throws the reader into another tab.
 function lightbox(ids, start) {
@@ -458,15 +472,166 @@ function editBox(words, { maxLength, label, save, close }) {
 
 const feelingUi = () => ({ el, icon, api, tell, go, link });
 
+const commentsLabel = (count) => (count === 1 ? 'תגובה אחת' : `${count} תגובות`);
+
+// The post that a share quotes, framed inside it. Whoever may not read the original gets a line instead.
+function quoted({ post, gone }) {
+  if (!post) {
+    return el('p', { className: 'quote missing' }, icon(gone ? 'trash' : 'users'),
+      gone ? 'הפוסט המקורי נמחק.' : 'הפוסט המקורי פתוח רק לחברים של מי שכתב אותו.');
+  }
+  const url = `/p/${post.id}`;
+  return el('blockquote', { className: 'quote' },
+    el('div', { className: 'head' }, profileLink(post.author, avatar(post.author, { small: true })), el('div', { className: 'who' },
+      profileLink(post.author, el('span', { className: 'author', dir: 'auto' }, post.author.name)),
+      el('span', { className: 'meta' }, link(url, when(post.createdAt)), audienceChip(post.audience), editedMark(post.editedAt)))),
+    post.body ? richText(post.body) : null,
+    post.images.length ? gallery(post.images) : null,
+    post.youtubeId ? video(post.youtubeId) : null,
+    el('p', { className: 'quote-more' }, link(url, 'לפוסט המקורי', post.commentCount ? ` · ${commentsLabel(post.commentCount)}` : '')));
+}
+
+// A few words of one's own, above a post that was just shared.
+function shareWords(shareId) {
+  const box = el('dialog', { className: 'dialog' });
+  const shut = () => {
+    box.close();
+    box.remove();
+  };
+  const form = editBox('', {
+    maxLength: 5000,
+    label: 'כמה מילים משלך',
+    close: shut,
+    save: async (body) => {
+      await api(`/posts/${shareId}`, { method: 'PUT', body: { body } });
+      shut();
+      toast('המילים שלך נוספו לשיתוף.', link(`/p/${shareId}`, 'לשיתוף'));
+    },
+  });
+  box.append(el('div', { className: 'dialog-body' }, el('h2', {}, 'כמה מילים משלך'),
+    el('p', { className: 'muted' }, 'הן יופיעו מעל הפוסט ששיתפת.'), form));
+  box.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    shut();
+  });
+  document.body.append(box);
+  box.showModal();
+  form.open();
+}
+
+// Everyone who shared a post, for whoever wrote it: who, when, and through whose share.
+async function showSharers(postId) {
+  const { shares } = await api(`/posts/${postId}/shares`);
+  const box = el('dialog', { className: 'dialog sharers' });
+  const shut = () => {
+    box.close();
+    box.remove();
+  };
+  box.append(el('div', { className: 'dialog-body' },
+    el('h2', {}, 'מי שיתף את הפוסט'),
+    el('ul', { className: 'sharers-list' }, ...shares.map((item) => el('li', {},
+      profileLink(item.user, avatar(item.user, { small: true })),
+      el('span', { className: 'who' },
+        profileLink(item.user, el('span', { className: 'author', dir: 'auto' }, item.user.name)),
+        el('span', { className: 'meta' }, when(item.at), item.via ? el('span', { dir: 'auto' }, `דרך השיתוף של ${item.via.name}`) : null)),
+      item.postId ? link(`/p/${item.postId}`, 'לשיתוף') : null))),
+    shares.length ? null : el('p', { className: 'muted' }, 'אף אחד לא משתף את הפוסט כרגע.'),
+    el('div', { className: 'dialog-actions' }, el('button', { className: 'ghost', type: 'button', onclick: shut }, 'סגירה'))));
+  box.addEventListener('click', (e) => (e.target === box || e.target.closest('a')) && shut());
+  box.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    shut();
+  });
+  document.body.append(box);
+  box.showModal();
+}
+
+// Sharing a post: the button that publishes it again under the reader's name, and the line that
+// says how many times it was shared. Whoever wrote the post opens from that line the list of
+// who shared it. The same post can stand on the page several times, as itself and inside
+// shares, so every change is shown on all of them.
+function sharing(post, onGone) {
+  const original = post.shared ? post.shared.post : post;
+  if (!original) return {};
+  let state = original.shares;
+  const showAll = (shares) => document.querySelectorAll(`[data-share-of="${original.id}"]`).forEach((node) => node.show(shares));
+
+  const note = post.shared ? null : el(original.mine ? 'button' : 'span', { className: `share-note${original.mine ? ' plain' : ''}` });
+  if (note) {
+    note.dataset.shareOf = original.id;
+    note.show = (shares) => {
+      note.hidden = !shares.count;
+      note.replaceChildren(icon('repost'), shares.count === 1 ? 'שותף פעם אחת' : `שותף ${shares.count} פעמים`);
+    };
+    note.show(state);
+    if (original.mine) {
+      note.type = 'button';
+      note.title = 'מי שיתף את הפוסט';
+      note.addEventListener('click', () => showSharers(original.id).catch((err) => tell(err.message)));
+    }
+  }
+
+  let button = null;
+  if (me?.name && !original.mine) {
+    button = el('button', {
+      className: 'plain share-button',
+      type: 'button',
+      onclick: async () => {
+        button.disabled = true;
+        try {
+          if (state.mine) {
+            if (!await ask('להסיר את השיתוף? הוא יימחק מהקיר שלך, יחד עם מה שנכתב עליו.', 'הסרת השיתוף')) return;
+            const gone = state.mine;
+            await api(`/posts/${gone}`, { method: 'DELETE' });
+            showAll({ count: Math.max(0, state.count - 1), mine: null });
+            if (gone === post.id) onGone?.();
+            else document.querySelector(`[data-post="${gone}"]`)?.remove();
+          } else {
+            const { id, shares } = await api(`/posts/${post.id}/share`, { method: 'POST' });
+            showAll(shares);
+            button.classList.add('bump');
+            const added = toast('שיתפת עם החברים שלך.', el('button', {
+              className: 'plain',
+              type: 'button',
+              onclick: () => {
+                added.remove();
+                shareWords(id);
+              },
+            }, 'להוסיף כמה מילים'));
+          }
+        } catch (err) {
+          tell(err.message);
+        } finally {
+          button.disabled = false;
+        }
+      },
+    });
+    button.dataset.shareOf = original.id;
+    button.show = (shares) => {
+      state = shares;
+      button.classList.toggle('chosen', !!shares.mine);
+      button.title = shares.mine ? 'שיתפת את הפוסט. לחיצה מסירה את השיתוף'
+        : 'הפוסט יופיע על הקיר שלך ואצל החברים שלך. מי שכתב אותו יראה ששיתפת';
+      button.replaceChildren(labelled('repost', shares.mine ? 'שיתפת' : 'שיתוף'));
+    };
+    button.show(state);
+    button.addEventListener('animationend', () => button.classList.remove('bump'));
+  }
+  return { button, note };
+}
+
 function postCard(post, options = {}) {
   const { onDeleted } = options;
   const url = `/p/${post.id}`;
-  const count = !post.commentCount ? 'להגיב' : post.commentCount === 1 ? 'תגובה אחת' : `${post.commentCount} תגובות`;
+  const count = !post.commentCount ? 'להגיב' : commentsLabel(post.commentCount);
   // What people felt about the post. Only members who chose a name can add a feeling of their own.
   const feel = feelings({ path: `/posts/${post.id}/reaction`, reactions: post.reactions, me: me?.name ? me : null, ui: feelingUi() });
-  const actions = el('div', { className: 'actions' }, me?.name ? feel.button : null, link(url, labelled('comment', count)));
+  const share = sharing(post, onDeleted);
+  const actions = el('div', { className: 'actions' }, me?.name ? feel.button : null, link(url, labelled('comment', count)), share.button ?? null);
   if (post.audience === 'public') {
-    const copy = el('button', { className: 'plain', type: 'button' }, labelled(navigator.share ? 'share' : 'link', navigator.share ? 'שיתוף' : 'העתקת קישור'));
+    // Sending the address of a public post outside the network, to WhatsApp for example.
+    const label = navigator.share ? 'שליחת קישור' : 'העתקת קישור';
+    const copy = el('button', { className: 'plain send-link', type: 'button', title: label }, labelled(navigator.share ? 'share' : 'link', label));
     copy.addEventListener('click', () => shareLink(new URL(url, location.origin).href, copy));
     actions.append(copy);
   }
@@ -488,14 +653,18 @@ function postCard(post, options = {}) {
   const words = post.body ? richText(post.body) : null;
   const head = el('div', { className: 'head' }, profileLink(post.author, avatar(post.author)), el('div', { className: 'who' },
     profileLink(post.author, el('span', { className: 'author', dir: 'auto' }, post.author.name)),
-    el('span', { className: 'meta' }, link(url, when(post.createdAt)), audienceChip(post.audience), editedMark(post.editedAt))));
-  const card = el('article', { className: 'card post' },
+    el('span', { className: 'meta' },
+      post.shared ? el('span', { className: 'shared-mark' }, icon('repost'), 'שיתוף') : null,
+      link(url, when(post.createdAt)), audienceChip(post.audience), editedMark(post.editedAt))));
+  const card = el('article', { className: `card post${post.shared ? ' is-share' : ''}` },
     head,
     words,
     post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
-    feel.summary,
+    post.shared ? quoted(post.shared) : null,
+    el('div', { className: 'post-echo' }, feel.summary, share.note ?? null),
     actions);
+  card.dataset.post = post.id;
   if (post.mine) {
     let box = null;
     const close = () => {

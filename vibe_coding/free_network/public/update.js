@@ -178,7 +178,7 @@ export function updatePanel({ me, seen, ui, all = false, top = false }) {
     return { bubble: wrap, form };
   }
 
-  function friendsRing({ statuses, fresh, replies, felt, moved, joined, quiet }) {
+  function friendsRing({ statuses, fresh, replies, felt, shared, moved, joined, quiet }) {
     const people = [
       ...replies.map((item) => [item.user, bubble(item.user, {
         badge: icon('comment'), mark: 'hot', path: `/p/${item.postId}`,
@@ -187,6 +187,9 @@ export function updatePanel({ me, seen, ui, all = false, top = false }) {
       ...felt.map((item) => [item.user, bubble(item.user, {
         badge: el('span', { className: 'face-feeling', title: feelingLabel(item.kind) }, face(item.kind)), mark: 'hot', path: `/p/${item.postId}`,
         caption: item.onPost ? 'הגיב ברגש לפוסט שלך' : 'הגיב ברגש לתגובה שלך',
+      })]),
+      ...shared.map((item) => [item.user, bubble(item.user, {
+        badge: icon('repost'), mark: 'hot', path: `/p/${item.shareId ?? item.postId}`, caption: 'שיתף פוסט שלך',
       })]),
       ...fresh.map((item) => [item.user, bubble(item.user, {
         badge: String(item.count), mark: 'hot',

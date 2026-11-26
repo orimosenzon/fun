@@ -2368,3 +2368,111 @@ dialog { color: var(--text); font: inherit; }
 }
 
 @keyframes rx-sheet { from { opacity: 0; transform: translateY(30%); } }
+
+/* Sharing a post: the mark on a share, the quoted post inside it, and who shared. */
+.shared-mark { display: inline-flex; align-items: center; gap: 4px; color: var(--citrus-ink); font-weight: 550; }
+
+.shared-mark .icon { width: 14px; height: 14px; }
+
+.quote {
+  margin: 12px 0 0;
+  padding: 12px 14px 2px;
+  background: var(--field);
+  border: 1.5px solid var(--line);
+  border-inline-start: 4px solid var(--line-strong);
+  border-radius: 14px;
+}
+
+.quote .head { gap: 10px; }
+
+.quote .author { font-size: 15.5px; }
+
+.quote-more { margin: 10px 0 8px; font-size: 13.5px; }
+
+.quote-more a { color: var(--muted); text-decoration: none; }
+
+.quote-more a:hover { color: var(--brand); text-decoration: underline; }
+
+.quote.missing { display: flex; align-items: center; gap: 9px; padding-block: 12px; color: var(--muted); font-size: 14.5px; }
+
+.quote.missing .icon { flex: none; width: 17px; height: 17px; }
+
+.post-echo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 12px; }
+
+.post-echo > * { margin-bottom: -4px; }
+
+.post-echo .rx-summary { flex: 1 1 auto; min-width: 0; }
+
+.post-echo .share-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  margin-top: 14px;
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.post-echo button.share-note { margin-inline-end: -8px; padding: 0 8px; }
+
+.post-echo button.share-note:hover { color: var(--brand); }
+
+.share-note .icon { width: 15px; height: 15px; }
+
+.actions .share-button.chosen { color: var(--brand); font-weight: 650; }
+
+.share-button.bump .icon { animation: share-turn 0.6s ease; }
+
+@keyframes share-turn { to { transform: rotate(360deg); } }
+
+.dialog-body h2 { margin: 0 0 8px; font-size: 19px; }
+
+.dialog-body p.muted { margin-bottom: 4px; font-size: 14.5px; }
+
+.sharers-list { max-height: 52dvh; margin: 0 0 16px; padding: 0; overflow-y: auto; list-style: none; }
+
+.sharers-list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+
+.sharers-list li:first-child { border-top: 0; }
+
+.sharers-list .who { display: flex; flex: 1; flex-direction: column; min-width: 0; line-height: 1.3; }
+
+.sharers-list .who a { color: inherit; text-decoration: none; }
+
+.sharers-list li > a:last-child { font-size: 14px; white-space: nowrap; }
+
+.toast {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  width: fit-content;
+  max-width: calc(100vw - 24px);
+  margin-inline: auto;
+  padding: 10px 20px;
+  color: #fff;
+  font-size: 15px;
+  background: var(--text);
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(15, 42, 56, 0.35);
+  animation: rise 0.2s ease both;
+}
+
+.toast button.plain, .toast a { min-height: 32px; padding: 0 4px; color: #ffd9a8; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.toast button.plain:hover { color: #fff; background: transparent; }
+
+@media (max-width: 430px) {
+  .actions .send-link .label { display: none; }
+}
+
+/* On a phone the menu sits at the bottom, and the line rises above it. */
+@media (max-width: 640px) {
+  .toast { bottom: calc(70px + env(safe-area-inset-bottom)); }
+}

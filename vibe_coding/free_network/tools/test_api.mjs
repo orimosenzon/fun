@@ -486,6 +486,94 @@ test('a comment gathers feelings of its own, until it is removed or its post is 
   assert.equal((await bob.call('PUT', `/comments/${second}/reaction`, { kind: 'love' })).status, 404);
 });
 
+test('a share quotes the original post, only for whoever may read it', async () => {
+  const writer = await signUp('share-writer');
+  const friend = await signUp('share-friend');
+  const far = await signUp('share-far');
+  for (const [a, b] of [[writer, friend], [friend, far]]) {
+    await a.call('POST', `/friends/${b.id}`);
+    await b.call('POST', `/friends/${a.id}`);
+  }
+  const closed = (await writer.call('POST', '/posts', { body: 'רק לחברים', audience: 'friends' })).data.id;
+
+  // Nobody shares their own post, or a post they cannot read.
+  assert.equal((await writer.call('POST', `/posts/${closed}/share`)).status, 400);
+  assert.equal((await far.call('POST', `/posts/${closed}/share`)).status, 404);
+  assert.equal((await anon('POST', `/posts/${closed}/share`)).status, 401);
+
+  // One click, once: sharing again changes nothing.
+  const first = await friend.call('POST', `/posts/${closed}/share`);
+  assert.equal(first.status, 201);
+  const share = first.data.id;
+  assert.deepEqual(first.data.shares, { count: 1, mine: share });
+  assert.equal((await friend.call('POST', `/posts/${closed}/share`)).data.id, share);
+
+  // The share is a post of the friend, for the friend's friends, and it carries the original.
+  const mine = (await friend.call('GET', '/feed')).data.posts.find((post) => post.id === share);
+  assert.deepEqual([mine.author.id, mine.body, mine.audience, mine.shares], [friend.id, '', 'friends', null]);
+  assert.deepEqual([mine.shared.post.id, mine.shared.post.body, mine.shared.post.author.id], [closed, 'רק לחברים', writer.id]);
+  assert.deepEqual(mine.shared.post.shares, { count: 1, mine: share });
+  assert.deepEqual((await writer.call('GET', `/posts/${closed}`)).data.post.shares, { count: 1, mine: null });
+
+  // A friend of the friend, who is not a friend of the writer, sees the share without the words.
+  const seen = (await far.call('GET', '/feed')).data.posts.find((post) => post.id === share);
+  assert.deepEqual(seen.shared, { post: null, gone: false });
+  assert.deepEqual((await far.call('GET', `/posts/${share}`)).data.post.shared, { post: null, gone: false });
+  assert.equal((await far.call('POST', `/posts/${share}/share`)).status, 404);
+  assert.equal((await anon('GET', `/posts/${share}`)).status, 404);
+
+  // Taking the share back frees the post to be shared again.
+  assert.equal((await friend.call('DELETE', `/posts/${share}`)).status, 200);
+  assert.deepEqual((await writer.call('GET', `/posts/${closed}`)).data.post.shares, { count: 0, mine: null });
+  const again = (await friend.call('POST', `/posts/${closed}/share`)).data.id;
+  assert.notEqual(again, share);
+});
+
+test('the writer of a post sees exactly who shared it, also through another share', async () => {
+  const writer = await signUp('echo-writer');
+  const friend = await signUp('echo-friend');
+  const far = await signUp('echo-far');
+  for (const [a, b] of [[writer, friend], [friend, far]]) {
+    await a.call('POST', `/friends/${b.id}`);
+    await b.call('POST', `/friends/${a.id}`);
+  }
+  const open = (await writer.call('POST', '/posts', { body: 'לכל העולם', audience: 'public' })).data.id;
+  const near = (await friend.call('POST', `/posts/${open}/share`)).data.id;
+
+  // Sharing from the friend's share is a share of the original post.
+  const through = await far.call('POST', `/posts/${near}/share`);
+  assert.deepEqual(through.data.shares, { count: 2, mine: through.data.id });
+  const quote = (await far.call('GET', `/posts/${through.data.id}`)).data.post.shared.post;
+  assert.deepEqual([quote.id, quote.author.id], [open, writer.id]);
+  assert.equal((await anon('GET', `/posts/${open}`)).data.post.shares.count, 2);
+
+  // The writer gets the names, the newest first, and opens only the share of a friend.
+  const { shares } = (await writer.call('GET', `/posts/${open}/shares`)).data;
+  assert.deepEqual(shares.map((item) => [item.user.id, item.postId, item.via?.id ?? null]),
+    [[far.id, null, friend.id], [friend.id, near, null]]);
+  assert.equal((await friend.call('GET', `/posts/${open}/shares`)).status, 404);
+  assert.equal((await writer.call('GET', `/posts/${near}/shares`)).status, 404);
+  const news = (await writer.call('GET', '/update')).data.friends.shared;
+  assert.deepEqual(news.map((item) => [item.user.id, item.postId, item.shareId]), [[far.id, open, null], [friend.id, open, near]]);
+  assert.deepEqual((await friend.call('GET', '/update')).data.friends.shared, []);
+
+  // Words can be added to a share and taken away again. A post of one's own cannot be emptied.
+  const worded = await friend.call('PUT', `/posts/${near}`, { body: 'כדאי לקרוא' });
+  assert.deepEqual([worded.data.post.body, worded.data.post.shared.post.id], ['כדאי לקרוא', open]);
+  assert.equal((await far.call('PUT', `/posts/${through.data.id}`, { body: '' })).status, 200);
+  assert.equal((await writer.call('PUT', `/posts/${open}`, { body: '' })).status, 400);
+
+  // When the original is deleted, a share that says something stays and says so.
+  // A share that was only the quote goes with it, with what was written under it.
+  await writer.call('POST', `/posts/${through.data.id}/comments`, { body: 'תודה' });
+  await writer.call('PUT', `/posts/${through.data.id}/reaction`, { kind: 'love' });
+  assert.equal((await writer.call('DELETE', `/posts/${open}`)).status, 200);
+  assert.deepEqual((await friend.call('GET', `/posts/${near}`)).data.post.shared, { post: null, gone: true });
+  assert.equal((await far.call('GET', `/posts/${through.data.id}`)).status, 404);
+  assert.equal((await friend.call('POST', `/posts/${near}/share`)).status, 404);
+  assert.deepEqual((await writer.call('GET', '/update')).data.friends.shared, []);
+});
+
 test('location data never survives an upload', async () => {
   const { status, data } = await upload(alice, phoneJpeg());
   assert.equal(status, 201);

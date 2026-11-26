@@ -255,6 +255,8 @@ function serializePost(row, viewer, reactions) {
     images: JSON.parse(row.image_ids),
     mine: viewer?.id === row.author_id,
     reactions: reactions?.get(row.id) ?? [],
+    shares: null,
+    shared: null,
   };
 }
 
@@ -287,6 +289,7 @@ const SAME_FEELING = { '❤️': 'love', '😂': 'funny', '🤣': 'funny', '😮
 // Built from a string because the bundler does not read the "v" flag yet.
 const ONE_EMOJI = new RegExp('^\\p{RGI_Emoji}$', 'v');
 const MAX_REACTION_NAMES = 60;
+const MAX_SHARE_NAMES = 200;
 
 function feelingKind(value) {
   if (typeof value !== 'string' || value.length > 40) return null;
@@ -318,6 +321,38 @@ async function reactionsOf(db, column, ids, viewer) {
 
 const postReactions = (db, rows, viewer) => reactionsOf(db, 'post_id', rows.map((row) => row.id), viewer);
 
+// Posts as the page shows them: with what was felt about each, how many times it was shared,
+// and for a share, the post it quotes. The quote comes only to a viewer who may read the
+// original post, so sharing never widens the audience that its writer chose.
+async function showPosts(db, rows, viewer) {
+  const viewerId = viewer?.id ?? 0;
+  const list = (ids) => JSON.stringify([...new Set(ids)]);
+  const quotedIds = rows.map((row) => row.shared_id).filter(Boolean);
+  const quoted = !quotedIds.length ? [] : (await db
+    .prepare(`${POST_SELECT} WHERE p.deleted_at IS NULL AND p.id IN (SELECT value FROM json_each(?2)) AND ${VISIBLE_TO}`)
+    .bind(viewerId, list(quotedIds))
+    .all()).results;
+  const originals = [...rows.filter((row) => !row.shared_id), ...quoted];
+  const [reactions, counted] = await Promise.all([
+    postReactions(db, rows, viewer),
+    !originals.length ? { results: [] } : db
+      .prepare(`SELECT shared_id, COUNT(*) AS n, MAX(CASE WHEN author_id = ?1 THEN id END) AS mine FROM posts
+        WHERE shared_id IN (SELECT value FROM json_each(?2)) AND deleted_at IS NULL GROUP BY shared_id`)
+      .bind(viewerId, list(originals.map((row) => row.id)))
+      .all(),
+  ]);
+  const counts = new Map(counted.results.map((row) => [row.shared_id, row]));
+  const original = (row, feelings) => ({
+    ...serializePost(row, viewer, feelings),
+    shares: { count: counts.get(row.id)?.n ?? 0, mine: counts.get(row.id)?.mine ?? null },
+  });
+  return rows.map((row) => {
+    if (!row.shared_id) return original(row, reactions);
+    const source = quoted.find((other) => other.id === row.shared_id);
+    return { ...serializePost(row, viewer, reactions), shared: { post: source ? original(source) : null, gone: !!row.shared_gone } };
+  });
+}
+
 // Sets, replaces or takes back the feeling of the member about one post or one comment.
 async function react(c, column, id) {
   const db = c.env.DB;
@@ -335,8 +370,12 @@ async function react(c, column, id) {
 const POST_SELECT = `
   SELECT p.*, u.name AS author_name, u.avatar_id AS author_avatar,
     (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
+    (SELECT deleted_at IS NOT NULL FROM posts WHERE id = p.shared_id) AS shared_gone,
     (SELECT json_group_array(id) FROM (SELECT id FROM images WHERE post_id = p.id ORDER BY position)) AS image_ids
   FROM posts p JOIN users u ON u.id = p.author_id`;
+
+// Whether the viewer (?1) may read the post p: it is public, their own, or written by a friend.
+const VISIBLE_TO = `(p.audience = 'public' OR p.author_id = ?1 OR p.author_id IN (${FRIEND_IDS}))`;
 
 async function areFriends(db, a, b) {
   const row = await db
@@ -754,8 +793,7 @@ app.get('/api/feed', requireUser, async (c) => {
       ORDER BY p.id DESC LIMIT ?3`)
     .bind(user.id, before, PAGE_SIZE)
     .all();
-  const reactions = await postReactions(c.env.DB, results, user);
-  return c.json({ posts: results.map((row) => serializePost(row, user, reactions)), hasMore: results.length === PAGE_SIZE });
+  return c.json({ posts: await showPosts(c.env.DB, results, user), hasMore: results.length === PAGE_SIZE });
 });
 
 app.post('/api/posts', requireUser, async (c) => {
@@ -801,12 +839,12 @@ app.get('/api/posts/:id', async (c) => {
       WHERE m.post_id = ? ORDER BY m.id`)
     .bind(id)
     .all();
-  const [postFeelings, commentFeelings] = await Promise.all([
-    postReactions(c.env.DB, [post], viewer),
+  const [[shown], commentFeelings] = await Promise.all([
+    showPosts(c.env.DB, [post], viewer),
     reactionsOf(c.env.DB, 'comment_id', results.filter((row) => !row.removed_by).map((row) => row.id), viewer),
   ]);
   return c.json({
-    post: serializePost(post, viewer, postFeelings),
+    post: shown,
     comments: results.map((row) => serializeComment(row, viewer, post, commentFeelings)),
   });
 });
@@ -836,32 +874,90 @@ app.put('/api/posts/:id', requireUser, async (c) => {
   if (typeof input.body !== 'string') return c.json({ error: 'הפוסט ריק' }, 400);
   const body = input.body.trim();
   if (body.length > MAX_POST) return c.json({ error: 'הפוסט ארוך מדי' }, 400);
-  if (!body && post.image_ids === '[]') return c.json({ error: 'הפוסט ריק' }, 400);
+  // A share may stay without words of its own: the post it quotes speaks for it.
+  if (!body && post.image_ids === '[]' && !post.shared_id) return c.json({ error: 'הפוסט ריק' }, 400);
   if (body !== post.body) {
     Object.assign(post, { body, youtube_id: findYoutubeId(body), edited_at: Date.now() });
     await c.env.DB.prepare('UPDATE posts SET body = ?, youtube_id = ?, edited_at = ? WHERE id = ?').bind(post.body, post.youtube_id, post.edited_at, id).run();
   }
-  return c.json({ post: serializePost(post, user, await postReactions(c.env.DB, [post], user)) });
+  return c.json({ post: (await showPosts(c.env.DB, [post], user))[0] });
 });
 
 app.delete('/api/posts/:id', requireUser, async (c) => {
   const id = parseId(c.req.param('id'));
+  const now = Date.now();
   const result = await c.env.DB
     .prepare('UPDATE posts SET deleted_at = ? WHERE id = ? AND author_id = ? AND deleted_at IS NULL')
-    .bind(Date.now(), id, c.get('user').id)
+    .bind(now, id, c.get('user').id)
     .run();
   if (!result.meta.changes) return c.json({ error: 'הפוסט לא נמצא' }, 404);
 
+  // A share with no words of its own is only the quote, so it goes with the post it quoted.
+  // A share that says something stays, and tells its readers that the original was deleted.
+  const { results: quotes } = await c.env.DB
+    .prepare(`UPDATE posts SET deleted_at = ? WHERE shared_id = ? AND body = '' AND deleted_at IS NULL RETURNING id`)
+    .bind(now, id)
+    .all();
+  const gone = JSON.stringify([id, ...quotes.map((quote) => quote.id)]);
+
   // Deleting a post really deletes its images and those in its comments, not only the links,
   // and what people felt about it and about its comments.
-  const attached = 'post_id = ?1 OR comment_id IN (SELECT id FROM comments WHERE post_id = ?1)';
-  await c.env.DB.prepare(`DELETE FROM reactions WHERE ${attached}`).bind(id).run();
-  const { results } = await c.env.DB.prepare(`SELECT id FROM images WHERE ${attached}`).bind(id).all();
+  const posts = 'SELECT value FROM json_each(?1)';
+  const attached = `post_id IN (${posts}) OR comment_id IN (SELECT id FROM comments WHERE post_id IN (${posts}))`;
+  await c.env.DB.prepare(`DELETE FROM reactions WHERE ${attached}`).bind(gone).run();
+  const { results } = await c.env.DB.prepare(`SELECT id FROM images WHERE ${attached}`).bind(gone).all();
   if (results.length) {
     await c.env.IMAGES.delete(results.map((image) => image.id));
-    await c.env.DB.prepare(`DELETE FROM images WHERE ${attached}`).bind(id).run();
+    await c.env.DB.prepare(`DELETE FROM images WHERE ${attached}`).bind(gone).run();
   }
   return c.json({ ok: true });
+});
+
+// One click publishes a post again under the name of whoever shares it, for their friends.
+// Sharing from someone's share still quotes the original post, and remembers the way it came.
+app.post('/api/posts/:id/share', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const id = parseId(c.req.param('id'));
+  const found = id && (await loadVisiblePost(c, id));
+  const original = found?.shared_id ? await loadVisiblePost(c, found.shared_id) : found;
+  if (!original) return c.json({ error: 'הפוסט לא נמצא' }, 404);
+  if (original.author_id === user.id) return c.json({ error: 'הפוסט הזה שלך, הוא כבר על הקיר שלך' }, 400);
+
+  // Sharing a post that the member already shared changes nothing.
+  await db
+    .prepare(`INSERT INTO posts (author_id, body, audience, created_at, shared_id, shared_via)
+      VALUES (?, '', 'friends', ?, ?, ?) ON CONFLICT DO NOTHING`)
+    .bind(user.id, Date.now(), original.id, found.id === original.id ? null : found.id)
+    .run();
+  const [shown] = await showPosts(db, [original], user);
+  return c.json({ id: shown.shares.mine, shares: shown.shares }, 201);
+});
+
+// Whoever wrote a post sees exactly who shared it, and through whose share it reached them.
+// The share itself opens only if its writer is a friend, like any post for friends.
+app.get('/api/posts/:id/shares', requireUser, async (c) => {
+  const id = parseId(c.req.param('id'));
+  const user = c.get('user');
+  const post = id && (await c.env.DB
+    .prepare('SELECT id FROM posts WHERE id = ? AND author_id = ? AND deleted_at IS NULL AND shared_id IS NULL')
+    .bind(id, user.id)
+    .first());
+  if (!post) return c.json({ error: 'הפוסט לא נמצא' }, 404);
+  const { results } = await c.env.DB
+    .prepare(`SELECT p.id, p.created_at, u.id AS user_id, u.name, u.avatar_id AS avatar, ${VISIBLE_TO} AS visible,
+        w.id AS via_id, w.name AS via_name
+      FROM posts p JOIN users u ON u.id = p.author_id
+      LEFT JOIN posts v ON v.id = p.shared_via LEFT JOIN users w ON w.id = v.author_id
+      WHERE p.shared_id = ?2 AND p.deleted_at IS NULL ORDER BY p.id DESC LIMIT ${MAX_SHARE_NAMES}`)
+    .bind(user.id, id)
+    .all();
+  return c.json({ shares: results.map((row) => ({
+    user: { id: row.user_id, name: row.name, avatar: row.avatar },
+    at: row.created_at,
+    postId: row.visible ? row.id : null,
+    via: row.via_id ? { id: row.via_id, name: row.via_name } : null,
+  })) });
 });
 
 app.post('/api/images', requireUser, async (c) => {
@@ -1109,11 +1205,10 @@ app.get('/api/users/:id', requireUser, async (c) => {
       ORDER BY p.id DESC LIMIT ?4`)
     .bind(id, before, seesAll ? 1 : 0, PAGE_SIZE)
     .all();
-  const reactions = await postReactions(c.env.DB, results, viewer);
   return c.json({
     user: person,
     friendship,
-    posts: results.map((row) => serializePost(row, viewer, reactions)),
+    posts: await showPosts(c.env.DB, results, viewer),
     hasMore: results.length === PAGE_SIZE,
   });
 });
@@ -1161,7 +1256,7 @@ app.get('/api/update', requireUser, async (c) => {
   // An expired line is erased, not just hidden.
   await db.prepare('UPDATE users SET status_text = NULL, status_at = NULL WHERE status_at <= ?').bind(now - STATUS_MS).run();
 
-  const [statuses, fresh, replies, felt, moved, joined, quiet] = (await db.batch([
+  const [statuses, fresh, replies, felt, shared, moved, joined, quiet] = (await db.batch([
     db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.status_text, u.status_at FROM users u
       WHERE ${friend} AND u.status_text IS NOT NULL ORDER BY u.status_at DESC LIMIT 8`).bind(me),
     // Posts the reader has not seen yet. What was seen is known only to their device, which says so
@@ -1184,6 +1279,12 @@ app.get('/api/update', requireUser, async (c) => {
       WHERE r.user_id <> ?1 AND r.created_at > ?2 AND p.deleted_at IS NULL
         AND ((r.post_id IS NOT NULL AND p.author_id = ?1) OR m.author_id = ?1)
       ORDER BY r.created_at DESC, r.rowid DESC LIMIT 4`).bind(me, now - 7 * DAY_MS),
+    // Who shared the reader's posts this week. The share opens only when its writer is a friend.
+    db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, p.id AS share_id, p.shared_id AS post_id, p.created_at,
+        p.author_id IN (${FRIEND_IDS}) AS visible
+      FROM posts p JOIN users u ON u.id = p.author_id JOIN posts o ON o.id = p.shared_id
+      WHERE o.author_id = ?1 AND o.deleted_at IS NULL AND p.deleted_at IS NULL AND p.created_at > ?2
+      ORDER BY p.id DESC LIMIT 4`).bind(me, now - 7 * DAY_MS),
     db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.lat, u.lng, u.place_at FROM users u
       WHERE ${friend} AND u.lat IS NOT NULL AND u.place_at > ?2 ORDER BY u.place_at DESC LIMIT 3`).bind(me, now - 14 * DAY_MS),
     db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.created_at FROM users u
@@ -1202,6 +1303,7 @@ app.get('/api/update', requireUser, async (c) => {
       fresh: fresh.map((row) => ({ user: person(row), count: row.n })),
       replies: replies.map((row) => ({ user: person(row), postId: row.post_id, at: row.created_at, onMine: !!row.on_mine })),
       felt: felt.map((row) => ({ user: person(row), kind: row.kind, postId: row.post_id, at: row.created_at, onPost: !!row.on_post })),
+      shared: shared.map((row) => ({ user: person(row), postId: row.post_id, shareId: row.visible ? row.share_id : null, at: row.created_at })),
       moved: moved.map((row) => ({ user: person(row), place: place(row), at: row.place_at })),
       joined: joined.map((row) => ({ user: person(row), at: row.created_at })),
       quiet: quiet.filter((row) => ![...moved, ...joined].some((other) => other.id === row.id))
