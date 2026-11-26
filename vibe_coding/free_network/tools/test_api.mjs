@@ -529,6 +529,29 @@ test('a share quotes the original post, only for whoever may read it', async () 
   assert.notEqual(again, share);
 });
 
+test('the next post starts from the audience chosen for the last one', async () => {
+  const writer = await signUp('audience-writer');
+  const friend = await signUp('audience-friend');
+  await writer.call('POST', `/friends/${friend.id}`);
+  await friend.call('POST', `/friends/${writer.id}`);
+  const last = async (who) => (await who.call('GET', '/audience')).data.last;
+  assert.equal(await last(writer), 'friends');
+  const open = (await writer.call('POST', '/posts', { body: 'לכולם', audience: 'public' })).data.id;
+  assert.equal(await last(writer), 'public');
+  assert.equal(await last(friend), 'friends');
+
+  // A share goes to friends without asking, so it does not change the choice.
+  await friend.call('POST', '/posts', { body: 'גם אני לכולם', audience: 'public' });
+  await friend.call('POST', `/posts/${open}/share`);
+  assert.equal(await last(friend), 'public');
+
+  // The choice holds after the post is deleted, and follows the next post.
+  await writer.call('DELETE', `/posts/${open}`);
+  assert.equal(await last(writer), 'public');
+  await writer.call('POST', '/posts', { body: 'רק לחברים', audience: 'friends' });
+  assert.equal(await last(writer), 'friends');
+});
+
 test('the writer of a post sees exactly who shared it, also through another share', async () => {
   const writer = await signUp('echo-writer');
   const friend = await signUp('echo-friend');

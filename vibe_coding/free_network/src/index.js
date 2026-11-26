@@ -773,13 +773,16 @@ app.put('/api/me/images', requireUser, async (c) => {
   return c.json({ ok: true });
 });
 
-// How many people a friends post will reach. The composer shows this before publishing.
+// How many people a friends post will reach, which the composer shows before publishing, and
+// the audience the member chose for the last post they wrote, which the next one starts from.
+// A share does not count: it always goes to friends, and nobody chose that.
 app.get('/api/audience', requireUser, async (c) => {
   const row = await c.env.DB
-    .prepare(`SELECT COUNT(*) AS n FROM (${FRIEND_IDS})`)
+    .prepare(`SELECT (SELECT COUNT(*) FROM (${FRIEND_IDS})) AS n,
+      (SELECT audience FROM posts WHERE author_id = ?1 AND shared_id IS NULL ORDER BY id DESC LIMIT 1) AS last`)
     .bind(c.get('user').id)
     .first();
-  return c.json({ friends: row.n });
+  return c.json({ friends: row.n, last: row.last ?? 'friends' });
 });
 
 // The whole feed algorithm: every post by you and your friends, newest first.

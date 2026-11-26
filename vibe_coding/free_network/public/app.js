@@ -700,7 +700,8 @@ function postCard(post, options = {}) {
 }
 
 async function composer(onPosted) {
-  const { friends } = await api('/audience');
+  // The audience starts from the one chosen for the last post, on any device.
+  const { friends, last } = await api('/audience');
   const text = el('textarea', {
     placeholder: 'מה חדש?',
     maxLength: 5000,
@@ -715,7 +716,7 @@ async function composer(onPosted) {
   const radio = (value, label, picture, checked) => el('label', {},
     el('input', { type: 'radio', name: 'audience', value, checked, onchange: explain }), icon(picture), label);
   const choices = el('div', { className: 'audience', role: 'radiogroup', ariaLabel: 'מי יראה את הפוסט' },
-    radio('friends', 'חברים', 'users', true), radio('public', 'ציבורי', 'globe', false));
+    radio('friends', 'חברים', 'users', last !== 'public'), radio('public', 'ציבורי', 'globe', last === 'public'));
 
   function audience() {
     return choices.querySelector('input:checked').value;
