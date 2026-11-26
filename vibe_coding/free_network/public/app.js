@@ -53,6 +53,7 @@ const ICONS = {
   expand: 'M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3',
   shrink: 'M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3',
   external: 'M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
+  at: 'M16 12a4 4 0 1 0-8 0a4 4 0 0 0 8 0zM16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94',
   square: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 8v8M8 12h8',
 };
 // Which phone this is, and whether the page already runs as the installed app: the Android app
@@ -329,17 +330,168 @@ function linkText(url) {
 
 // Text is added as text nodes only, so user content can never become HTML.
 // Links are clickable for everyone, in posts and in comments alike.
-function richText(text) {
+// A friend who was tagged ("@name") becomes a link to their page. The tags come in the order
+// they stand in the words, each with the name as it was written.
+function richText(text, mentions = []) {
   const node = el('p', { className: 'text', dir: 'auto' });
-  let last = 0;
-  for (const match of text.matchAll(/https?:\/\/[^\s<>"]+/g)) {
-    const url = match[0].replace(/[.,;:!?'"”׳״)\]]+$/, '');
-    node.append(text.slice(last, match.index));
-    node.append(el('a', { className: 'url', href: url, title: url, dir: 'ltr', target: '_blank', rel: 'noopener nofollow ugc' }, linkText(url)));
-    last = match.index + url.length;
+  const plain = (part) => {
+    let last = 0;
+    for (const match of part.matchAll(/https?:\/\/[^\s<>"]+/g)) {
+      const url = match[0].replace(/[.,;:!?'"”׳״)\]]+$/, '');
+      node.append(part.slice(last, match.index));
+      node.append(el('a', { className: 'url', href: url, title: url, dir: 'ltr', target: '_blank', rel: 'noopener nofollow ugc' }, linkText(url)));
+      last = match.index + url.length;
+    }
+    node.append(part.slice(last));
+  };
+  const left = [...mentions];
+  let from = 0;
+  while (left.length) {
+    // The tag that stands first in what is left of the words, and the longer name if two start there.
+    let first = null;
+    for (const tag of left) {
+      const at = text.indexOf(`@${tag.name}`, from);
+      if (at !== -1 && (!first || at < first.at || (at === first.at && tag.name.length > first.tag.name.length))) first = { at, tag };
+    }
+    if (!first) break;
+    plain(text.slice(from, first.at));
+    const tagged = link(`/u/${first.tag.id}`, `@${first.tag.name}`);
+    tagged.className = 'mention';
+    node.append(tagged);
+    from = first.at + first.tag.name.length + 1;
+    left.splice(left.indexOf(first.tag), 1);
   }
-  node.append(text.slice(last));
+  plain(text.slice(from));
   return node;
+}
+
+// The friends that can be tagged, asked for when "@" is first typed and kept for a minute.
+let friendsKept = null;
+function friendsToTag() {
+  if (!friendsKept || Date.now() - friendsKept.at > 60000) {
+    friendsKept = { at: Date.now(), list: api('/friends').then(({ friends }) => friends).catch(() => []) };
+  }
+  return friendsKept.list;
+}
+
+// Tagging a friend while writing: "@" opens the list of friends, letters narrow it, and a choice
+// writes the name in. Returns the box wrapped with its list, and the friends whose tag still
+// stands in the words. `tagged` are the tags the words already hold, when they are being edited.
+let tagLists = 0;
+function tagging(box, tagged = []) {
+  const picked = new Map(tagged.map((tag) => [tag.id, tag.name]));
+  const list = el('ul', { className: 'suggestions tag-list', id: `tag-list-${++tagLists}`, role: 'listbox', ariaLabel: 'חברים לתיוג', hidden: true });
+  const wrap = el('div', { className: 'suggest-wrap tag-wrap' }, box, list);
+  let friends = null;
+  let shown = [];
+  let active = 0;
+  let turn = 0;
+  box.setAttribute('aria-autocomplete', 'list');
+  box.setAttribute('aria-controls', list.id);
+
+  // What is being typed after the last "@" before the cursor, or null when no tag is being written.
+  function typing() {
+    const before = box.value.slice(0, box.selectionStart);
+    const start = before.lastIndexOf('@');
+    // An "@" in the middle of a word is an email address, not a tag.
+    if (start === -1 || (start > 0 && !/[\s(\[{"'׳״،,.:;!?־-]/.test(before[start - 1]))) return null;
+    const word = before.slice(start + 1);
+    if (word.length > 40 || word.includes('\n')) return null;
+    return { start, word };
+  }
+
+  function hide() {
+    turn++;
+    shown = [];
+    list.hidden = true;
+    list.replaceChildren();
+    box.setAttribute('aria-expanded', 'false');
+    box.removeAttribute('aria-activedescendant');
+  }
+
+  function mark() {
+    [...list.children].forEach((row, index) => row.setAttribute('aria-selected', String(index === active)));
+    box.setAttribute('aria-activedescendant', `${list.id}-${active}`);
+    list.children[active]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function pick(friend) {
+    const now = typing();
+    if (!now) return hide();
+    const end = box.selectionStart;
+    const name = `@${friend.name} `;
+    box.value = `${box.value.slice(0, now.start)}${name}${box.value.slice(end).replace(/^ /, '')}`;
+    const caret = now.start + name.length;
+    box.setSelectionRange(caret, caret);
+    picked.set(friend.id, friend.name);
+    hide();
+    box.focus();
+  }
+
+  async function suggest() {
+    const now = typing();
+    if (!now) return hide();
+    const mine = ++turn;
+    friends ??= await friendsToTag();
+    if (mine !== turn) return;
+    const word = now.word.toLowerCase();
+    // A whole name that is already written is a finished tag, and the words go on after it.
+    if (friends.some((friend) => word.startsWith(`${friend.name.toLowerCase()} `) || word === friend.name.toLowerCase())) return hide();
+    const asked = word.trim();
+    const starts = [];
+    const holds = [];
+    for (const friend of friends) {
+      const name = friend.name.toLowerCase();
+      if (name.startsWith(asked) || name.split(/\s+/).some((part) => part.startsWith(asked))) starts.push(friend);
+      else if (asked.length > 1 && name.includes(asked)) holds.push(friend);
+    }
+    shown = [...starts, ...holds].slice(0, 8);
+    if (!shown.length) return hide();
+    active = 0;
+    list.replaceChildren(...shown.map((friend, index) => el('li', {
+      id: `${list.id}-${index}`,
+      role: 'option',
+      onpointerdown: (e) => e.preventDefault(),
+      onclick: () => pick(friend),
+    }, avatar(friend, { small: true }), el('span', { className: 'suggest-name', dir: 'auto' }, friend.name))));
+    list.hidden = false;
+    box.setAttribute('aria-expanded', 'true');
+    mark();
+  }
+
+  box.addEventListener('input', suggest);
+  box.addEventListener('click', suggest);
+  box.addEventListener('blur', hide);
+  // Before the keys of the box itself, so that Enter chooses a friend and Escape closes only the list.
+  box.addEventListener('keydown', (e) => {
+    if (!shown.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      active = (active + (e.key === 'ArrowDown' ? 1 : shown.length - 1)) % shown.length;
+      mark();
+    } else if ((e.key === 'Enter' && !e.ctrlKey && !e.metaKey) || e.key === 'Tab') {
+      pick(shown[active]);
+    } else if (e.key === 'Escape') {
+      hide();
+    } else {
+      return;
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+
+  return {
+    wrap,
+    // Starts a tag at the cursor, for whoever does not know the "@".
+    start: () => {
+      const at = box.selectionStart;
+      const gap = at > 0 && !/\s/.test(box.value[at - 1]) ? ' ' : '';
+      box.setRangeText(`${gap}@`, at, box.selectionEnd, 'end');
+      box.focus();
+      suggest();
+    },
+    ids: () => [...picked].filter(([, name]) => box.value.includes(`@${name}`))
+      .sort((a, b) => box.value.indexOf(`@${a[1]}`) - box.value.indexOf(`@${b[1]}`)).map(([id]) => id),
+  };
 }
 
 // The picture and title come through our server. Nothing reaches Google until the reader clicks.
@@ -594,7 +746,7 @@ function editedMark(ms) {
 }
 
 // Published words, opened for rewriting in the place where they are read.
-function editBox(words, { maxLength, label, save, close, page }) {
+function editBox(words, { maxLength, label, save, close, page, mentions = [] }) {
   const text = el('textarea', {
     maxLength,
     dir: 'auto',
@@ -609,6 +761,7 @@ function editBox(words, { maxLength, label, save, close, page }) {
   const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'שמירה');
   // A post keeps its live page while it is edited, and may gain or lose one.
   const live = page === undefined ? null : pageField(page, () => text.value);
+  const tags = tagging(text, mentions);
   const form = el('form', {
     className: 'edit-box',
     onsubmit: async (e) => {
@@ -616,14 +769,14 @@ function editBox(words, { maxLength, label, save, close, page }) {
       submit.disabled = true;
       error.hidden = true;
       try {
-        await save(text.value, live && live.changed() ? live.value() : undefined);
+        await save(text.value, live && live.changed() ? live.value() : undefined, tags.ids());
       } catch (err) {
         error.textContent = err.message;
         error.hidden = false;
         submit.disabled = false;
       }
     },
-  }, text, live?.field ?? null,
+  }, tags.wrap, live?.field ?? null,
   el('div', { className: 'row' }, submit, el('button', { className: 'plain', type: 'button', onclick: close }, 'ביטול'), live?.button ?? null), error);
   form.open = () => {
     text.focus();
@@ -647,7 +800,7 @@ function quoted({ post, gone }) {
     el('div', { className: 'head' }, profileLink(post.author, avatar(post.author, { small: true })), el('div', { className: 'who' },
       profileLink(post.author, el('span', { className: 'author', dir: 'auto' }, post.author.name)),
       el('span', { className: 'meta' }, link(url, when(post.createdAt)), audienceChip(post.audience), editedMark(post.editedAt)))),
-    post.body ? richText(post.body) : null,
+    post.body ? richText(post.body, post.mentions) : null,
     post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
     post.page ? livePage(post.page) : null,
@@ -665,8 +818,8 @@ function shareWords(shareId) {
     maxLength: 5000,
     label: 'כמה מילים משלך',
     close: shut,
-    save: async (body) => {
-      await api(`/posts/${shareId}`, { method: 'PUT', body: { body } });
+    save: async (body, page, mentions) => {
+      await api(`/posts/${shareId}`, { method: 'PUT', body: { body, mentions } });
       shut();
       toast('המילים שלך נוספו לשיתוף.', link(`/p/${shareId}`, 'לשיתוף'));
     },
@@ -813,7 +966,7 @@ function postCard(post, options = {}) {
       }
     },
   }, icon('trash'));
-  const words = post.body ? richText(post.body) : null;
+  const words = post.body ? richText(post.body, post.mentions) : null;
   const head = el('div', { className: 'head' }, profileLink(post.author, avatar(post.author)), el('div', { className: 'who' },
     profileLink(post.author, el('span', { className: 'author', dir: 'auto' }, post.author.name)),
     el('span', { className: 'meta' },
@@ -848,8 +1001,9 @@ function postCard(post, options = {}) {
             label: 'עריכת הפוסט',
             close,
             page: post.shared ? undefined : post.page?.url ?? '',
-            save: async (body, page) => {
-              const { post: saved } = await api(`/posts/${post.id}`, { method: 'PUT', body: { body, page } });
+            mentions: post.mentions,
+            save: async (body, page, mentions) => {
+              const { post: saved } = await api(`/posts/${post.id}`, { method: 'PUT', body: { body, page, mentions } });
               card.replaceWith(postCard(saved, options));
             },
           });
@@ -919,6 +1073,8 @@ async function composer(onPosted) {
   });
   const addPhoto = el('button', { className: 'plain', type: 'button', ariaLabel: 'הוספת תמונה', title: 'הוספת תמונה', onclick: () => picker.click() }, labelled('image', 'תמונה'));
   const live = pageField('', () => text.value);
+  const tags = tagging(text);
+  const addTag = el('button', { className: 'plain', type: 'button', ariaLabel: 'תיוג חבר', title: 'תיוג חבר. אפשר גם להקליד @ בתוך הטקסט', onclick: tags.start }, labelled('at', 'תיוג'));
 
   const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'פרסום');
   return el('form', {
@@ -931,7 +1087,7 @@ async function composer(onPosted) {
       try {
         const uploads = photos.map((photo) => api('/images', { method: 'POST', body: photo }));
         const images = (await Promise.all(uploads)).map((upload) => upload.id);
-        await api('/posts', { method: 'POST', body: { body: text.value, audience: audience(), images, page: live.value() } });
+        await api('/posts', { method: 'POST', body: { body: text.value, audience: audience(), images, page: live.value(), mentions: tags.ids() } });
         onPosted();
       } catch (err) {
         error.textContent = err.message;
@@ -940,9 +1096,9 @@ async function composer(onPosted) {
         submit.textContent = 'פרסום';
       }
     },
-  }, el('div', { className: 'composer-top' }, avatar(me), text),
+  }, el('div', { className: 'composer-top' }, avatar(me), tags.wrap),
   el('div', { className: 'composer-more' }, previews, picker, live.field,
-    el('div', { className: 'composer-bar' }, choices, addPhoto, live.button, submit),
+    el('div', { className: 'composer-bar' }, choices, addPhoto, live.button, addTag, submit),
     el('p', { className: 'reach' }, icon('eye'), note), error));
 }
 
@@ -1115,7 +1271,7 @@ function comment(item, reload, onReply) {
     bubble.append(el('p', { className: 'text removed' }, `התגובה הוסרה על ידי ${by}`));
     return node;
   }
-  const words = item.body ? richText(item.body) : null;
+  const words = item.body ? richText(item.body, item.mentions) : null;
   if (words) bubble.append(words);
   if (item.image) bubble.append(gallery([item.image]));
   if (item.youtubeId) bubble.append(video(item.youtubeId));
@@ -1140,8 +1296,9 @@ function comment(item, reload, onReply) {
             maxLength: 2000,
             label: 'עריכת התגובה',
             close,
-            save: async (body) => {
-              await api(`/comments/${item.id}`, { method: 'PUT', body: { body } });
+            mentions: item.mentions,
+            save: async (body, page, mentions) => {
+              await api(`/comments/${item.id}`, { method: 'PUT', body: { body, mentions } });
               reload();
             },
           });
@@ -1182,6 +1339,7 @@ function commentForm(postId, parentId, placeholder) {
   });
   const error = el('p', { className: 'error', hidden: true });
   const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'שליחה');
+  const tags = tagging(text);
   const previews = el('div', { className: 'previews' });
   const picker = el('input', { type: 'file', accept: 'image/*', hidden: true });
   let photo = null;
@@ -1213,7 +1371,7 @@ function commentForm(postId, parentId, placeholder) {
       error.hidden = true;
       try {
         const image = photo ? (await api('/images', { method: 'POST', body: photo })).id : null;
-        await api(`/posts/${postId}/comments`, { method: 'POST', body: { body: text.value, image, parentId } });
+        await api(`/posts/${postId}/comments`, { method: 'POST', body: { body: text.value, image, parentId, mentions: tags.ids() } });
         route();
       } catch (err) {
         error.textContent = err.message;
@@ -1221,7 +1379,7 @@ function commentForm(postId, parentId, placeholder) {
         submit.disabled = false;
       }
     },
-  }, text, previews, picker, el('div', { className: 'row spread' },
+  }, tags.wrap, previews, picker, el('div', { className: 'row spread' },
     el('button', { className: 'plain', type: 'button', onclick: () => picker.click() }, labelled('image', 'תמונה')),
     submit), error);
 }

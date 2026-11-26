@@ -2727,3 +2727,17 @@ html.page-full main { z-index: 100; }
 .page-field .icon-button { margin: 0; align-self: center; }
 
 .page-field .note { margin-top: 6px; font-size: 13.5px; }
+
+/* ---------- Tags ---------- */
+
+/* A friend tagged in the words: a link to their page. */
+.mention { color: var(--brand); font-weight: 550; text-decoration: none; unicode-bidi: isolate; }
+
+.mention:hover { text-decoration: underline; }
+
+/* The box that is written in, with the list of friends that "@" opens under it. */
+.tag-wrap { flex: 1; min-width: 0; }
+
+.tag-list li { justify-content: flex-start; align-items: center; gap: 10px; }
+
+.notice-badge.mention { background: var(--a5); }

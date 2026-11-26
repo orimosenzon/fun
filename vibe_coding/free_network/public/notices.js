@@ -4,9 +4,9 @@
 
 import { face, feelingLabel } from '/reactions.js';
 
-const GROUPS = [['', 'הכול'], ['comments', 'תגובות'], ['feelings', 'רגשות'], ['shares', 'שיתופים'], ['friends', 'חברויות']];
-const PUSHED = [['messages', 'הודעות פרטיות'], ['comments', 'תגובות ותשובות'], ['feelings', 'רגשות'], ['shares', 'שיתופים'], ['friends', 'חברויות']];
-const BADGE = { comment: 'comment', reply: 'reply', thread: 'comment', share: 'repost', reshare: 'repost', request: 'users', accepted: 'check', joined: 'plus' };
+const GROUPS = [['', 'הכול'], ['comments', 'תגובות'], ['feelings', 'רגשות'], ['shares', 'שיתופים'], ['mentions', 'תיוגים'], ['friends', 'חברויות']];
+const PUSHED = [['messages', 'הודעות פרטיות'], ['comments', 'תגובות ותשובות'], ['feelings', 'רגשות'], ['shares', 'שיתופים'], ['mentions', 'תיוגים'], ['friends', 'חברויות']];
+const BADGE = { comment: 'comment', reply: 'reply', thread: 'comment', share: 'repost', reshare: 'repost', request: 'users', accepted: 'check', joined: 'plus', mention: 'at' };
 const HINT_KEY = 'push-hint-hidden';
 
 // ---------- Pushes to this device ----------

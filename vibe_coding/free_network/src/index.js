@@ -292,13 +292,15 @@ function serializePost(row, viewer, reactions) {
     images: JSON.parse(row.image_ids),
     mine: viewer?.id === row.author_id,
     reactions: reactions?.get(row.id) ?? [],
+    mentions: [],
     shares: null,
     shared: null,
   };
 }
 
-function serializeComment(row, viewer, post, reactions) {
+function serializeComment(row, viewer, post, reactions, tags) {
   return {
+    mentions: row.removed_by ? [] : tags?.get(row.id) ?? [],
     id: row.id,
     author: { id: row.author_id, name: row.author_name, avatar: row.author_avatar },
     body: row.body,
@@ -370,8 +372,9 @@ async function showPosts(db, rows, viewer) {
     .bind(viewerId, list(quotedIds))
     .all()).results;
   const originals = [...rows.filter((row) => !row.shared_id), ...quoted];
-  const [reactions, counted] = await Promise.all([
+  const [reactions, tags, counted] = await Promise.all([
     postReactions(db, rows, viewer),
+    postMentions(db, [...rows, ...quoted].map((row) => row.id)),
     !originals.length ? { results: [] } : db
       .prepare(`SELECT shared_id, COUNT(*) AS n, MAX(CASE WHEN author_id = ?1 THEN id END) AS mine FROM posts
         WHERE shared_id IN (SELECT value FROM json_each(?2)) AND deleted_at IS NULL GROUP BY shared_id`)
@@ -381,12 +384,13 @@ async function showPosts(db, rows, viewer) {
   const counts = new Map(counted.results.map((row) => [row.shared_id, row]));
   const original = (row, feelings) => ({
     ...serializePost(row, viewer, feelings),
+    mentions: tags.get(row.id) ?? [],
     shares: { count: counts.get(row.id)?.n ?? 0, mine: counts.get(row.id)?.mine ?? null },
   });
   return rows.map((row) => {
     if (!row.shared_id) return original(row, reactions);
     const source = quoted.find((other) => other.id === row.shared_id);
-    return { ...serializePost(row, viewer, reactions), shared: { post: source ? original(source) : null, gone: !!row.shared_gone } };
+    return { ...serializePost(row, viewer, reactions), mentions: tags.get(row.id) ?? [], shared: { post: source ? original(source) : null, gone: !!row.shared_gone } };
   });
 }
 
@@ -478,9 +482,10 @@ const NOTICE_GROUPS = {
   feelings: ['felt'],
   shares: ['share', 'reshare'],
   friends: ['request', 'accepted', 'joined'],
+  mentions: ['mention'],
 };
 const PUSH_GROUPS = ['messages', ...Object.keys(NOTICE_GROUPS)];
-const TOLD_ONCE = ['felt', 'share', 'reshare', 'request', 'accepted', 'joined'];
+const TOLD_ONCE = ['felt', 'share', 'reshare', 'request', 'accepted', 'joined', 'mention'];
 const NOTICES_PAGE = 30;
 const MAX_PUSH_DEVICES = 10;
 const FEELING_EMOJI = { love: '❤️', funny: '😂', surprise: '😮', bored: '😑', anger: '😠' };
@@ -498,6 +503,7 @@ function noticeText(kind, { onShare = false, onComment = false } = {}) {
     case 'reshare': return 'שיתוף נוסף, דרך השיתוף שלך';
     case 'request': return 'בקשת חברות';
     case 'accepted': return 'בקשת החברות שלך אושרה';
+    case 'mention': return onComment ? 'תיוג שלך בתגובה' : 'תיוג שלך בפוסט';
     default: return 'הצטרפות לרשת, בהזמנתך';
   }
 }
@@ -530,6 +536,8 @@ const NOTICE_FROM = `
       WHEN 'request' THEN EXISTS (SELECT 1 FROM friendships f
         WHERE f.requester_id = n.actor_id AND f.addressee_id = ?1 AND f.status = 'pending')
       WHEN 'accepted' THEN n.actor_id IN (${FRIEND_IDS})
+      WHEN 'mention' THEN EXISTS (SELECT 1 FROM mentions x
+        WHERE x.user_id = ?1 AND x.post_id = n.post_id AND IFNULL(x.comment_id, 0) = IFNULL(n.comment_id, 0))
       ELSE 1 END`;
 
 // The notices that came since the member last opened their notices page, on any device.
@@ -549,10 +557,13 @@ const NOTICE_SELECT = `
 // A notice as the page shows it: who, what happened, what they wrote (words), and which of the
 // member's own words it was about.
 function serializeNotice(row, seenAt) {
-  const wrote = NOTICE_GROUPS.comments.includes(row.kind);
-  const onComment = row.kind === 'felt' && row.comment_id !== null;
-  const words = wrote ? row.comment_body : row.share_id && row.share_visible ? row.share_body : null;
-  const about = row.kind === 'reply' || row.kind === 'thread' ? row.thread_body : onComment ? row.comment_body : row.post_body;
+  const tagged = row.kind === 'mention';
+  const wrote = NOTICE_GROUPS.comments.includes(row.kind) || (tagged && row.comment_id !== null);
+  const onComment = (row.kind === 'felt' || tagged) && row.comment_id !== null;
+  // A tag shows the words it stands in: the comment, or the post itself.
+  const words = wrote ? row.comment_body : tagged ? row.post_body : row.share_id && row.share_visible ? row.share_body : null;
+  const about = tagged ? (onComment ? row.post_body : null)
+    : row.kind === 'reply' || row.kind === 'thread' ? row.thread_body : onComment ? row.comment_body : row.post_body;
   return {
     id: row.id,
     kind: row.kind,
@@ -638,7 +649,7 @@ async function notify(c, actor, notices) {
   // Someone who has not chosen a name yet is told about on the page, once they have one.
   if (!actor.name || !fresh.length) return;
   later(c, Promise.all(fresh.map((notice) => {
-    const text = noticeText(notice.kind, { onShare: notice.onShare, onComment: notice.kind === 'felt' && !!notice.comment });
+    const text = noticeText(notice.kind, { onShare: notice.onShare, onComment: (notice.kind === 'felt' || notice.kind === 'mention') && !!notice.comment });
     const body = notice.feeling ? `${FEELING_EMOJI[notice.feeling] ?? notice.feeling} ${text}` : notice.words ? `${text}: ${notice.words}` : text;
     return pushTo(c, notice.user, noticeGroup(notice.kind), {
       title: actor.name,
@@ -657,6 +668,55 @@ async function readersOf(db, post, ids) {
     .bind(post.author_id, JSON.stringify(ids))
     .all();
   return results.map((row) => row.id);
+}
+
+// ---------- Tags ----------
+
+const MAX_MENTIONS = 20;
+
+// Writes the tags of a post or of a comment as they stand in its words now, and returns the
+// members who were not tagged there before. Only friends of the writer can be tagged, the
+// browser says which (two friends may share a name), and a tag counts only while "@name" is in
+// the words. A browser that says nothing leaves the tags that are still written.
+async function setMentions(db, writer, { post, comment = null }, body, ids) {
+  const { results: old } = await db
+    .prepare('SELECT user_id AS id, label FROM mentions WHERE post_id = ? AND IFNULL(comment_id, 0) = ? ORDER BY id')
+    .bind(post, comment ?? 0)
+    .all();
+  const wanted = ids === undefined ? old.map((tag) => tag.id)
+    : Array.isArray(ids) ? [...new Set(ids.filter((id) => Number.isInteger(id)))].slice(0, 100) : [];
+  if (!old.length && (!wanted.length || !body.includes('@'))) return [];
+  const { results: friends } = !wanted.length ? { results: [] } : await db
+    .prepare(`SELECT id, name FROM users WHERE name <> '' AND id IN (SELECT value FROM json_each(?2)) AND id IN (${FRIEND_IDS})`)
+    .bind(writer, JSON.stringify(wanted))
+    .all();
+  const now = [];
+  for (const id of wanted) {
+    const kept = old.find((tag) => tag.id === id && body.includes(`@${tag.label}`));
+    const friend = friends.find((other) => other.id === id);
+    const label = kept?.label ?? (friend && body.includes(`@${friend.name}`) ? friend.name : null);
+    if (label && now.length < MAX_MENTIONS) now.push({ id, label });
+  }
+  const same = now.length === old.length && now.every((tag, index) => tag.id === old[index].id && tag.label === old[index].label);
+  if (!same) {
+    await db.batch([
+      db.prepare('DELETE FROM mentions WHERE post_id = ? AND IFNULL(comment_id, 0) = ?').bind(post, comment ?? 0),
+      ...now.map((tag) => db.prepare('INSERT INTO mentions (post_id, comment_id, user_id, label) VALUES (?, ?, ?, ?)').bind(post, comment, tag.id, tag.label)),
+    ]);
+  }
+  return now.filter((tag) => !old.some((before) => before.id === tag.id)).map((tag) => tag.id);
+}
+
+// The tags in the words of these posts (not of their comments), by post: who, and the name as written.
+async function postMentions(db, ids) {
+  const found = new Map();
+  if (!ids.length) return found;
+  const { results } = await db
+    .prepare('SELECT post_id, user_id, label FROM mentions WHERE comment_id IS NULL AND post_id IN (SELECT value FROM json_each(?)) ORDER BY id')
+    .bind(JSON.stringify([...new Set(ids)]))
+    .all();
+  for (const row of results) found.set(row.post_id, [...(found.get(row.post_id) ?? []), { id: row.user_id, name: row.label }]);
+  return found;
 }
 
 const app = new Hono();
@@ -1123,6 +1183,8 @@ app.post('/api/posts', requireUser, async (c) => {
       .prepare('UPDATE images SET post_id = ?, position = ? WHERE id = ?')
       .bind(row.id, position, imageId)));
   }
+  const tagged = await setMentions(c.env.DB, user.id, { post: row.id }, body, input.mentions ?? []);
+  await notify(c, user, tagged.map((friend) => ({ user: friend, kind: 'mention', post: row.id, words: body.slice(0, 140) })));
   return c.json({ id: row.id }, 201);
 });
 
@@ -1141,13 +1203,16 @@ app.get('/api/posts/:id', async (c) => {
       WHERE m.post_id = ? ORDER BY m.id`)
     .bind(id)
     .all();
-  const [[shown], commentFeelings] = await Promise.all([
+  const [[shown], commentFeelings, tagRows] = await Promise.all([
     showPosts(c.env.DB, [post], viewer),
     reactionsOf(c.env.DB, 'comment_id', results.filter((row) => !row.removed_by).map((row) => row.id), viewer),
+    c.env.DB.prepare('SELECT comment_id, user_id, label FROM mentions WHERE post_id = ? AND comment_id IS NOT NULL ORDER BY id').bind(id).all(),
   ]);
+  const tags = new Map();
+  for (const row of tagRows.results) tags.set(row.comment_id, [...(tags.get(row.comment_id) ?? []), { id: row.user_id, name: row.label }]);
   return c.json({
     post: shown,
-    comments: results.map((row) => serializeComment(row, viewer, post, commentFeelings)),
+    comments: results.map((row) => serializeComment(row, viewer, post, commentFeelings, tags)),
   });
 });
 
@@ -1190,6 +1255,9 @@ app.put('/api/posts/:id', requireUser, async (c) => {
     Object.assign(post, { body, youtube_id: findYoutubeId(body), edited_at: Date.now() });
     await c.env.DB.prepare('UPDATE posts SET body = ?, youtube_id = ?, edited_at = ? WHERE id = ?').bind(post.body, post.youtube_id, post.edited_at, id).run();
   }
+  // Whoever was tagged in the rewriting is told. Whoever was tagged before is not told again.
+  const tagged = await setMentions(c.env.DB, user.id, { post: id }, body, input.mentions);
+  await notify(c, user, tagged.map((friend) => ({ user: friend, kind: 'mention', post: id, words: body.slice(0, 140) })));
   if (page !== undefined) {
     const [url, title, text, picture, framed] = pageColumns(page);
     Object.assign(post, { page_url: url, page_title: title, page_text: text, page_picture: picture, page_framable: framed });
@@ -1388,6 +1456,11 @@ app.post('/api/posts/:id/comments', requireUser, async (c) => {
   }
   if (told.get(post.author_id) !== 'reply') told.set(post.author_id, 'comment');
   told.delete(user.id);
+  // A friend tagged in the comment is told of the tag, unless the comment already reaches them.
+  for (const friend of await setMentions(c.env.DB, user.id, { post: id, comment: row.id }, body, input.mentions ?? [])) {
+    if (!told.has(friend)) told.set(friend, 'mention');
+  }
+  told.delete(user.id);
   const readers = await readersOf(c.env.DB, post, [...told.keys()]);
   await notify(c, user, readers.map((reader) => ({
     user: reader, kind: told.get(reader), post: id, comment: row.id, words: body ? body.slice(0, 140) : 'תמונה', onShare: !!post.shared_id,
@@ -1400,7 +1473,7 @@ app.put('/api/comments/:id', requireUser, async (c) => {
   const id = parseId(c.req.param('id'));
   const user = c.get('user');
   const comment = id && (await c.env.DB
-    .prepare(`SELECT m.body, (SELECT id FROM images WHERE comment_id = m.id) AS image_id FROM comments m
+    .prepare(`SELECT m.body, m.post_id, p.audience, p.author_id, (SELECT id FROM images WHERE comment_id = m.id) AS image_id FROM comments m
       JOIN posts p ON p.id = m.post_id WHERE m.id = ? AND m.author_id = ? AND m.removed_by IS NULL AND p.deleted_at IS NULL`)
     .bind(id, user.id)
     .first());
@@ -1410,6 +1483,9 @@ app.put('/api/comments/:id', requireUser, async (c) => {
   const body = typeof input.body === 'string' ? input.body.trim() : '';
   if (body.length > MAX_COMMENT || (!body && !comment.image_id)) return c.json({ error: 'התגובה ריקה או ארוכה מדי' }, 400);
   if (body !== (comment.body ?? '')) await c.env.DB.prepare('UPDATE comments SET body = ?, edited_at = ? WHERE id = ?').bind(body, Date.now(), id).run();
+  const tagged = await setMentions(c.env.DB, user.id, { post: comment.post_id, comment: id }, body, input.mentions);
+  const readers = await readersOf(c.env.DB, { audience: comment.audience, author_id: comment.author_id }, tagged);
+  await notify(c, user, readers.map((reader) => ({ user: reader, kind: 'mention', post: comment.post_id, comment: id, words: body.slice(0, 140) })));
   return c.json({ ok: true });
 });
 

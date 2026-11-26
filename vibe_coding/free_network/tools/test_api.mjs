@@ -1912,6 +1912,72 @@ test('logging out silences the device, and it is told again only after it asks a
   assert.equal(phone.count(), start);
 });
 
+test('a tagged friend becomes a link and is told, and only a friend whose name stands in the words is tagged', async () => {
+  const [writer, friend, other, stranger] = await Promise.all(['tag-writer', 'tag-friend', 'tag-other', 'tag-stranger'].map((name) => signUp(name)));
+  const befriend = async (x, y) => {
+    await x.call('POST', `/friends/${y.id}`);
+    await y.call('POST', `/friends/${x.id}`);
+  };
+  await befriend(writer, friend);
+  await befriend(writer, other);
+  const tagsOf = async (reader, id) => (await reader.call('GET', `/posts/${id}`)).data.post.mentions;
+  const latest = async (member) => (await noticesOf(member)).notices[0];
+
+  // Three are named: a friend whose name is written, a friend whose name is not, and a stranger.
+  const { id } = (await writer.call('POST', '/posts', {
+    body: 'תודה ל-@tag-friend על העזרה, וגם ל-@tag-stranger', audience: 'friends', mentions: [friend.id, other.id, stranger.id, 'x', 999999],
+  })).data;
+  assert.deepEqual(await tagsOf(friend, id), [{ id: friend.id, name: 'tag-friend' }]);
+  const told = await latest(friend);
+  assert.deepEqual([told.kind, told.actor.name, told.text, told.words, told.about, told.path],
+    ['mention', 'tag-writer', 'תיוג שלך בפוסט', 'תודה ל-@tag-friend על העזרה, וגם ל-@tag-stranger', null, `/p/${id}`]);
+  assert.ok(!(await noticesOf(other)).notices.some((item) => item.kind === 'mention'));
+  assert.equal((await noticesOf(stranger)).notices.length, 0);
+  assert.deepEqual((await noticesOf(friend, '?group=mentions')).notices.map((item) => item.kind), ['mention']);
+
+  // Rewriting: a tag that was added is told, one that stayed is not told again, one that left is gone.
+  let { post } = (await writer.call('PUT', `/posts/${id}`, { body: 'תודה ל-@tag-friend ול-@tag-other', mentions: [friend.id, other.id] })).data;
+  assert.deepEqual(post.mentions.map((tag) => tag.name), ['tag-friend', 'tag-other']);
+  assert.equal((await latest(other)).kind, 'mention');
+  assert.equal((await noticesOf(friend)).notices.filter((item) => item.kind === 'mention').length, 1);
+  // An older browser that sends no tags keeps those still written.
+  ({ post } = (await writer.call('PUT', `/posts/${id}`, { body: 'תודה רק ל-@tag-other' })).data);
+  assert.deepEqual(post.mentions, [{ id: other.id, name: 'tag-other' }]);
+  assert.ok(!(await noticesOf(friend)).notices.some((item) => item.kind === 'mention'));
+  // The tag keeps the name as it was written, also after the friend changed theirs.
+  await other.call('PUT', '/me', { name: 'tag-renamed' });
+  assert.deepEqual(await tagsOf(writer, id), [{ id: other.id, name: 'tag-other' }]);
+  ({ post } = (await writer.call('PUT', `/posts/${id}`, { body: 'שוב תודה ל-@tag-other', mentions: [other.id] })).data);
+  assert.deepEqual(post.mentions, [{ id: other.id, name: 'tag-other' }]);
+});
+
+test('a tag in a comment is told once, and never about a post the tagged friend may not read', async () => {
+  const [owner, guest, pal] = await Promise.all(['tagc-owner', 'tagc-guest', 'tagc-pal'].map((name) => signUp(name)));
+  const befriend = async (x, y) => {
+    await x.call('POST', `/friends/${y.id}`);
+    await y.call('POST', `/friends/${x.id}`);
+  };
+  await befriend(owner, guest);
+  await befriend(guest, pal);
+  // Pal is a friend of the guest and not of the owner: a closed post stays closed to them.
+  const closed = (await owner.call('POST', '/posts', { body: 'רק לחברים', audience: 'friends' })).data.id;
+  await guest.call('POST', `/posts/${closed}/comments`, { body: 'מה דעתך @tagc-pal?', mentions: [pal.id] });
+  assert.equal((await noticesOf(pal)).notices.filter((item) => item.kind === 'mention').length, 0);
+
+  const open = (await owner.call('POST', '/posts', { body: 'פתוח לכולם', audience: 'public' })).data.id;
+  const comment = (await guest.call('POST', `/posts/${open}/comments`, { body: 'מה דעתך @tagc-pal? וגם @tagc-owner', mentions: [pal.id, owner.id] })).data.id;
+  const told = (await noticesOf(pal)).notices[0];
+  assert.deepEqual([told.kind, told.text, told.words, told.about, told.path],
+    ['mention', 'תיוג שלך בתגובה', 'מה דעתך @tagc-pal? וגם @tagc-owner', 'פתוח לכולם', `/p/${open}?c=${comment}`]);
+  // The owner already hears of the comment on their post, so the tag adds no second line.
+  assert.deepEqual((await noticesOf(owner)).notices.filter((item) => item.post !== null && item.path.includes(`c=${comment}`)).map((item) => item.kind), ['comment']);
+  const shown = (await pal.call('GET', `/posts/${open}`)).data.comments.find((item) => item.id === comment);
+  assert.deepEqual(shown.mentions.map((tag) => tag.id), [pal.id, owner.id]);
+  // Rewriting the comment without the tag takes the notice away, and removing the comment clears its tags.
+  await guest.call('PUT', `/comments/${comment}`, { body: 'בלי תיוג', mentions: [] });
+  assert.equal((await noticesOf(pal)).notices.filter((item) => item.kind === 'mention').length, 0);
+});
+
 test('friends see the friends of a friend, and a stranger does not', async () => {
   const [a, b, c2, d] = await Promise.all(['fof-a', 'fof-b', 'fof-c', 'fof-d'].map((name) => signUp(name)));
   const befriend = async (x, y) => {
