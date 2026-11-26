@@ -262,41 +262,176 @@ function toast(message, ...actions) {
 // Pictures open over the page, so reading a post never throws the reader into another tab.
 function lightbox(ids, start) {
   let at = start;
-  const picture = el('img', { alt: 'תמונה' });
+  const picture = el('img', { alt: 'תמונה', draggable: false });
   const counter = el('span', { className: 'lightbox-count' });
   const box = el('dialog', { className: 'lightbox' });
+  // The picture starts fitted to the screen (zoom 1) and can be enlarged until every one of
+  // its own dots is a square this many screen dots wide. (tx, ty) is how far it was moved.
+  const DOT_AT_MOST = 40;
+  let zoom = 1;
+  let tx = 0;
+  let ty = 0;
+  const most = () => Math.max(4, DOT_AT_MOST * (picture.naturalWidth || 1) / (picture.offsetWidth || 1));
+  const level = el('button', { className: 'lightbox-level', type: 'button', title: 'גודל אמיתי, או חזרה לתמונה שלמה' });
+
+  function draw(smooth) {
+    zoom = Math.min(most(), Math.max(1, zoom));
+    // The picture never leaves the screen: it moves only as far as it is larger than it.
+    const freeX = Math.max(0, (picture.offsetWidth * zoom - box.clientWidth) / 2);
+    const freeY = Math.max(0, (picture.offsetHeight * zoom - box.clientHeight) / 2);
+    tx = Math.min(freeX, Math.max(-freeX, tx));
+    ty = Math.min(freeY, Math.max(-freeY, ty));
+    const real = zoom * picture.offsetWidth / (picture.naturalWidth || picture.offsetWidth || 1);
+    picture.style.transition = smooth ? 'transform 0.16s ease' : 'none';
+    picture.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
+    // Far in, the dots of the picture are shown as they are, sharp squares, and not smeared.
+    picture.classList.toggle('dots', real >= 3);
+    box.classList.toggle('zoomed', zoom > 1.001);
+    level.textContent = `${Math.round(real * 100)}%`;
+  }
+
+  // Enlarges or shrinks around a point of the screen, so what is under the finger stays there.
+  function zoomAt(factor, x, y, smooth = false) {
+    const frame = box.getBoundingClientRect();
+    const px = x - (frame.left + frame.width / 2);
+    const py = y - (frame.top + frame.height / 2);
+    const next = Math.min(most(), Math.max(1, zoom * factor));
+    tx = px - (px - tx) * (next / zoom);
+    ty = py - (py - ty) * (next / zoom);
+    zoom = next;
+    draw(smooth);
+  }
+  const middle = () => {
+    const frame = box.getBoundingClientRect();
+    return [frame.left + frame.width / 2, frame.top + frame.height / 2];
+  };
+  const whole = (smooth = true) => {
+    zoom = 1;
+    tx = 0;
+    ty = 0;
+    draw(smooth);
+  };
+  // The size at which one dot of the picture is one dot of the screen, or three times the
+  // fitted size when the picture is small anyway.
+  const realSize = () => Math.max(3, (picture.naturalWidth || 1) / (picture.offsetWidth || 1));
+  const toggle = (x, y) => (zoom > 1.001 ? whole() : zoomAt(realSize(), x, y, true));
+
   const show = (step) => {
     at = (at + step + ids.length) % ids.length;
     picture.src = `/api/images/${ids[at]}`;
     counter.textContent = ids.length > 1 ? `${at + 1} מתוך ${ids.length}` : '';
+    whole(false);
   };
-  const arrow = (step, side, label) => el('button', {
-    className: `lightbox-arrow ${side}`,
-    type: 'button',
-    ariaLabel: label,
-    onclick: (e) => {
-      e.stopPropagation();
-      show(step);
-    },
-  }, icon(side));
-  box.append(picture, el('button', { className: 'lightbox-close', type: 'button', ariaLabel: 'סגירה' }, icon('close')), counter);
+  picture.addEventListener('load', () => whole(false));
+  const press = (work) => (e) => {
+    e.stopPropagation();
+    work();
+  };
+  const arrow = (step, side, label) => el('button', { className: `lightbox-arrow ${side}`, type: 'button', ariaLabel: label, onclick: press(() => show(step)) }, icon(side));
+  level.addEventListener('click', press(() => toggle(...middle())));
+  box.append(picture,
+    el('button', { className: 'lightbox-close', type: 'button', ariaLabel: 'סגירה', onclick: press(() => box.close()) }, icon('close')),
+    counter,
+    el('div', { className: 'lightbox-zoom' },
+      el('button', { type: 'button', ariaLabel: 'הקטנה', title: 'הקטנה', onclick: press(() => zoomAt(1 / 1.6, ...middle(), true)) }, icon('minus')),
+      level,
+      el('button', { type: 'button', ariaLabel: 'הגדלה', title: 'הגדלה', onclick: press(() => zoomAt(1.6, ...middle(), true)) }, icon('plus'))));
   // The page reads right to left, so the next picture waits on the left.
   if (ids.length > 1) box.append(arrow(-1, 'right', 'התמונה הקודמת'), arrow(1, 'left', 'התמונה הבאה'));
-  let touchX = null;
-  box.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
-  box.addEventListener('touchend', (e) => {
-    const moved = e.changedTouches[0].clientX - touchX;
-    if (ids.length > 1 && Math.abs(moved) > 40) {
-      e.preventDefault();
-      show(moved > 0 ? 1 : -1);
+
+  // A wheel, or two fingers on a trackpad, enlarges around the pointer.
+  box.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const turned = e.deltaY * (e.deltaMode === 1 ? 33 : 1);
+    zoomAt(Math.exp(-turned * (e.ctrlKey ? 0.012 : 0.0022)), e.clientX, e.clientY);
+  }, { passive: false });
+
+  // Fingers and the mouse: one moves the enlarged picture, two pinch it, a double tap jumps to
+  // the real size and back, a sideways swipe over a whole picture turns to the next one, and a
+  // tap on the dark around the picture closes.
+  const down = new Map();
+  let moved = 0;
+  let pinched = false;
+  let lastTap = null;
+  const gap = () => {
+    const [a, b] = [...down.values()];
+    return { far: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
+  box.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    if (!down.size) {
+      moved = 0;
+      pinched = false;
+    }
+    down.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, onPicture: e.target === picture });
+    box.setPointerCapture(e.pointerId);
+    if (down.size === 2) pinched = true;
+  });
+  box.addEventListener('pointermove', (e) => {
+    const finger = down.get(e.pointerId);
+    if (!finger) return;
+    const before = down.size === 2 ? gap() : null;
+    const dx = e.clientX - finger.x;
+    const dy = e.clientY - finger.y;
+    finger.x = e.clientX;
+    finger.y = e.clientY;
+    moved += Math.abs(dx) + Math.abs(dy);
+    if (before) {
+      const now = gap();
+      tx += now.x - before.x;
+      ty += now.y - before.y;
+      zoomAt(now.far / (before.far || 1), now.x, now.y);
+    } else if (down.size === 1 && zoom > 1.001) {
+      tx += dx;
+      ty += dy;
+      draw(false);
     }
   });
+  const lift = (e) => {
+    const finger = down.get(e.pointerId);
+    if (!finger) return;
+    down.delete(e.pointerId);
+    if (down.size || e.type === 'pointercancel') return;
+    const across = e.clientX - finger.startX;
+    if (pinched) return;
+    if (moved > 8) {
+      if (zoom <= 1.001 && ids.length > 1 && e.pointerType !== 'mouse' && Math.abs(across) > 40) show(across > 0 ? 1 : -1);
+      return;
+    }
+    if (!finger.onPicture) return box.close();
+    const now = Date.now();
+    if (lastTap && now - lastTap.at < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+      lastTap = null;
+      toggle(e.clientX, e.clientY);
+    } else {
+      lastTap = { at: now, x: e.clientX, y: e.clientY };
+    }
+  };
+  box.addEventListener('pointerup', lift);
+  box.addEventListener('pointercancel', lift);
+
   box.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') show(1);
-    if (e.key === 'ArrowRight') show(-1);
+    const far = zoom > 1.001;
+    const step = { ArrowLeft: [1, 0], ArrowRight: [-1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+    if (step && far) {
+      // An enlarged picture is moved by the arrows. A whole one is turned to the next.
+      tx += step[0] * 120;
+      ty += step[1] * 120;
+      draw(true);
+    } else if (e.key === 'ArrowLeft') show(1);
+    else if (e.key === 'ArrowRight') show(-1);
+    else if (e.key === '+' || e.key === '=') zoomAt(1.6, ...middle(), true);
+    else if (e.key === '-') zoomAt(1 / 1.6, ...middle(), true);
+    else if (e.key === '0') whole();
+    else return;
+    e.preventDefault();
   });
-  box.addEventListener('click', () => box.close());
-  box.addEventListener('close', () => box.remove());
+  const fit = () => draw(false);
+  window.addEventListener('resize', fit);
+  box.addEventListener('close', () => {
+    window.removeEventListener('resize', fit);
+    box.remove();
+  });
   show(0);
   document.body.append(box);
   box.showModal();

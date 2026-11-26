@@ -930,7 +930,17 @@ dialog { color: var(--text); font: inherit; }
 
 .lightbox::backdrop { background: rgba(12, 22, 28, 0.95); }
 
-.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; user-select: none; -webkit-user-drag: none; will-change: transform; }
+
+/* The picture is enlarged and moved by hand, so the browser's own gestures stay out of it. */
+.lightbox { touch-action: none; overflow: hidden; overscroll-behavior: contain; }
+
+.lightbox.zoomed img { cursor: grab; }
+
+.lightbox.zoomed img:active { cursor: grabbing; }
+
+/* Far in, each dot of the picture is a sharp square. */
+.lightbox img.dots { image-rendering: pixelated; }
 
 .lightbox button {
   position: absolute;
@@ -954,7 +964,27 @@ dialog { color: var(--text); font: inherit; }
 
 .lightbox-arrow.left { left: 12px; }
 
-.lightbox-count { position: absolute; inset: auto 0 max(14px, env(safe-area-inset-bottom)); color: #fff; font-size: 14.5px; text-align: center; pointer-events: none; }
+.lightbox-count { position: absolute; inset: max(24px, env(safe-area-inset-top)) 0 auto; color: #fff; font-size: 14.5px; text-align: center; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); pointer-events: none; }
+
+/* Enlarging by buttons too, with the size between them: 100% is the picture's real size. */
+.lightbox-zoom {
+  position: absolute;
+  inset: auto auto max(14px, env(safe-area-inset-bottom)) 50%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  direction: ltr;
+  background: rgba(12, 22, 28, 0.72);
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.lightbox-zoom button { position: static; width: 40px; height: 40px; background: none; }
+
+.lightbox-zoom button:hover { background: rgba(255, 255, 255, 0.16); filter: none; }
+
+.lightbox-zoom .lightbox-level { width: auto; min-width: 64px; padding: 0 8px; font-size: 14.5px; font-weight: 550; font-variant-numeric: tabular-nums; border-radius: 999px; }
 
 /* Shown only when a page takes a moment to arrive. */
 .bone {
