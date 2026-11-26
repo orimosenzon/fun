@@ -65,6 +65,8 @@ const INSTALLED = (() => {
 })();
 const APP_HINT_KEY = 'app-hint-hidden';
 const APK = '/downloads/free-network.apk';
+// The version of the Android app that is offered for download (android/app/build.gradle.kts).
+const APP_VERSION = '1.1';
 let me = null;
 let inviteOnly = false;
 let googleLogin = false;
@@ -1678,7 +1680,7 @@ async function adminPage() {
 }
 
 function promise(picture, title, text) {
-  return el('li', {}, el('span', { className: 'promise-icon' }, icon(picture)), el('div', {}, el('strong', {}, title), text));
+  return el('li', {}, el('span', { className: 'promise-icon' }, icon(picture)), el('div', {}, el('strong', {}, title), ...[text].flat()));
 }
 
 function steps(...items) {
@@ -1689,35 +1691,67 @@ function androidSteps() {
   return el('section', { className: 'card app-way' },
     el('h2', {}, icon('phone'), 'אנדרואיד'),
     el('a', { className: 'button-link', href: APK, download: 'free-network.apk' }, icon('download'), 'הורדת האפליקציה'),
+    el('p', { className: 'note' }, `גרסה ${APP_VERSION}, קובץ קטן (פחות ממגה). צריך Chrome בטלפון, והוא נמצא כמעט בכל אנדרואיד.`),
     steps(
       'לוחצים על "הורדת האפליקציה" למעלה.',
       'פותחים את הקובץ שירד, מההודעה שקופצת או מתיקיית ההורדות.',
       ['אם הטלפון שואל, מאשרים לדפדפן ', el('strong', {}, 'להתקין אפליקציות לא מוכרות'), ' וחוזרים אחורה.'],
-      ['לוחצים ', el('strong', {}, 'התקנה'), '. אם מופיעה אזהרה של Play Protect, לוחצים "פרטים נוספים" ואז "להתקין בכל זאת".']),
+      ['לוחצים ', el('strong', {}, 'התקנה'), '. אם מופיעה אזהרה של Play Protect, לוחצים "פרטים נוספים" ואז "להתקין בכל זאת".'],
+      ['פותחים את ', el('strong', {}, 'הרשת החופשית'), ' ממסך הבית, ונכנסים.']),
     el('p', { className: 'note' }, 'האזהרות מופיעות כי האפליקציה לא בחנות של גוגל. היא רק פותחת את הרשת במסך מלא, ומי שמחובר ב-Chrome מחובר גם בה.'));
 }
 
 function iosSteps() {
   return el('section', { className: 'card app-way' },
     el('h2', {}, icon('phone'), 'אייפון'),
-    el('p', { className: 'flush' }, 'באייפון מוסיפים את הרשת למסך הבית, והיא נפתחת משם כמו אפליקציה, במסך מלא.'),
+    el('p', { className: 'flush' }, 'באייפון לא מורידים כלום: מוסיפים את הרשת למסך הבית, והיא נפתחת משם כמו אפליקציה, במסך מלא.'),
     steps(
       ['פותחים את הרשת ב-', el('strong', {}, 'Safari'), '.'],
       ['לוחצים על כפתור השיתוף ', el('span', { className: 'inline-icon' }, icon('share')), '. בגרסאות חדשות הוא בתפריט ', el('strong', {}, '⋯'), ' שליד הכתובת.'],
       ['גוללים ובוחרים ', el('strong', {}, 'הוספה למסך הבית'), ' ', el('span', { className: 'inline-icon' }, icon('square')), '.'],
-      ['לוחצים ', el('strong', {}, 'הוסף'), '. האייקון של הרשת מופיע במסך הבית.']),
+      ['לוחצים ', el('strong', {}, 'הוסף'), '. האייקון של הרשת מופיע במסך הבית.'],
+      'פותחים את הרשת מהאייקון החדש, ונכנסים.'),
     el('p', { className: 'note' }, 'אם האפליקציה מבקשת להתחבר, נכנסים עם Google, או עם הקישור שבמייל ההזמנה.'));
+}
+
+// What there is to know once the app is on the phone. A phone gets the lines that fit it.
+function appUse() {
+  const android = PHONE !== 'ios';
+  return el('section', { className: 'card app-use' },
+    el('h2', {}, 'איך משתמשים'),
+    el('ul', { className: 'promises' },
+      promise('user', 'נכנסים פעם אחת', 'עם Google, או עם הקישור האישי שבמייל ההזמנה. מאז האפליקציה זוכרת אותך.'),
+      promise('home', 'התפריט בתחתית המסך', 'בית הוא הפיד של החברים. לידו התראות, הודעות פרטיות, העדכון, הדף שלך, החברים והגלובוס.'),
+      promise('bell', 'התראות', 'בלשונית "התראות" לוחצים "הפעלת התראות" ומאשרים כשהטלפון שואל. מאז מגיעה התראה כשמגיבים לך או כותבים לך, גם כשהאפליקציה סגורה.'),
+      android ? promise('link', 'קישורים נפתחים באפליקציה', 'קישור לרשת שמגיע במייל או בוואטסאפ נפתח ישר בה.') : null,
+      promise('check', 'אין מה לעדכן', android
+        ? 'האפליקציה מציגה תמיד את הרשת כפי שהיא עכשיו. רק לעיתים רחוקות יוצאת גרסה חדשה של האפליקציה עצמה, והיא תופיע בדף הזה.'
+        : 'האייקון מציג תמיד את הרשת כפי שהיא עכשיו.'),
+      promise('trash', 'הסרה', 'מסירים כמו כל אפליקציה. החשבון, הפוסטים וההודעות נשארים ברשת.')));
 }
 
 function appPage() {
   const ways = PHONE === 'android' ? [androidSteps()] : PHONE === 'ios' ? [iosSteps()] : [androidSteps(), iosSteps()];
-  app.replaceChildren(el('section', { className: 'hero app-hero' },
+  // On a computer the page is easiest to carry to the phone through its camera.
+  const scan = PHONE ? null : el('section', { className: 'card app-scan' },
+    el('img', { src: '/app-qr.svg', alt: 'קוד לסריקה שמוביל לדף הזה', width: 148, height: 148 }),
+    el('div', {}, el('h2', {}, 'מתחילים מהטלפון'),
+      el('p', { className: 'flush' }, 'מכוונים את מצלמת הטלפון אל הקוד, והדף הזה נפתח בו. אפשר גם להקליד בדפדפן של הטלפון:'),
+      el('p', { className: 'app-address', dir: 'ltr' }, `${location.host}/app`)));
+  const installed = !INSTALLED ? null : el('section', { className: 'card app-way' },
+    el('h2', {}, icon('check'), 'האפליקציה מותקנת, ואתם בתוכה'),
+    ...(PHONE === 'android' ? [
+      el('p', { className: 'flush' }, `הגרסה האחרונה היא ${APP_VERSION}, והיא זו שהוסיפה התראות. מי שהתקין לפניה מוריד ומתקין שוב, מעל הקיימת. שום דבר לא נמחק.`),
+      el('a', { className: 'button-link', href: APK, download: 'free-network.apk' }, icon('download'), `הורדת גרסה ${APP_VERSION}`)] : []));
+  app.replaceChildren(...[el('section', { className: 'hero app-hero' },
     el('img', { src: '/icon-192.png', alt: '' }),
     el('h1', {}, 'הרשת בטלפון'),
-    el('p', {}, INSTALLED ? 'האפליקציה כבר מותקנת, ואתם בתוכה עכשיו.' : 'אייקון במסך הבית, נפתח במסך מלא, בלי לחפש את הכתובת.')),
+    el('p', {}, 'אייקון במסך הבית, נפתח במסך מלא, עם התראות. בלי חנות אפליקציות ובלי לחפש את הכתובת.')),
+  scan,
+  installed,
   ...(INSTALLED ? [] : ways),
-  ...(PHONE ? [] : [el('p', { className: 'feed-rule' }, 'כדאי לפתוח את הדף הזה בטלפון עצמו: ', el('span', { dir: 'ltr' }, `${location.host}/app`))]),
-  ...(me ? [] : [el('p', { className: 'feed-rule' }, el('a', { href: '/' }, 'לדף הכניסה'))]));
+  appUse(),
+  me ? null : el('p', { className: 'feed-rule' }, el('a', { href: '/' }, 'לדף הכניסה'))].filter(Boolean));
 }
 
 // A small card above the feed, on a phone that does not run the app yet, until it is put away.
@@ -1863,10 +1897,24 @@ function renderNav() {
   const topWhy = document.getElementById('top-why');
   if (!topWhy.firstChild) topWhy.append(icon('info'));
   topWhy.hidden = !me;
+  // The way to the app is always in sight, until the page runs inside it: in the menu on a
+  // computer, and at the top of the screen on a phone.
+  const topApp = document.getElementById('top-app');
+  if (!topApp.firstChild) {
+    topApp.append(icon('download'), 'אפליקציה');
+    topApp.addEventListener('click', (e) => {
+      e.preventDefault();
+      go('/app');
+    });
+  }
+  topApp.hidden = INSTALLED;
+  const getApp = INSTALLED ? null : link('/app', labelled('phone', 'אפליקציה'));
+  getApp?.classList.add('desktop-only');
   if (!me) {
     document.title = TITLE;
     navigator.clearAppBadge?.().catch(() => {});
-    nav.replaceChildren(...[why, link('/login', labelled('user', 'כניסה'))].filter(Boolean));
+    nav.replaceChildren(...[why, getApp, link('/login', labelled('user', 'כניסה'))].filter(Boolean));
+    markNav();
     return;
   }
   // On a phone the bottom bar is full, so the admin reaches their screen from their own page.
@@ -1896,7 +1944,7 @@ function renderNav() {
   navigator.setAppBadge?.(waiting).catch(() => {});
   const world = link('/globe', labelled('globe', 'גלובוס'));
   const news = link('/update', labelled('sun', 'העדכון'));
-  nav.replaceChildren(...[home, bell, mail, news, mine, friends, world, admin, why, el('button', {
+  nav.replaceChildren(...[home, bell, mail, news, mine, friends, world, admin, getApp, why, el('button', {
     className: 'plain desktop-only',
     type: 'button',
     onclick: logout,

@@ -1570,7 +1570,7 @@ dialog { color: var(--text); font: inherit; }
 
 /* Between a phone and a full window there is no room for seven named items, so only the page
    you are on keeps its name. The names stay there for a screen reader. */
-@media (min-width: 641px) and (max-width: 960px) {
+@media (min-width: 641px) and (max-width: 1260px) {
   #nav a:not(.active) .label, #nav button.plain .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   #nav a, #nav button.plain { padding: 7px 10px; }
 }
@@ -2604,3 +2604,45 @@ dialog { color: var(--text); font: inherit; }
 .person .row > a:not(.pill-link) { font-size: 14.5px; }
 
 .note.flush-top { margin-top: -2px; }
+
+/* ---------- The way to the app ---------- */
+
+.top-app { display: none; }
+
+@media (max-width: 640px) {
+  .top-app {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-inline-start: auto;
+    padding: 6px 12px;
+    color: var(--brand);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    background: var(--field);
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  }
+
+  .top-app .icon { width: 16px; height: 16px; }
+
+  .topbar { gap: 8px; }
+}
+
+.app-scan { display: flex; align-items: center; gap: 18px; }
+
+.app-scan img { flex: none; width: 148px; height: 148px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); }
+
+.app-scan h2 { margin: 0 0 4px; }
+
+.app-address { margin: 6px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+
+.app-use h2 { margin-top: 0; }
+
+.app-use .promises { margin-bottom: 0; }
+
+.app-use .promises li { background: var(--field); box-shadow: inset 0 0 0 1px var(--line); }
+
+.app-way .button-link + .note { margin-top: 8px; }
