@@ -60,12 +60,17 @@ const ICONS = {
 // open it in standalone mode. The referrer is only there on the first page, so it is remembered.
 const PHONE = /Android/i.test(navigator.userAgent) ? 'android'
   : /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios' : null;
+// Other apps open links with a referrer of their own (Gmail does), so only ours counts.
+const APP_PACKAGE = 'il.pardes.freenetwork';
+// What brought the page here, when it was another app: its package name. For the journal.
+const OPENED_FROM = document.referrer.startsWith('android-app://') ? document.referrer.slice(14).split('/')[0] : null;
+const STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const INSTALLED = (() => {
   try {
-    if (document.referrer.startsWith('android-app://')) sessionStorage.setItem('installed', '1');
+    if (OPENED_FROM === APP_PACKAGE) sessionStorage.setItem('installed', '1');
     if (sessionStorage.getItem('installed')) return true;
   } catch {}
-  return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  return STANDALONE;
 })();
 const APP_HINT_KEY = 'app-hint-hidden';
 const APK = '/downloads/free-network.apk';
@@ -140,6 +145,20 @@ function report(message, stack) {
     body: JSON.stringify({ message: String(message), stack, path: location.pathname }),
     keepalive: true,
   }).catch(() => {});
+}
+
+// Tells the journal that the network was opened here and how, so that a question like "the app
+// did not know me" has an answer. No words of anyone, and the numbers in the path are dropped.
+function reportOpen(note) {
+  const words = {
+    mode: INSTALLED ? (PHONE === 'ios' ? 'home-screen' : 'app') : 'browser',
+    display: STANDALONE ? 'standalone' : 'tab',
+    from: OPENED_FROM,
+    path: location.pathname.replace(/\d+/g, 'N'),
+    app: APP_VERSION,
+    note,
+  };
+  fetch('/api/journal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(words), keepalive: true }).catch(() => {});
 }
 
 window.addEventListener('error', (e) => report(e.message, e.error?.stack));
@@ -1998,7 +2017,10 @@ function welcomePage() {
     el('p', { className: 'note' }, me.avatar ? 'זו התמונה שלך. לחיצה עליה מחליפה אותה.' : 'בינתיים התמונה שלך מצוירת מהשם הפרטי. לחיצה עליה מעלה תמונה אחרת.')) : null,
   me.name ? google : null,
   el('label', { className: 'field' }, el('span', {}, 'השם שיוצג לאחרים'), name),
-  el('div', { className: 'row' }, el('button', { type: 'submit' }, 'כניסה לרשת')), error));
+  el('div', { className: 'row' }, el('button', { type: 'submit' }, 'כניסה לרשת')), error,
+  // Someone who already has an account and got here through an old link, on another device.
+  googleLogin && !me.name ? el('p', { className: 'note welcome-other' }, 'כבר יש לך חשבון ברשת? ',
+    el('a', { href: '/api/auth/google' }, 'כניסה עם Google'), ' תפתח אותו במקום ליצור חדש.') : null));
 }
 
 async function logout() {
@@ -2167,7 +2189,13 @@ async function start() {
       localStorage.removeItem(LOGGED_OUT);
     } catch {}
   }
-  if (!me && !token && !location.search.includes('google=') && quietGoogle()) return;
+  const cameBack = new URLSearchParams(location.search).get('google');
+  // A phone that holds a nameless account from an old link is asked too: if Google vouches for
+  // a member there, that account opens instead.
+  const going = !me?.name && !token && !cameBack && quietGoogle();
+  reportOpen([token ? (linkFailed ? 'link-failed' : 'link') : null, cameBack ? `google:${cameBack}` : null, going ? 'asking-google-quietly' : null,
+    me && !me.name ? 'no-name' : null].filter(Boolean).join('/') || null);
+  if (going) return;
   // Opening an old link again is normal: someone already logged in just continues to the site.
   const google = new URLSearchParams(location.search).get('google');
   if (google) {

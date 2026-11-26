@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { outsideNews, israelNews, PICTURE_HOSTS } from './digest.js';
-import { writeLog } from './log.js';
+import { deviceName, writeJournal, writeLog } from './log.js';
 import { pushDevice, pushReady, sendPush } from './push.js';
 import { pagePicture, pageUrl, readPage } from './page.js';
 import { CONTACT_SCOPES, DEFAULT_NOTE, MAX_NOTE, SEND_SCOPE, googleContacts, inviteLetter, seal, sendFromGmail, unseal } from './mail.js';
@@ -157,13 +157,41 @@ function startSession(c, token) {
   });
 }
 
-async function createSession(c, userId) {
+// Enough of a session's hash to tell in the journal that two lines came from one device.
+const sessionMark = (hash) => hash?.slice(0, 8) ?? null;
+const SEEN_EVERY_MS = 60 * 60 * 1000;
+
+// One line in the journal about this request. Whoever it is about is the logged in member,
+// unless the line says otherwise (a login is about the one who just got in).
+async function journal(c, kind, detail, about = {}) {
+  await writeJournal(c.env.DB, {
+    kind,
+    detail,
+    userId: about.userId ?? c.get('user')?.id,
+    session: about.session ?? c.get('session'),
+    device: deviceName(c.req.header('User-Agent')),
+    requestId: c.get('requestId'),
+  });
+}
+
+// Opens a session for the member on this device. `how` is the way they got in, for the journal.
+// The session this browser held until now, of whichever account, ends: it has no other holder.
+async function createSession(c, userId, how) {
   const session = randomToken();
-  await c.env.DB
-    .prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
-    .bind(await sha256(session), userId, Date.now() + SESSION_MS)
-    .run();
+  const hash = await sha256(session);
+  const now = Date.now();
+  const old = getCookie(c, SESSION_COOKIE);
+  const oldHash = old ? await sha256(old) : null;
+  const before = oldHash && (await c.env.DB.prepare('SELECT user_id FROM sessions WHERE token_hash = ?').bind(oldHash).first());
+  await c.env.DB.batch([
+    c.env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, created_at, seen_at, device) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(hash, userId, now + SESSION_MS, now, now, deviceName(c.req.header('User-Agent'))),
+    c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(oldHash),
+    c.env.DB.prepare('DELETE FROM push_devices WHERE session_hash = ?').bind(oldHash),
+  ]);
   startSession(c, session);
+  const replaced = before ? (before.user_id === userId ? ', replacing their older session here' : `, replacing the session of member ${before.user_id} here`) : '';
+  await journal(c, 'login', `${how}${replaced}`, { userId, session: sessionMark(hash) });
 }
 
 function googleRedirectUri(c) {
@@ -706,17 +734,42 @@ app.post('/api/client-log', async (c) => {
 async function sessionUser(c) {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return null;
-  return c.env.DB
-    .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at, u.notices_seen_at, u.push_muted FROM sessions s JOIN users u ON u.id = s.user_id
+  const hash = await sha256(token);
+  const now = Date.now();
+  const user = await c.env.DB
+    .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at, u.notices_seen_at, u.push_muted, s.seen_at AS session_seen
+      FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ? AND s.expires_at > ?`)
-    .bind(await sha256(token), Date.now())
+    .bind(hash, now)
     .first();
+  if (!user) return null;
+  c.set('session', sessionMark(hash));
+  // When the session was last used is kept to the hour: enough to tell a device that is in use
+  // from one that was forgotten, without a write on every request.
+  if (now - (user.session_seen ?? 0) > SEEN_EVERY_MS) {
+    later(c, c.env.DB.prepare('UPDATE sessions SET seen_at = ?, device = ? WHERE token_hash = ?').bind(now, deviceName(c.req.header('User-Agent')), hash).run());
+  }
+  return user;
 }
 
 app.use('/api/*', async (c, next) => {
   const user = await sessionUser(c);
   if (user) c.set('user', user);
   await next();
+});
+
+// The browser tells that the network was opened in it, and how: as the installed app, from the
+// home screen or in a plain browser, and what brought it here. Only words from a short list of
+// letters are kept, so nothing a person wrote can ride in.
+const JOURNAL_WORD = /^[\w.:/-]{1,80}$/;
+
+app.post('/api/journal', async (c) => {
+  const input = await readJson(c);
+  const words = ['mode', 'display', 'from', 'path', 'app', 'note']
+    .filter((name) => typeof input[name] === 'string' && JOURNAL_WORD.test(input[name]))
+    .map((name) => `${name}=${input[name]}`);
+  await journal(c, 'open', words.join(' '));
+  return c.json({ ok: true });
 });
 
 async function requireUser(c, next) {
@@ -778,7 +831,7 @@ app.post('/api/auth/verify', async (c) => {
   if (used.invited_by) await befriend(c.env.DB, used.invited_by, user.id, now);
   if (used.invited_by && created.meta.changes) await notify(c, { id: user.id, name: used.name ?? '' }, [{ user: used.invited_by, kind: 'joined' }]);
 
-  await createSession(c, user.id);
+  await createSession(c, user.id, created.meta.changes ? 'link, joined' : 'link');
   return c.json({ ok: true, joined: !!created.meta.changes });
 });
 
@@ -821,7 +874,12 @@ app.get('/api/auth/google/callback', async (c) => {
   const [mode, state] = (getCookie(c, GOOGLE_STATE_COOKIE) ?? '').split('.');
   deleteCookie(c, GOOGLE_STATE_COOKIE, { path: GOOGLE_STATE_PATH });
   // A quiet attempt that did not end in a login says nothing: the login screen is all that follows.
-  const finish = (result) => c.redirect(`/?google=${mode === 'quiet' && result !== 'login' ? 'quiet' : result}`);
+  // What Google said when it sent no code (the member has to choose an account, for example).
+  const refusal = /^[a-z_]{1,40}$/.test(c.req.query('error') ?? '') ? c.req.query('error') : null;
+  const finish = async (result) => {
+    await journal(c, 'google', `${mode || 'no state cookie'}: ${result}${refusal ? ` (${refusal})` : ''}`);
+    return c.redirect(`/?google=${mode === 'quiet' && result !== 'login' ? 'quiet' : result}`);
+  };
 
   const code = c.req.query('code');
   if (!state || state !== c.req.query('state') || !code) return finish('failed');
@@ -831,7 +889,10 @@ app.get('/api/auth/google/callback', async (c) => {
 
   const db = c.env.DB;
   if (mode === 'mail') {
-    const back = (result) => c.redirect(`/admin?google=${result}`);
+    const back = async (result) => {
+      await journal(c, 'google', `mail: ${result}`);
+      return c.redirect(`/admin?google=${result}`);
+    };
     if (!isAdmin(c)) return finish('failed');
     if (!google.refreshToken || !google.address || !google.scopes.includes(SEND_SCOPE)) return back('mail-refused');
     await db
@@ -852,7 +913,7 @@ app.get('/api/auth/google/callback', async (c) => {
     return finish('linked');
   }
   if (owner) {
-    await createSession(c, owner.id);
+    await createSession(c, owner.id, mode === 'quiet' ? 'google, quiet' : 'google');
     return finish('login');
   }
   if (!google.email) return finish('unknown');
@@ -863,7 +924,7 @@ app.get('/api/auth/google/callback', async (c) => {
   if (member) {
     await db.prepare('UPDATE users SET google_sub = ? WHERE id = ?').bind(subject, member.id).run();
     await importGooglePicture(c, member.id, google.picture);
-    await createSession(c, member.id);
+    await createSession(c, member.id, mode === 'quiet' ? 'google by address, quiet' : 'google by address');
     return finish('login');
   }
 
@@ -885,7 +946,7 @@ app.get('/api/auth/google/callback', async (c) => {
   await befriend(db, invite.invited_by, user.id, now);
   await notify(c, { id: user.id, name: invite.name ?? google.name ?? '' }, [{ user: invite.invited_by, kind: 'joined' }]);
   await importGooglePicture(c, user.id, google.picture);
-  await createSession(c, user.id);
+  await createSession(c, user.id, 'google, joined');
   return finish('joined');
 });
 
@@ -893,6 +954,7 @@ app.post('/api/auth/logout', async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (token) {
     const hash = await sha256(token);
+    await journal(c, 'logout', null);
     // A device that was logged out is not told anything any more.
     await c.env.DB.batch([
       c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(hash),
@@ -1715,12 +1777,14 @@ app.put('/api/push', requireUser, async (c) => {
     db.prepare(`DELETE FROM push_devices WHERE user_id = ?1 AND endpoint NOT IN
       (SELECT endpoint FROM push_devices WHERE user_id = ?1 ORDER BY created_at DESC LIMIT ${MAX_PUSH_DEVICES})`).bind(user.id),
   ]);
+  await journal(c, 'push', `on, through ${new URL(device.endpoint).hostname}`);
   return c.json({ ok: true });
 });
 
 app.delete('/api/push', requireUser, async (c) => {
   const { endpoint } = await readJson(c);
-  await c.env.DB.prepare('DELETE FROM push_devices WHERE endpoint = ? AND user_id = ?').bind(String(endpoint), c.get('user').id).run();
+  const gone = await c.env.DB.prepare('DELETE FROM push_devices WHERE endpoint = ? AND user_id = ?').bind(String(endpoint), c.get('user').id).run();
+  if (gone.meta.changes) await journal(c, 'push', 'off');
   return c.json({ ok: true });
 });
 

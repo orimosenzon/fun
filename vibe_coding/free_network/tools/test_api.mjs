@@ -5,6 +5,7 @@ import { createDecipheriv, createECDH, createPublicKey, generateKeyPairSync, hkd
 import { mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
+import { deviceName } from '../src/log.js';
 import { join } from 'node:path';
 
 // Other projects' servers sometimes sit on these ports. TEST_PORT_BASE=18792 npm test moves them all.
@@ -783,6 +784,45 @@ test('a crash reaches the log with a code the user can quote', async () => {
   assert.match(log, /GET \/api\/posts\/1 500/);
 });
 
+test('the journal tells who got in where and how, and keeps nothing a person wrote', async () => {
+  const state = join(root, String(PORT));
+  const read = (...more) => execFileSync('node', ['tools/logs.mjs', '--persist-to', state, ...more], { encoding: 'utf8' });
+  const guy = await signUp('journal-guy');
+  const first = guy.call.cookie();
+  // The browser says how the network was opened. Words outside the short list of letters are dropped.
+  await guy.call('POST', '/journal', { mode: 'app', display: 'standalone', from: 'il.pardes.freenetwork', path: '/p/N', app: '1.1', note: 'שלום <script>', extra: 'x' });
+  await client()('POST', '/journal', { mode: 'browser', display: 'tab', path: '/login' });
+  // Logging in again in the same browser ends the session it held.
+  const { data } = await guy.call('POST', '/auth/request', { email: 'journal-guy@example.com' });
+  assert.equal((await guy.call('POST', '/auth/verify', { token: data.devLink.split('#token=')[1] })).status, 200);
+  const stale = await fetch(`http://localhost:${PORT}/api/me`, { headers: { Cookie: first } });
+  assert.equal((await stale.json()).user, null);
+  assert.equal((await guy.call('GET', '/me')).data.user.id, guy.id);
+
+  const lines = read('--journal', '--user', String(guy.id));
+  assert.match(lines, /login +member \d+ journal-guy/);
+  assert.match(lines, /link, joined/);
+  assert.match(lines, /mode=app display=standalone from=il\.pardes\.freenetwork path=\/p\/N app=1\.1\n/);
+  assert.match(lines, /link, replacing their older session here/);
+  assert.ok(!lines.includes('script') && !lines.includes('extra'));
+  assert.match(read('--journal', '--kind', 'open', '--limit', '1'), /nobody logged in.*\n {4}mode=browser display=tab path=\/login/);
+
+  const sessions = read('--sessions', '--user', String(guy.id));
+  assert.match(sessions, /1 sessions/);
+  assert.match(sessions, /began 20\d\d-.* last used 20\d\d-/);
+  await guy.call('POST', '/auth/logout');
+  assert.match(read('--journal', '--user', String(guy.id), '--kind', 'logout'), /1 lines/);
+  assert.match(read('--sessions', '--user', String(guy.id)), /0 sessions/);
+});
+
+test('the journal names the device in a few words', () => {
+  assert.equal(deviceName('Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'), 'Android 14 · Chrome 131');
+  assert.equal(deviceName('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'), 'iOS 17.5 · Safari 17');
+  assert.equal(deviceName('Mozilla/5.0 (Linux; Android 13; Pixel 7 Build/TQ3A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36'), 'Android 13 · Chrome 120 (webview)');
+  assert.equal(deviceName('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0'), 'Windows · Firefox 132');
+  assert.equal(deviceName(undefined), null);
+});
+
 test('browser errors are logged, and post text is not', async () => {
   const state = join(root, String(PORT));
   await client()('POST', '/client-log', { message: 'TypeError: boom', stack: 'at app.js:1', path: '/p/1' });
@@ -1346,6 +1386,7 @@ test('Google never creates an account, and a forged redirect gets nothing', asyn
 
 test('the installed app lets in quietly a member Google vouches for, and says nothing otherwise', async () => {
   const boss = await theBoss();
+  const journalOf = (...more) => execFileSync('node', ['tools/logs.mjs', '--persist-to', join(root, String(INVITE_PORT)), '--journal', ...more], { encoding: 'utf8' });
   const quiet = await googleFlow('google-lior', { quiet: true });
   assert.equal(quiet.asked.searchParams.get('prompt'), 'none');
   assert.equal(quiet.result, 'login');
@@ -1359,6 +1400,13 @@ test('the installed app lets in quietly a member Google vouches for, and says no
   await boss.call('POST', '/admin/email-invites', { email: 'quiet.one@gmail.com', name: 'שקטה' });
   assert.equal((await googleFlow('google-quiet:quietone@gmail.com', { quiet: true })).result, 'quiet');
   assert.equal((await googleFlow('google-quiet:quietone@gmail.com')).result, 'joined');
+  // What Google answered each time is in the journal, with the reason when it gave one.
+  const told = journalOf('--kind', 'google', '--limit', '6');
+  assert.match(told, /quiet: login\n/);
+  assert.match(told, /quiet: failed \(interaction_required\)/);
+  assert.match(told, /quiet: unknown/);
+  assert.match(told, /login: joined/);
+  assert.match(journalOf('--kind', 'login', '--limit', '8'), /google, quiet/);
 });
 
 test('one Google account belongs to one person, and it can be unlinked', async () => {
