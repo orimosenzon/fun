@@ -2,7 +2,7 @@
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>', '#bundle/<id>'.
 import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, loadGever, sendGever, markOwnDevice, dayKey, primaryAnswer, hasAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611251827';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611261327';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -1922,22 +1922,53 @@ function showPreview(img, data) {
   img.closest('.drop').classList.toggle('filled', !!data);
 }
 
-// A drop zone takes a click (file picker) or a dragged-in file.
+const COPY_TIP = 'נסי ללחוץ על התמונה בלחצן ימני, "העתקת תמונה", ואז Ctrl+V כאן.';
+
+// A picture dragged in from another browser tab (e.g. Google Photos) arrives as a link, not a file.
+// Fetch it when the site allows; many don't, so the error points to copy and paste, which always works.
+async function droppedLink(dt) {
+  const html = dt.getData('text/html');
+  const src = html && new DOMParser().parseFromString(html, 'text/html').querySelector('img')?.src;
+  const url = src || dt.getData('text/uri-list').split('\n').find((l) => l && !l.startsWith('#'));
+  if (!url) return null;
+  try {
+    const blob = await (await fetch(url)).blob();
+    if (blob.type.startsWith('image/')) return blob;
+  } catch { /* cross-site fetch blocked */ }
+  throw new Error(`לא הצלחתי למשוך את התמונה מהאתר השני. ${COPY_TIP}`);
+}
+
+// A drop zone takes a click (file picker), a dragged-in file or picture, or a pasted picture.
 function dropZone(zone, input, preview, set, onError = showError, size = []) {
   const take = async (file) => {
     if (!file) return;
     try { const data = await readImage(file, ...size); set(data); showPreview(preview, data); onError(''); }
     catch (err) { onError(err.message); }
   };
+  zone.take = take;
   input.addEventListener('change', (e) => { take(e.target.files[0]); e.target.value = ''; });
   zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-  zone.addEventListener('drop', (e) => {
+  zone.addEventListener('drop', async (e) => {
     e.preventDefault();
     zone.classList.remove('over');
-    take(e.dataTransfer.files[0]);
+    const file = e.dataTransfer.files[0];
+    if (file) return take(file);
+    try { await take(await droppedLink(e.dataTransfer)); } catch (err) { onError(err.message); }
   });
 }
+// Ctrl+V with a picture on the clipboard fills the zone under the mouse, otherwise the first empty
+// zone showing in the open dialog, otherwise its main one. Copying from Google Photos needs no download.
+addEventListener('paste', (e) => {
+  const dialog = document.querySelector('#riddle-dialog[open], #letter-dialog[open]');
+  const file = [...(e.clipboardData?.files || [])].find((f) => f.type.startsWith('image/'));
+  if (!dialog || !file) return;
+  const zones = [...dialog.querySelectorAll('.drop')].filter((z) => z.take && z.offsetParent);
+  const zone = zones.find((z) => z.matches(':hover')) || zones.find((z) => !z.classList.contains('filled')) || zones[0];
+  if (!zone) return;
+  e.preventDefault();
+  zone.take(file);
+});
 // A file dropped just outside a zone would otherwise make the browser leave the page to show it.
 for (const ev of ['dragover', 'drop']) {
   addEventListener(ev, (e) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); });
