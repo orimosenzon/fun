@@ -216,6 +216,26 @@ ${card('מאוחר יותר באותו יום')}
     });
     return;
   }
+  // Web pages to set in a post: one that tells its title and picture, and two that refuse frames.
+  if (request.url.startsWith('/site/')) {
+    const name = request.url.slice(6);
+    if (name === 'cover.png') {
+      response.setHeader('Content-Type', 'image/png');
+      response.end(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      return;
+    }
+    if (name === 'denied') response.setHeader('X-Frame-Options', 'DENY');
+    if (name === 'own-only') response.setHeader('Content-Security-Policy', "default-src 'self'; frame-ancestors 'self'");
+    if (name === 'anyone') {
+      response.setHeader('X-Frame-Options', 'DENY');
+      response.setHeader('Content-Security-Policy', 'frame-ancestors *');
+    }
+    response.setHeader('Content-Type', 'text/html; charset=utf-8');
+    response.end(`<!doctype html><html><head><title>כותרת &amp; משנה</title>
+      <meta content="מעבדה שאפשר לשחק בה" property="og:description">
+      <meta property="og:image" content="/site/cover.png"></head><body><script>1</script></body></html>`);
+    return;
+  }
   youtubeRequests.push(request);
   if (request.url.startsWith('/oembed') && request.url.includes(VIDEO_ID)) {
     response.setHeader('Content-Type', 'application/json');
@@ -695,6 +715,54 @@ test('a post needs text or an image, and at most four images', async () => {
   const images = [];
   for (let i = 0; i < 5; i++) images.push((await upload(alice, phoneJpeg())).data.id);
   assert.equal((await alice.call('POST', '/posts', { body: 'x', audience: 'public', images })).status, 400);
+});
+
+const site = (name) => `http://localhost:${YOUTUBE_PORT}/site/${name}`;
+
+test('a live page is read once for its title and picture, and follows the audience of its post', async () => {
+  const { data, status } = await alice.call('POST', '/posts', { body: '', audience: 'friends', page: site('lab') });
+  assert.equal(status, 201);
+  const { post } = (await alice.call('GET', `/posts/${data.id}`)).data;
+  assert.deepEqual(post.page, { url: site('lab'), title: 'כותרת & משנה', text: 'מעבדה שאפשר לשחק בה', picture: `/api/posts/${data.id}/page-picture`, framable: true });
+  const picture = await bob.call('GET', `/posts/${data.id}/page-picture`);
+  assert.equal(picture.status, 200);
+  assert.equal(Buffer.from(picture.bytes)[1], 0x50);
+  assert.equal((await anon('GET', `/posts/${data.id}/page-picture`)).status, 404);
+  assert.equal((await anon('GET', `/posts/${data.id}`)).status, 404);
+});
+
+test('a live page that refuses frames is marked so, unless its policy lets anyone frame it', async () => {
+  for (const [name, framable] of [['denied', false], ['own-only', false], ['anyone', true]]) {
+    const { data } = await alice.call('POST', '/posts', { body: name, audience: 'public', page: site(name) });
+    assert.equal((await anon('GET', `/posts/${data.id}`)).data.post.page.framable, framable, name);
+  }
+});
+
+test('only a full outside address can be a live page', async () => {
+  for (const page of ['javascript:alert(1)', 'data:text/html,<b>x</b>', 'ftp://example.com/', 'not a url', 'https://user:pass@example.com/',
+    `http://localhost:${PORT}/`, `http://localhost:${PORT}/api/me`]) {
+    assert.equal((await alice.call('POST', '/posts', { body: 'x', audience: 'public', page })).status, 400, page);
+  }
+  const { data } = await alice.call('POST', '/posts', { body: 'בלי דף', audience: 'public', page: '  ' });
+  assert.equal((await anon('GET', `/posts/${data.id}`)).data.post.page, null);
+});
+
+test('the writer can add, change and take away the live page, and readers see it was edited', async () => {
+  const { data } = await alice.call('POST', '/posts', { body: 'דף', audience: 'public' });
+  const put = (body) => alice.call('PUT', `/posts/${data.id}`, body);
+  let { post } = (await put({ body: 'דף', page: site('lab') })).data;
+  assert.equal(post.page.title, 'כותרת & משנה');
+  assert.ok(post.editedAt);
+  ({ post } = (await put({ body: 'דף אחר' })).data);
+  assert.equal(post.page.url, site('lab'));
+  ({ post } = (await put({ body: 'דף אחר', page: site('denied') })).data);
+  assert.equal(post.page.framable, false);
+  ({ post } = (await put({ body: 'דף אחר', page: '' })).data);
+  assert.equal(post.page, null);
+  assert.equal((await bob.call('PUT', `/posts/${data.id}`, { body: 'x', page: site('lab') })).status, 404);
+  // A post that is only its page cannot lose both.
+  const only = (await alice.call('POST', '/posts', { body: '', audience: 'public', page: site('lab') })).data;
+  assert.equal((await alice.call('PUT', `/posts/${only.id}`, { body: '', page: '' })).status, 400);
 });
 
 test('name search treats wildcards literally', async () => {

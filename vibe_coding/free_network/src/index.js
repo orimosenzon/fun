@@ -3,6 +3,7 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { outsideNews, israelNews, PICTURE_HOSTS } from './digest.js';
 import { writeLog } from './log.js';
 import { pushDevice, pushReady, sendPush } from './push.js';
+import { pagePicture, pageUrl, readPage } from './page.js';
 import { CONTACT_SCOPES, DEFAULT_NOTE, MAX_NOTE, SEND_SCOPE, googleContacts, inviteLetter, seal, sendFromGmail, unseal } from './mail.js';
 
 const SESSION_COOKIE = 'session';
@@ -249,6 +250,13 @@ function serializePost(row, viewer, reactions) {
     author: { id: row.author_id, name: row.author_name, avatar: row.author_avatar },
     body: row.body,
     youtubeId: row.youtube_id,
+    page: row.page_url ? {
+      url: row.page_url,
+      title: row.page_title,
+      text: row.page_text,
+      picture: row.page_picture ? `/api/posts/${row.id}/page-picture` : null,
+      framable: row.page_framable !== 0,
+    } : null,
     audience: row.audience,
     createdAt: row.created_at,
     editedAt: row.edited_at ?? null,
@@ -1008,13 +1016,28 @@ app.get('/api/feed', requireUser, async (c) => {
   return c.json({ posts: await showPosts(c.env.DB, results, user), hasMore: results.length === PAGE_SIZE });
 });
 
+// The live page of a post, as the writer gave it: '' or nothing for none, null when the address
+// cannot be a live page. Its title and picture are read now, once, for every reader to come.
+async function livePage(c, raw) {
+  if (raw === undefined || raw === null || (typeof raw === 'string' && !raw.trim())) return { url: null };
+  const where = { own: new URL(c.req.url).host, local: c.env.DEV_LOGIN === '1' && isLocalhost(c) };
+  const url = pageUrl(raw, where);
+  if (!url) return null;
+  return { url, ...(await readPage(url, where)) };
+}
+
+const PAGE_PROBLEM = 'אפשר לשבץ רק כתובת מלאה של דף, שמתחילה ב-https://';
+const pageColumns = (page) => [page.url, page.title ?? null, page.text ?? null, page.picture ?? null, page.url ? (page.framable ? 1 : 0) : null];
+
 app.post('/api/posts', requireUser, async (c) => {
   const input = await readJson(c);
   const user = c.get('user');
   const body = typeof input.body === 'string' ? input.body.trim() : '';
   const imageIds = Array.isArray(input.images) ? [...new Set(input.images)] : [];
   if (body.length > MAX_POST) return c.json({ error: 'הפוסט ארוך מדי' }, 400);
-  if (!body && !imageIds.length) return c.json({ error: 'הפוסט ריק' }, 400);
+  const page = await livePage(c, input.page);
+  if (!page) return c.json({ error: PAGE_PROBLEM }, 400);
+  if (!body && !imageIds.length && !page.url) return c.json({ error: 'הפוסט ריק' }, 400);
   if (imageIds.length > MAX_IMAGES_PER_POST) return c.json({ error: 'עד 4 תמונות בפוסט' }, 400);
   if (!['friends', 'public'].includes(input.audience)) return c.json({ error: 'קהל לא תקין' }, 400);
 
@@ -1024,9 +1047,9 @@ app.post('/api/posts', requireUser, async (c) => {
   }
 
   const row = await c.env.DB
-    .prepare(`INSERT INTO posts (author_id, body, youtube_id, audience, created_at)
-      VALUES (?, ?, ?, ?, ?) RETURNING id`)
-    .bind(user.id, body, findYoutubeId(body), input.audience, Date.now())
+    .prepare(`INSERT INTO posts (author_id, body, youtube_id, audience, created_at, page_url, page_title, page_text, page_picture, page_framable)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`)
+    .bind(user.id, body, findYoutubeId(body), input.audience, Date.now(), ...pageColumns(page))
     .first();
   if (imageIds.length) {
     await c.env.DB.batch(imageIds.map((imageId, position) => c.env.DB
@@ -1088,11 +1111,23 @@ app.put('/api/posts/:id', requireUser, async (c) => {
   if (typeof input.body !== 'string') return c.json({ error: 'הפוסט ריק' }, 400);
   const body = input.body.trim();
   if (body.length > MAX_POST) return c.json({ error: 'הפוסט ארוך מדי' }, 400);
+  // The live page changes only when it is given: '' takes it away. An address that stays the
+  // same is read again, so a page that changed its title shows the new one.
+  const page = input.page === undefined || post.shared_id ? undefined : await livePage(c, input.page);
+  if (page === null) return c.json({ error: PAGE_PROBLEM }, 400);
+  const pageAfter = page === undefined ? post.page_url : page.url;
   // A share may stay without words of its own: the post it quotes speaks for it.
-  if (!body && post.image_ids === '[]' && !post.shared_id) return c.json({ error: 'הפוסט ריק' }, 400);
-  if (body !== post.body) {
+  if (!body && post.image_ids === '[]' && !post.shared_id && !pageAfter) return c.json({ error: 'הפוסט ריק' }, 400);
+  const pageChanged = page !== undefined && page.url !== post.page_url;
+  if (body !== post.body || pageChanged) {
     Object.assign(post, { body, youtube_id: findYoutubeId(body), edited_at: Date.now() });
     await c.env.DB.prepare('UPDATE posts SET body = ?, youtube_id = ?, edited_at = ? WHERE id = ?').bind(post.body, post.youtube_id, post.edited_at, id).run();
+  }
+  if (page !== undefined) {
+    const [url, title, text, picture, framed] = pageColumns(page);
+    Object.assign(post, { page_url: url, page_title: title, page_text: text, page_picture: picture, page_framable: framed });
+    await c.env.DB.prepare('UPDATE posts SET page_url = ?, page_title = ?, page_text = ?, page_picture = ?, page_framable = ? WHERE id = ?')
+      .bind(url, title, text, picture, framed, id).run();
   }
   return c.json({ post: (await showPosts(c.env.DB, [post], user))[0] });
 });
@@ -1348,6 +1383,14 @@ app.get('/api/youtube/:id', async (c) => {
   const details = response?.ok ? await response.json().catch(() => null) : null;
   c.header('Cache-Control', `public, max-age=${VIDEO_CACHE_SECONDS}`);
   return c.json({ title: typeof details?.title === 'string' ? details.title : null });
+});
+
+// The picture of a post's live page, for whoever may read the post.
+app.get('/api/posts/:id/page-picture', async (c) => {
+  const id = parseId(c.req.param('id'));
+  const post = id && (await loadVisiblePost(c, id));
+  const picture = post?.page_picture && (await pagePicture(post.page_picture));
+  return picture || c.json({ error: 'לא נמצא' }, 404);
 });
 
 // A picture from outside, passed through this server so the reader's browser contacts nobody else.

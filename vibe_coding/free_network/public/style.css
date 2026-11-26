@@ -157,7 +157,7 @@ h1 { font-size: 26px; font-weight: 750; line-height: 1.25; margin: 0 0 8px; lett
 
 h2 { font-size: 19px; font-weight: 650; margin: 18px 0 8px; }
 
-textarea, input[type="text"], input[type="email"], input[type="search"] {
+textarea, input[type="text"], input[type="email"], input[type="search"], input[type="url"] {
   width: 100%;
   padding: 11px 14px;
   font: inherit;
@@ -973,7 +973,8 @@ dialog { color: var(--text); font: inherit; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 
-.arriving > * { animation: rise 0.28s ease both; }
+/* backwards, not both: a transform left on the post would trap a live page shown on the full screen. */
+.arriving > * { animation: rise 0.28s ease backwards; }
 
 .arriving > :nth-child(2) { animation-delay: 0.04s; }
 
@@ -2646,3 +2647,83 @@ dialog { color: var(--text); font: inherit; }
 .app-use .promises li { background: var(--field); box-shadow: inset 0 0 0 1px var(--line); }
 
 .app-way .button-link + .note { margin-top: 8px; }
+
+/* ---------- Live pages ---------- */
+
+/* A web page that runs inside a post. Closed, it is a card with the page's picture and title. */
+.live-page {
+  margin-top: 10px;
+  background: var(--thread);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.page-picture { display: block; width: 100%; aspect-ratio: 1.91 / 1; object-fit: cover; cursor: pointer; background: var(--line); }
+
+.page-about { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px 14px; }
+
+.page-kind { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: var(--quiet); font-size: 13.5px; font-weight: 550; }
+
+.page-kind .icon { flex: none; width: 17px; height: 17px; }
+
+.page-from { color: var(--muted); font-weight: 450; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.page-from::before { content: "·"; margin-inline-end: 6px; }
+
+.page-title { font-size: 17px; line-height: 1.3; }
+
+.page-text { color: var(--muted); font-size: 14.5px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.page-buttons { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+.page-start { display: inline-flex; align-items: center; gap: 8px; }
+
+.page-start .icon { width: 19px; height: 19px; }
+
+.page-out { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; color: var(--brand); font-size: 14.5px; font-weight: 500; border-radius: 999px; }
+
+.page-out:hover { background: var(--hover); text-decoration: none; }
+
+.page-out .icon { width: 17px; height: 17px; }
+
+/* Running: a narrow bar above the page, and the page as tall as the screen allows. */
+.page-bar { display: flex; align-items: center; gap: 2px; padding: 4px 10px 4px 6px; border-bottom: 1px solid var(--line-strong); }
+
+.page-bar .page-kind { flex: 1; color: var(--text); }
+
+.page-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.page-bar .icon-button { width: 36px; height: 36px; margin: 0; align-self: center; }
+
+.page-bar .page-out { padding: 6px 8px; }
+
+.live-page iframe { display: block; width: 100%; height: min(72dvh, 760px); border: 0; background: #fff; }
+
+.live-page.full { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; margin: 0; border: 0; border-radius: 0; }
+
+.live-page.full iframe { flex: 1; height: auto; }
+
+html.page-full { overflow: hidden; }
+
+/* main sits under the header and the phone menu; a page on the full screen lifts it above them. */
+html.page-full main { z-index: 100; }
+
+@media (max-width: 600px) {
+  .page-bar .page-out .label { display: none; }
+}
+
+/* The address of the live page, in the composer and while editing. */
+.page-field { margin-top: 10px; }
+
+.page-field label { display: flex; align-items: center; gap: 8px; color: var(--quiet); font-size: 14.5px; font-weight: 550; }
+
+.page-field label > .icon { flex: none; width: 19px; height: 19px; }
+
+.page-field label > span { flex: none; }
+
+.page-field input { flex: 1; min-width: 0; }
+
+.page-field .icon-button { margin: 0; align-self: center; }
+
+.page-field .note { margin-top: 6px; font-size: 13.5px; }

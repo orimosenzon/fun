@@ -49,6 +49,10 @@ const ICONS = {
   download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
   repost: 'M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3',
   bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
+  window: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM3 9h18M7 6h.01M10.5 6h.01',
+  expand: 'M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3',
+  shrink: 'M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3',
+  external: 'M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
   square: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 8v8M8 12h8',
 };
 // Which phone this is, and whether the page already runs as the installed app: the Android app
@@ -329,6 +333,119 @@ function video(id) {
   return button;
 }
 
+// A live page: a whole web page that runs inside the post. Until the reader asks for it, only its
+// title and picture are shown, read by our server, so the site learns nothing of who looks. Once
+// loaded it runs in a closed frame: from its own address, without the network's cookies, and
+// unable to move this page anywhere else.
+const PAGE_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock allow-presentation';
+
+function livePage(page) {
+  let address;
+  try {
+    address = new URL(page.url);
+  } catch {
+    return null;
+  }
+  const host = address.hostname.replace(/^www\./, '');
+  const outside = () => el('a', { className: 'page-out', href: page.url, target: '_blank', rel: 'noopener nofollow ugc', title: 'פתיחת הדף בחלון נפרד' },
+    icon('external'), el('span', { className: 'label' }, 'בחלון נפרד'));
+  const runs = page.framable && address.origin !== location.origin;
+  const box = el('div', { className: 'live-page' });
+  const from = el('span', { className: 'page-from', dir: 'ltr' }, host);
+
+  function closed() {
+    const picture = page.picture ? el('img', { className: 'page-picture', src: page.picture, alt: '', loading: 'lazy', onerror: () => picture.remove() }) : null;
+    const start = runs ? el('button', { className: 'page-start', type: 'button', onclick: open }, icon('window'), 'הפעלת הדף') : null;
+    box.classList.remove('running', 'full');
+    box.replaceChildren(...[picture].filter(Boolean),
+      el('div', { className: 'page-about' },
+        el('span', { className: 'page-kind' }, icon('window'), 'דף חי', from),
+        el('strong', { className: 'page-title', dir: 'auto' }, page.title || host),
+        page.text ? el('span', { className: 'page-text', dir: 'auto' }, page.text) : null,
+        runs ? null : el('span', { className: 'page-text' }, 'האתר הזה לא מרשה להציג אותו בתוך דף אחר, אז הוא נפתח בחלון נפרד.'),
+        el('div', { className: 'page-buttons' }, start, outside())));
+    if (picture && runs) picture.addEventListener('click', open);
+  }
+
+  function full(on) {
+    if (on) document.addEventListener('keydown', escape);
+    else document.removeEventListener('keydown', escape);
+    box.classList.toggle('full', on);
+    document.documentElement.classList.toggle('page-full', on);
+    size.replaceChildren(icon(on ? 'shrink' : 'expand'));
+    size.title = on ? 'יציאה ממסך מלא' : 'מסך מלא';
+    size.ariaLabel = size.title;
+  }
+  const size = el('button', { className: 'icon-button', type: 'button', onclick: () => full(!box.classList.contains('full')) });
+  const escape = (e) => e.key === 'Escape' && box.classList.contains('full') && full(false);
+
+  function open() {
+    box.classList.add('running');
+    full(false);
+    box.replaceChildren(
+      el('div', { className: 'page-bar' },
+        el('span', { className: 'page-kind' }, icon('window'), el('span', { className: 'page-name', dir: 'auto' }, page.title || host)),
+        size, outside(),
+        el('button', {
+          className: 'icon-button',
+          type: 'button',
+          title: 'עצירת הדף',
+          ariaLabel: 'עצירת הדף',
+          onclick: () => {
+            full(false);
+            closed();
+          },
+        }, icon('close'))),
+      el('iframe', {
+        src: page.url,
+        title: page.title || host,
+        sandbox: PAGE_SANDBOX,
+        allow: 'fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture',
+        allowFullscreen: true,
+        referrerPolicy: 'no-referrer',
+      }));
+  }
+  closed();
+  return box;
+}
+
+// The live page chosen in the composer or while editing: an address, opened by a button.
+function pageField(start, words) {
+  const input = el('input', { type: 'url', dir: 'ltr', inputMode: 'url', placeholder: 'https://', maxLength: 1000, ariaLabel: 'כתובת הדף שירוץ בתוך הפוסט' });
+  const field = el('div', { className: 'page-field', hidden: !start },
+    el('label', {}, icon('window'), el('span', {}, 'דף חי בתוך הפוסט'), input,
+      el('button', {
+        className: 'icon-button',
+        type: 'button',
+        title: 'בלי דף חי',
+        ariaLabel: 'בלי דף חי',
+        onclick: () => {
+          input.value = '';
+          field.hidden = true;
+          button.hidden = false;
+        },
+      }, icon('close'))),
+    el('p', { className: 'note' }, 'הדף ירוץ בתוך הפוסט עם כל מה שהוא יודע לעשות. הקוראים יראו קודם את הכותרת והתמונה שלו, והוא ייטען רק כשילחצו.'));
+  input.value = start ?? '';
+  const button = el('button', {
+    className: 'plain',
+    type: 'button',
+    title: 'לשבץ בפוסט דף אינטרנט שעובד',
+    hidden: !!start,
+    onclick: () => {
+      field.hidden = false;
+      button.hidden = true;
+      // A link already in the text is most likely the page meant.
+      if (!input.value) {
+        const found = words().match(/https:\/\/[^\s<>"]+/g)?.find((url) => !/youtu\.?be/.test(url));
+        if (found) input.value = found.replace(/[.,;:!?'"”׳״)\]]+$/, '');
+      }
+      input.focus();
+    },
+  }, labelled('window', 'דף חי'));
+  return { button, field, value: () => (field.hidden ? '' : input.value.trim()), changed: () => (field.hidden ? '' : input.value.trim()) !== (start ?? '') };
+}
+
 // Shrinks the photo and re-encodes it, which also drops the GPS location the phone stored in it.
 async function prepareImage(file) {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -442,7 +559,7 @@ function editedMark(ms) {
 }
 
 // Published words, opened for rewriting in the place where they are read.
-function editBox(words, { maxLength, label, save, close }) {
+function editBox(words, { maxLength, label, save, close, page }) {
   const text = el('textarea', {
     maxLength,
     dir: 'auto',
@@ -455,6 +572,8 @@ function editBox(words, { maxLength, label, save, close }) {
   text.value = words;
   const error = el('p', { className: 'error', hidden: true });
   const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'שמירה');
+  // A post keeps its live page while it is edited, and may gain or lose one.
+  const live = page === undefined ? null : pageField(page, () => text.value);
   const form = el('form', {
     className: 'edit-box',
     onsubmit: async (e) => {
@@ -462,14 +581,15 @@ function editBox(words, { maxLength, label, save, close }) {
       submit.disabled = true;
       error.hidden = true;
       try {
-        await save(text.value);
+        await save(text.value, live && live.changed() ? live.value() : undefined);
       } catch (err) {
         error.textContent = err.message;
         error.hidden = false;
         submit.disabled = false;
       }
     },
-  }, text, el('div', { className: 'row' }, submit, el('button', { className: 'plain', type: 'button', onclick: close }, 'ביטול')), error);
+  }, text, live?.field ?? null,
+  el('div', { className: 'row' }, submit, el('button', { className: 'plain', type: 'button', onclick: close }, 'ביטול'), live?.button ?? null), error);
   form.open = () => {
     text.focus();
     text.setSelectionRange(text.value.length, text.value.length);
@@ -495,6 +615,7 @@ function quoted({ post, gone }) {
     post.body ? richText(post.body) : null,
     post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
+    post.page ? livePage(post.page) : null,
     el('p', { className: 'quote-more' }, link(url, 'לפוסט המקורי', post.commentCount ? ` · ${commentsLabel(post.commentCount)}` : '')));
 }
 
@@ -668,6 +789,7 @@ function postCard(post, options = {}) {
     words,
     post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
+    post.page ? livePage(post.page) : null,
     post.shared ? quoted(post.shared) : null,
     el('div', { className: 'post-echo' }, feel.summary, share.note ?? null),
     actions);
@@ -690,8 +812,9 @@ function postCard(post, options = {}) {
             maxLength: 5000,
             label: 'עריכת הפוסט',
             close,
-            save: async (body) => {
-              const { post: saved } = await api(`/posts/${post.id}`, { method: 'PUT', body: { body } });
+            page: post.shared ? undefined : post.page?.url ?? '',
+            save: async (body, page) => {
+              const { post: saved } = await api(`/posts/${post.id}`, { method: 'PUT', body: { body, page } });
               card.replaceWith(postCard(saved, options));
             },
           });
@@ -760,6 +883,7 @@ async function composer(onPosted) {
     picker.value = '';
   });
   const addPhoto = el('button', { className: 'plain', type: 'button', ariaLabel: 'הוספת תמונה', title: 'הוספת תמונה', onclick: () => picker.click() }, labelled('image', 'תמונה'));
+  const live = pageField('', () => text.value);
 
   const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'פרסום');
   return el('form', {
@@ -772,7 +896,7 @@ async function composer(onPosted) {
       try {
         const uploads = photos.map((photo) => api('/images', { method: 'POST', body: photo }));
         const images = (await Promise.all(uploads)).map((upload) => upload.id);
-        await api('/posts', { method: 'POST', body: { body: text.value, audience: audience(), images } });
+        await api('/posts', { method: 'POST', body: { body: text.value, audience: audience(), images, page: live.value() } });
         onPosted();
       } catch (err) {
         error.textContent = err.message;
@@ -782,8 +906,8 @@ async function composer(onPosted) {
       }
     },
   }, el('div', { className: 'composer-top' }, avatar(me), text),
-  el('div', { className: 'composer-more' }, previews, picker,
-    el('div', { className: 'composer-bar' }, choices, addPhoto, submit),
+  el('div', { className: 'composer-more' }, previews, picker, live.field,
+    el('div', { className: 'composer-bar' }, choices, addPhoto, live.button, submit),
     el('p', { className: 'reach' }, icon('eye'), note), error));
 }
 
