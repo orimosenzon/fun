@@ -28,6 +28,9 @@ name = "free-network"
 INVITE_ONLY = "1"
 ADMIN_EMAIL = "admin@invite.invalid"
 GOOGLE_CLIENT_ID = "499440299994-1jorad0ruokmg0hdlkrv60dmm314jqt2.apps.googleusercontent.com"
+# The public half of the key that push notifications are signed with. The private half is the
+# secret VAPID_PRIVATE (wrangler secret put VAPID_PRIVATE --env live), kept in ~/.config/free-network/vapid.json.
+VAPID_PUBLIC = "BA-WELUUdzAKsKAjOfnGrul1l1C7MkapISliXYMlMqig9Oc3fCBmEta6YitDjUnb6EnIHCUYaitxiQM2pgYG3dI"
 
 [env.live.assets]
 directory = "public"

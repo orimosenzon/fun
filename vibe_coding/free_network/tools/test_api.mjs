@@ -1,6 +1,7 @@
 // Runs the real worker on a throwaway local database and checks the promises the network makes.
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
+import { createDecipheriv, createECDH, createPublicKey, generateKeyPairSync, hkdfSync, randomBytes, verify } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -22,6 +23,46 @@ const mailSent = [];
 const revoked = [];
 const peopleRequests = [];
 const tileRequests = [];
+const pushes = [];
+
+// The key the test network signs its pushes with, as the two strings the worker is given.
+const vapid = (() => {
+  const jwk = generateKeyPairSync('ec', { namedCurve: 'P-256' }).privateKey.export({ format: 'jwk' });
+  const point = Buffer.concat([Buffer.from([4]), Buffer.from(jwk.x, 'base64url'), Buffer.from(jwk.y, 'base64url')]);
+  return { public: point.toString('base64url'), private: jwk.d, jwk: { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y } };
+})();
+
+// Opens a sealed push the way a browser does (RFC 8291), with the private key of the device.
+function openPush(ecdh, auth, body) {
+  const salt = body.subarray(0, 16);
+  const sender = body.subarray(21, 21 + body[20]);
+  const sealed = body.subarray(21 + body[20]);
+  const secret = hkdfSync('sha256', ecdh.computeSecret(sender), auth, Buffer.concat([Buffer.from('WebPush: info\0'), ecdh.getPublicKey(), sender]), 32);
+  const opener = createDecipheriv('aes-128-gcm', Buffer.from(hkdfSync('sha256', secret, salt, 'Content-Encoding: aes128gcm\0', 16)),
+    Buffer.from(hkdfSync('sha256', secret, salt, 'Content-Encoding: nonce\0', 12)));
+  opener.setAuthTag(sealed.subarray(-16));
+  const plain = Buffer.concat([opener.update(sealed.subarray(0, -16)), opener.final()]);
+  return plain.subarray(0, plain.lastIndexOf(2)).toString();
+}
+
+// A device that subscribed to pushes: what its browser hands to the network, and a way to wait
+// for the pushes that the fake push service received for it and read them.
+function device(name) {
+  const ecdh = createECDH('prime256v1');
+  ecdh.generateKeys();
+  const auth = randomBytes(16);
+  const subscription = { endpoint: `http://localhost:${YOUTUBE_PORT}/push/${name}`, keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: auth.toString('base64url') } };
+  const got = () => pushes.filter((push) => push.name === name);
+  return {
+    subscription,
+    count: () => got().length,
+    async wait(n) {
+      for (let i = 0; i < 100 && got().length < n; i++) await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.equal(got().length, n, `pushes to ${name}`);
+      return got().map((push) => ({ ...push, message: JSON.parse(openPush(ecdh, auth, push.body)) }));
+    },
+  };
+}
 
 // Stands in for YouTube, and records what the worker sends it.
 const fakeYoutube = createServer((request, response) => {
@@ -161,6 +202,18 @@ ${card('מאוחר יותר באותו יום')}
       response.statusCode = 404;
       response.end();
     }
+    return;
+  }
+  // A push service: it keeps what it was sent, and one address says the device has unsubscribed.
+  if (request.url.startsWith('/push/')) {
+    const parts = [];
+    request.on('data', (part) => parts.push(part));
+    request.on('end', () => {
+      const name = request.url.slice(6);
+      pushes.push({ name, headers: request.headers, body: Buffer.concat(parts) });
+      response.statusCode = name === 'gone' ? 410 : 201;
+      response.end();
+    });
     return;
   }
   youtubeRequests.push(request);
@@ -1489,6 +1542,276 @@ test('the motto and the film page are public', async () => {
   assert.match(await film.text(), /<video[^>]+src="\/video\/intro\.mp4"/);
 });
 
+let nava, oded, pnina, navaPost, odedComment, navaPhone;
+const noticesOf = async (member, query = '') => (await member.call('GET', `/notices${query}`)).data;
+const unseen = async (member) => (await member.call('GET', '/me')).data.user.notices;
+
+test('a friend request and its acceptance are told, each to the other side', async () => {
+  nava = await signUp('nava');
+  oded = await signUp('oded');
+  pnina = await signUp('pnina');
+  await nava.call('POST', `/friends/${oded.id}`);
+  let { notices } = await noticesOf(oded);
+  assert.deepEqual(notices.map((item) => [item.kind, item.actor.name, item.text, item.path, item.fresh]), [['request', 'nava', 'בקשת חברות', '/friends', true]]);
+  assert.equal(await unseen(oded), 1);
+  assert.equal(await unseen(nava), 0);
+
+  await oded.call('POST', `/friends/${nava.id}`);
+  // A request that was answered is no longer a notice, and the one who asked hears the answer.
+  assert.deepEqual((await noticesOf(oded)).notices, []);
+  assert.equal(await unseen(oded), 0);
+  ({ notices } = await noticesOf(nava));
+  assert.deepEqual(notices.map((item) => [item.kind, item.actor.id, item.text, item.path]), [['accepted', oded.id, 'בקשת החברות שלך אושרה', `/u/${oded.id}`]]);
+  await pnina.call('POST', `/friends/${nava.id}`);
+  await nava.call('POST', `/friends/${pnina.id}`);
+});
+
+test('a comment, an answer and a word in a thread are told to whoever they concern, each on its own line', async () => {
+  navaPost = (await nava.call('POST', '/posts', { body: 'הפוסט של נועה', audience: 'friends' })).data.id;
+  odedComment = (await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'תגובה ראשונה' })).data.id;
+  let [first] = (await noticesOf(nava)).notices;
+  assert.deepEqual([first.kind, first.actor.name, first.text, first.words, first.about, first.path, first.fresh],
+    ['comment', 'oded', 'תגובה לפוסט שלך', 'תגובה ראשונה', 'הפוסט של נועה', `/p/${navaPost}?c=${odedComment}`, true]);
+
+  // Paz answers Omer: Omer hears an answer, Noa hears a comment on her post, each once.
+  const pninaReply = (await pnina.call('POST', `/posts/${navaPost}/comments`, { body: 'תשובה לעומר', parentId: odedComment })).data.id;
+  [first] = (await noticesOf(oded)).notices;
+  assert.deepEqual([first.kind, first.text, first.words, first.about, first.path], ['reply', 'תשובה לתגובה שלך', 'תשובה לעומר', 'תגובה ראשונה', `/p/${navaPost}?c=${pninaReply}`]);
+  assert.deepEqual((await noticesOf(nava)).notices.map((item) => [item.kind, item.actor.name]), [['comment', 'pnina'], ['comment', 'oded'], ['accepted', 'oded']]);
+
+  // Omer writes again under his own comment: Paz, who wrote in that thread, hears of it.
+  await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'ועוד מילה', parentId: odedComment });
+  [first] = (await noticesOf(pnina)).notices;
+  assert.deepEqual([first.kind, first.actor.name, first.text, first.words], ['thread', 'oded', 'תגובה נוספת בשרשור שכתבת בו', 'ועוד מילה']);
+  // Noa answering in the thread under her own post is told to both, and never to herself.
+  await nava.call('POST', `/posts/${navaPost}/comments`, { body: 'תודה לשניכם', parentId: odedComment });
+  assert.equal((await noticesOf(oded)).notices[0].kind, 'reply');
+  assert.equal((await noticesOf(pnina)).notices[0].kind, 'thread');
+  assert.equal((await noticesOf(nava)).notices.filter((item) => item.actor.id === nava.id).length, 0);
+  assert.equal(await unseen(nava), 4);
+});
+
+test('opening the notices marks them seen on every device, and what comes later is counted again', async () => {
+  const { notices, now } = await noticesOf(nava);
+  assert.ok(notices.every((item) => item.fresh));
+  await nava.call('PUT', '/notices/seen', { upTo: now });
+  assert.equal(await unseen(nava), 0);
+  assert.ok((await noticesOf(nava)).notices.every((item) => !item.fresh));
+  // A mark from the future is not believed.
+  await nava.call('PUT', '/notices/seen', { upTo: Date.now() + 86400000 });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'אחרי שראית' });
+  assert.equal(await unseen(nava), 1);
+  assert.deepEqual((await noticesOf(nava)).notices.map((item) => item.fresh).slice(0, 2), [true, false]);
+});
+
+test('a feeling is told once, follows the feeling that stands, and leaves when it is taken back', async () => {
+  await nava.call('PUT', '/notices/seen', {});
+  await oded.call('PUT', `/posts/${navaPost}/reaction`, { kind: 'love' });
+  let felt = (await noticesOf(nava, '?group=feelings')).notices;
+  assert.deepEqual(felt.map((item) => [item.kind, item.feeling, item.text, item.about, item.path]), [['felt', 'love', 'על הפוסט שלך', 'הפוסט של נועה', `/p/${navaPost}`]]);
+  await oded.call('PUT', `/posts/${navaPost}/reaction`, { kind: '😂' });
+  felt = (await noticesOf(nava, '?group=feelings')).notices;
+  assert.deepEqual(felt.map((item) => item.feeling), ['funny']);
+  assert.equal(await unseen(nava), 1);
+  await oded.call('DELETE', `/posts/${navaPost}/reaction`);
+  assert.deepEqual((await noticesOf(nava, '?group=feelings')).notices, []);
+  assert.equal(await unseen(nava), 0);
+
+  // A feeling about a comment is told to whoever wrote the comment, and leads to it.
+  await nava.call('PUT', `/comments/${odedComment}/reaction`, { kind: '🙏' });
+  const [mine] = (await noticesOf(oded, '?group=feelings')).notices;
+  assert.deepEqual([mine.feeling, mine.text, mine.about, mine.path], ['🙏', 'על התגובה שלך', 'תגובה ראשונה', `/p/${navaPost}?c=${odedComment}`]);
+});
+
+test('a share is told to the writer, and a share of a share also to whoever it came through', async () => {
+  const open = (await nava.call('POST', '/posts', { body: 'פוסט לכולם', audience: 'public' })).data.id;
+  const odedShare = (await oded.call('POST', `/posts/${open}/share`)).data.id;
+  let [told] = (await noticesOf(nava, '?group=shares')).notices;
+  assert.deepEqual([told.kind, told.actor.name, told.text, told.about, told.path], ['share', 'oded', 'שיתוף של הפוסט שלך', 'פוסט לכולם', `/p/${odedShare}`]);
+
+  // Rina is a friend of Omer only. She shares from his share: Noa hears of a share she cannot
+  // open, so it leads to her own post, and Omer hears that it went on through him.
+  const rina = await signUp('rina');
+  await rina.call('POST', `/friends/${oded.id}`);
+  await oded.call('POST', `/friends/${rina.id}`);
+  const rinaShare = (await rina.call('POST', `/posts/${odedShare}/share`)).data.id;
+  [told] = (await noticesOf(nava, '?group=shares')).notices;
+  assert.deepEqual([told.kind, told.actor.name, told.path], ['share', 'rina', `/p/${open}`]);
+  [told] = (await noticesOf(oded, '?group=shares')).notices;
+  assert.deepEqual([told.kind, told.actor.name, told.text, told.path], ['reshare', 'rina', 'שיתוף נוסף, דרך השיתוף שלך', `/p/${rinaShare}`]);
+
+  // Taking the share back takes the notices with it.
+  await rina.call('DELETE', `/posts/${rinaShare}`);
+  assert.deepEqual((await noticesOf(nava, '?group=shares')).notices.map((item) => item.actor.name), ['oded']);
+  assert.deepEqual((await noticesOf(oded, '?group=shares')).notices, []);
+});
+
+test('a notice never outlives what it tells of, or the right to read it', async () => {
+  const before = (await noticesOf(nava)).notices.length;
+  const extra = (await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'תגובה שתוסר' })).data.id;
+  assert.equal((await noticesOf(nava)).notices.length, before + 1);
+  await oded.call('DELETE', `/comments/${extra}`);
+  assert.equal((await noticesOf(nava)).notices.length, before);
+
+  // Paz was told about words under Noa's post for friends. Once they are no longer friends she
+  // cannot read the post, so those notices are not shown to her and are not counted.
+  assert.ok((await noticesOf(pnina)).notices.some((item) => item.kind === 'thread'));
+  assert.ok(await unseen(pnina) > 0);
+  await nava.call('DELETE', `/friends/${pnina.id}`);
+  assert.deepEqual((await noticesOf(pnina)).notices.filter((item) => item.path.startsWith(`/p/${navaPost}`)), []);
+  assert.equal(await unseen(pnina), 0);
+  // And nobody reads the notices of someone else.
+  assert.equal((await anon('GET', '/notices')).status, 401);
+});
+
+test('the notices go back to the first one, page after page, with none skipped or repeated', async () => {
+  const sara = await signUp('sara');
+  const tomer = await signUp('tomer');
+  await sara.call('POST', `/friends/${tomer.id}`);
+  await tomer.call('POST', `/friends/${sara.id}`);
+  const post = (await sara.call('POST', '/posts', { body: 'הרבה תגובות', audience: 'friends' })).data.id;
+  for (let i = 1; i <= 34; i++) await tomer.call('POST', `/posts/${post}/comments`, { body: `תגובה ${i}` });
+  const first = await noticesOf(sara, '?group=comments');
+  assert.equal(first.notices.length, 30);
+  assert.equal(first.notices[0].words, 'תגובה 34');
+  const second = await noticesOf(sara, `?group=comments&before=${first.before}`);
+  assert.deepEqual(second.notices.map((item) => item.words), ['תגובה 4', 'תגובה 3', 'תגובה 2', 'תגובה 1']);
+  assert.equal(second.before, null);
+  // Without the filter the same pages end with how the friendship began.
+  const all = await noticesOf(sara, `?before=${first.before}`);
+  assert.deepEqual(all.notices.map((item) => item.kind), ['comment', 'comment', 'comment', 'comment', 'accepted']);
+});
+
+test('the reading of a push here agrees with the example in the standard (RFC 8291)', () => {
+  const ecdh = createECDH('prime256v1');
+  ecdh.setPrivateKey(Buffer.from('q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94', 'base64url'));
+  const body = Buffer.from('DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN', 'base64url');
+  assert.equal(openPush(ecdh, Buffer.from('BTBZMqHH6r4Tts7J_aSIgg', 'base64url'), body), 'When I grow up, I want to be a watermelon');
+});
+
+test('a push reaches the device that asked for one, sealed for it alone and signed by the network', async () => {
+  const me = (await nava.call('GET', '/me')).data;
+  assert.equal(me.pushKey, vapid.public);
+  assert.deepEqual(me.user.pushMuted, []);
+  navaPhone = device('nava-phone');
+  const phone = navaPhone;
+  // Only the address of a real push service is taken, so the network cannot be sent anywhere.
+  for (const bad of [{ ...phone.subscription, endpoint: 'https://evil.example/push' }, { ...phone.subscription, keys: { p256dh: 'short', auth: 'x' } }, {}]) {
+    assert.equal((await nava.call('PUT', '/push', bad)).status, 400);
+  }
+  assert.equal((await anon('PUT', '/push', phone.subscription)).status, 401);
+  assert.equal((await nava.call('PUT', '/push', phone.subscription)).status, 200);
+  assert.equal((await nava.call('PUT', '/push', phone.subscription)).status, 200);
+
+  const written = (await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'תגובה עם התראה' })).data.id;
+  const [push] = await phone.wait(1);
+  assert.deepEqual([push.message.title, push.message.body, push.message.path], ['oded', 'תגובה לפוסט שלך: תגובה עם התראה', `/p/${navaPost}?c=${written}`]);
+  assert.equal(push.message.count, await unseen(nava));
+  assert.equal(push.headers['content-encoding'], 'aes128gcm');
+  assert.ok(Number(push.headers.ttl) > 3600);
+  // The words are not in what the push service was handed.
+  assert.ok(!push.body.includes(Buffer.from('oded')));
+
+  const [, token, key] = push.headers.authorization.match(/^vapid t=([\w.-]+), k=([\w-]+)$/);
+  assert.equal(key, vapid.public);
+  const [head, claims, signature] = token.split('.');
+  assert.ok(verify('sha256', Buffer.from(`${head}.${claims}`), { key: createPublicKey({ key: vapid.jwk, format: 'jwk' }), dsaEncoding: 'ieee-p1363' }, Buffer.from(signature, 'base64url')));
+  const said = JSON.parse(Buffer.from(claims, 'base64url'));
+  assert.equal(said.aud, `http://localhost:${YOUTUBE_PORT}`);
+  assert.equal(said.sub, `http://localhost:${PORT}`);
+  assert.ok(said.exp > Date.now() / 1000 && said.exp <= Date.now() / 1000 + 86400);
+
+  // A private message is pushed too, and leads into the conversation.
+  await oded.call('POST', `/messages/${nava.id}`, { body: 'היי נועה' });
+  const [, message] = await phone.wait(2);
+  assert.deepEqual([message.message.title, message.message.body, message.message.path, message.message.tag], ['oded', 'היי נועה', `/messages/${oded.id}`, `m${oded.id}`]);
+});
+
+test('a feeling rings once, a silenced kind is not pushed, and a device that left is forgotten', async () => {
+  const phone = navaPhone;
+  const start = phone.count();
+  const fresh = (await nava.call('POST', '/posts', { body: 'פוסט חדש', audience: 'friends' })).data.id;
+  await oded.call('PUT', `/posts/${fresh}/reaction`, { kind: 'love' });
+  const felt = (await phone.wait(start + 1)).at(-1);
+  assert.deepEqual([felt.message.title, felt.message.body, felt.message.path], ['oded', '❤️ על הפוסט שלך', `/p/${fresh}`]);
+  // Taking it back and giving it again, or changing it, does not ring again.
+  await oded.call('DELETE', `/posts/${fresh}/reaction`);
+  await oded.call('PUT', `/posts/${fresh}/reaction`, { kind: 'anger' });
+
+  assert.deepEqual((await nava.call('PUT', '/push/muted', { muted: ['messages', 'nonsense'] })).data.muted, ['messages']);
+  assert.deepEqual((await nava.call('GET', '/me')).data.user.pushMuted, ['messages']);
+  await oded.call('POST', `/messages/${nava.id}`, { body: 'בשקט' });
+  await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'בקול' });
+  const last = (await phone.wait(start + 2)).at(-1);
+  assert.equal(last.message.body, 'תגובה לפוסט שלך: בקול');
+  await nava.call('PUT', '/push/muted', { muted: [] });
+
+  // A second device that has unsubscribed answers 410, and is not tried again.
+  const old = device('gone');
+  await nava.call('PUT', '/push', old.subscription);
+  assert.equal((await nava.call('POST', '/push/test')).data.delivered, 1);
+  await old.wait(1);
+  assert.equal((await nava.call('POST', '/push/test')).data.delivered, 1);
+  assert.equal(old.count(), 1);
+  const test = (await phone.wait(start + 4)).at(-1);
+  assert.equal(test.message.path, '/notices');
+});
+
+test('logging out silences the device, and it is told again only after it asks again', async () => {
+  const phone = navaPhone;
+  const start = phone.count();
+  await nava.call('POST', '/auth/logout');
+  await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'אחרי היציאה' });
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  assert.equal(phone.count(), start);
+
+  const { data } = await nava.call('POST', '/auth/request', { email: 'nava@example.com' });
+  await nava.call('POST', '/auth/verify', { token: data.devLink.split('#token=')[1] });
+  // The comment waited on the page all along.
+  assert.equal((await noticesOf(nava)).notices[0].words, 'אחרי היציאה');
+  await nava.call('PUT', '/push', phone.subscription);
+  await nava.call('DELETE', '/push', { endpoint: phone.subscription.endpoint });
+  await oded.call('POST', `/posts/${navaPost}/comments`, { body: 'אחרי הכיבוי' });
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  assert.equal(phone.count(), start);
+});
+
+test('friends see the friends of a friend, and a stranger does not', async () => {
+  const [a, b, c2, d] = await Promise.all(['fof-a', 'fof-b', 'fof-c', 'fof-d'].map((name) => signUp(name)));
+  const befriend = async (x, y) => {
+    await x.call('POST', `/friends/${y.id}`);
+    await y.call('POST', `/friends/${x.id}`);
+  };
+  // a - b, b - c, b - d, c - d. So a knows c and d only through b.
+  await befriend(a, b);
+  await befriend(b, c2);
+  await befriend(b, d);
+  await befriend(c2, d);
+  const { data } = await a.call('GET', `/users/${b.id}/friends`);
+  assert.deepEqual(data.friends.map((f) => [f.name, f.friendship, f.mutual]), [['fof-a', 'self', 0], ['fof-c', null, 1], ['fof-d', null, 1]]);
+  assert.equal((await a.call('GET', `/users/${b.id}`)).data.friends, 3);
+  // c is not a friend of a: a sees neither the list nor the number, and nobody sees it logged out.
+  assert.equal((await a.call('GET', `/users/${c2.id}/friends`)).status, 403);
+  assert.equal((await a.call('GET', `/users/${c2.id}`)).data.friends, null);
+  assert.equal((await anon('GET', `/users/${b.id}/friends`)).status, 401);
+  // Everyone sees their own list, with what each friend is to them.
+  assert.deepEqual((await c2.call('GET', `/users/${c2.id}/friends`)).data.friends.map((f) => [f.name, f.friendship, f.mutual]), [['fof-b', 'friends', 1], ['fof-d', 'friends', 1]]);
+
+  // The suggestions name exactly the friends in common, and leave once a request was sent.
+  let { people } = (await a.call('GET', '/friends/suggested')).data;
+  assert.deepEqual(people.map((one) => [one.name, one.through.map((m) => m.name)]), [['fof-c', ['fof-b']], ['fof-d', ['fof-b']]]);
+  await a.call('POST', `/friends/${c2.id}`);
+  assert.deepEqual((await a.call('GET', `/users/${b.id}/friends`)).data.friends.map((f) => f.friendship), ['self', 'outgoing', null]);
+  assert.deepEqual((await c2.call('GET', `/users/${b.id}/friends`)).data.friends.map((f) => [f.name, f.friendship]), [['fof-a', 'incoming'], ['fof-c', 'self'], ['fof-d', 'friends']]);
+  ({ people } = (await a.call('GET', '/friends/suggested')).data);
+  assert.deepEqual(people.map((one) => one.name), ['fof-d']);
+  // Whoever shares more friends comes first: after a and c are friends, d is known through two.
+  await c2.call('POST', `/friends/${a.id}`);
+  ({ people } = (await a.call('GET', '/friends/suggested')).data);
+  assert.deepEqual(people.map((one) => [one.name, one.through.map((m) => m.name).sort()]), [['fof-d', ['fof-b', 'fof-c']]]);
+});
+
 test('without DEV_LOGIN a login link is never returned', async () => {
   const { status, data } = await client(PROD_PORT)('POST', '/auth/request', { email: 'y@example.com' });
   assert.equal(status, 503);
@@ -1516,7 +1839,7 @@ let failed = 0;
 try {
   await new Promise((resolve) => fakeYoutube.listen(YOUTUBE_PORT, resolve));
   const fake = `http://localhost:${YOUTUBE_PORT}`;
-  startServer(PORT, ['--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:${fake}`, '--var', `TILES_ORIGIN:${fake}`, '--var', `WIKI_HE_ORIGIN:${fake}`,
+  startServer(PORT, ['--var', `VAPID_PUBLIC:${vapid.public}`, '--var', `VAPID_PRIVATE:${vapid.private}`, '--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:${fake}`, '--var', `TILES_ORIGIN:${fake}`, '--var', `WIKI_HE_ORIGIN:${fake}`,
     '--var', `WIKI_EN_ORIGIN:${fake}`, '--var', `PARDESPEDIA_ORIGIN:${fake}`, '--var', `PLANS_URL:${fake}/plans.json`,
     ...['N12', 'C13', 'C14', 'KAN'].flatMap((name) => ['--var', `${name}_FEED:${fake}/feed/${name.toLowerCase()}.xml`])]);
   startServer(PROD_PORT, []);

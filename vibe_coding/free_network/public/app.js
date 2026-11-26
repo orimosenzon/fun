@@ -2,6 +2,7 @@ import { friendsGlobe } from '/globe.js';
 import { updatePanel } from '/update.js';
 import { messenger } from '/messages.js';
 import { feelings } from '/reactions.js';
+import { noticesPage, pushHint, pushKeep, pushListen } from '/notices.js';
 
 const app = document.getElementById('app');
 // Beside the feed: the update on the left once there is room for it, and the globe on the
@@ -47,6 +48,7 @@ const ICONS = {
   phone: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2',
   download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
   repost: 'M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
   square: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 8v8M8 12h8',
 };
 // Which phone this is, and whether the page already runs as the installed app: the Android app
@@ -66,6 +68,8 @@ const APK = '/downloads/free-network.apk';
 let me = null;
 let inviteOnly = false;
 let googleLogin = false;
+// The public key that pushes are signed with, or null when this network sends none.
+let pushKey = null;
 const GOOGLE_MESSAGES = {
   linked: 'חשבון הגוגל חובר. מעכשיו אפשר להיכנס איתו מכל מכשיר.',
   mail: 'ה-Gmail חובר. מעכשיו ההזמנות נשלחות ישר מהכתובת שלך.',
@@ -146,7 +150,8 @@ async function go(path) {
   scrollByPath.set(location.pathname, scrollY);
   history.pushState(null, '', path);
   await route();
-  scrollTo(0, 0);
+  // A link to one comment has already scrolled to it.
+  if (!new URLSearchParams(location.search).has('c')) scrollTo(0, 0);
 }
 
 function link(path, ...content) {
@@ -876,7 +881,7 @@ async function feedPage() {
   paint(...[
     side,
     news,
-    appHint(),
+    appHint() ?? pushHint({ me, pushKey, ui: pushUi() }),
     await composer(route),
     el('p', { className: 'feed-rule' }, 'כל הפוסטים שלך ושל החברים שלך, מהחדש לישן. זה כל האלגוריתם.'),
     list,
@@ -915,12 +920,35 @@ async function messagesPage(id) {
   page.shown();
 }
 
+const pushUi = () => ({ el, icon, link, api, tell, toast, report, phone: PHONE, installed: INSTALLED, apk: APK });
+
+// Opening the page is what marks the notices as seen, on every device of the member.
+async function noticesShown(upTo) {
+  if (!me?.notices) return;
+  await api('/notices/seen', { method: 'PUT', body: { upTo } });
+  me.notices = 0;
+  renderNav();
+}
+
+async function noticesRoute() {
+  const paint = painter();
+  const page = noticesPage({ me, pushKey, ui: { ...pushUi(), avatar, when, dayLabel, seen: (upTo) => noticesShown(upTo).catch(() => {}) } });
+  await page.ready;
+  if (paint.stale()) {
+    page.leave();
+    return;
+  }
+  leavePage = page.leave;
+  paint(page.node);
+}
+
 function comment(item, reload, onReply) {
   const bubble = el('div', { className: 'bubble' },
     el('div', { className: 'comment-head' },
       profileLink(item.author, el('span', { className: 'author', dir: 'auto' }, item.author.name)),
       el('span', { className: 'meta' }, when(item.createdAt), editedMark(item.editedAt))));
   const node = el('div', { className: `comment${item.parentId ? ' reply' : ''}` }, profileLink(item.author, avatar(item.author, { small: true })), bubble);
+  node.dataset.comment = item.id;
   if (item.removedBy) {
     const by = item.removedBy === 'author' ? 'הכותב' : 'בעל הפוסט';
     bubble.append(el('p', { className: 'text removed' }, `התגובה הוסרה על ידי ${by}`));
@@ -1075,12 +1103,50 @@ async function postPage(id) {
   if (me?.name) section.append(commentForm(id, null, 'כתיבת תגובה'));
   else section.append(el('p', {}, link('/login', 'התחברו'), ' כדי להגיב.'));
   paint(...[back, postCard(post, { onDeleted: () => go('/') }), section].filter(Boolean));
+  // A notice leads to one comment: the page opens on it, and it is marked for a moment.
+  const pointed = paint.stale() ? null : section.querySelector(`[data-comment="${Number(new URLSearchParams(location.search).get('c'))}"]`);
+  if (pointed) {
+    pointed.classList.add('pointed');
+    pointed.scrollIntoView({ block: 'center' });
+  }
 }
 
 function person(user, ...actions) {
   return el('div', { className: 'person' },
     el('div', { className: 'head' }, profileLink(user, avatar(user, { small: true }), el('span', { dir: 'auto' }, user.name))),
     el('div', { className: 'row', style: 'margin-top: 0' }, ...actions));
+}
+
+// A person with a line under the name: how the reader knows them.
+function personNoted(user, note, ...actions) {
+  const row = person(user, ...actions);
+  if (note) row.querySelector('.head a').append(el('span', { className: 'person-note', dir: 'auto' }, note));
+  row.classList.add('noted');
+  return row;
+}
+
+const mutualLabel = (count) => (count === 1 ? 'חבר משותף אחד' : `${count} חברים משותפים`);
+
+// The friends of a friend, with what each of them is to the reader. This is where people who
+// share a friend find each other.
+async function friendsOfPage(id) {
+  const paint = painter();
+  const { user, friends } = await api(`/users/${id}/friends`);
+  const action = (friend) => {
+    if (friend.friendship === 'self') return el('span', { className: 'chip' }, 'זה הדף שלך');
+    if (friend.friendship === 'friends') return el('span', { className: 'chip friends' }, icon('check'), 'חברים');
+    if (friend.friendship === 'outgoing') return el('span', { className: 'muted' }, 'הבקשה ממתינה');
+    if (friend.friendship === 'incoming') return friendAction('אישור הבקשה', 'POST', friend.id);
+    return friendAction('בקשת חברות', 'POST', friend.id);
+  };
+  const others = friends.filter((friend) => friend.friendship !== 'self');
+  paint(
+    el('a', { className: 'back', href: `/u/${id}`, onclick: (e) => { e.preventDefault(); back(`/u/${id}`); } }, icon('right'), 'חזרה'),
+    el('section', { className: 'card people' },
+      el('h1', { dir: 'auto' }, `החברים של ${user.name}`),
+      el('p', { className: 'muted' }, `${friends.length} חברים, והרשימה כוללת גם אותך. רק החברים של ${user.name} רואים אותה.`),
+      ...others.map((friend) => personNoted(friend, friend.mutual && friend.friendship !== 'friends' ? mutualLabel(friend.mutual) : null, action(friend))),
+      others.length ? null : el('p', { className: 'note' }, 'אין כאן עוד חברים מלבדך.')));
 }
 
 function friendAction(label, method, id, { plain = false, confirmText = null } = {}) {
@@ -1108,7 +1174,7 @@ function messageLink(user, label) {
 
 async function friendsPage() {
   const paint = painter();
-  const { friends, incoming, outgoing } = await api('/friends');
+  const [{ friends, incoming, outgoing }, { people }] = await Promise.all([api('/friends'), api('/friends/suggested')]);
   const known = new Set([...friends, ...incoming, ...outgoing].map((user) => user.id));
   const results = el('div');
   const search = el('input', { type: 'search', placeholder: 'חיפוש לפי שם', dir: 'auto', ariaLabel: 'חיפוש אנשים לפי שם' });
@@ -1147,6 +1213,25 @@ async function friendsPage() {
   if (outgoing.length) {
     card.append(el('h2', {}, 'ממתינות לאישור'), ...outgoing.map((user) => person(user,
       friendAction('ביטול', 'DELETE', user.id, { plain: true }))));
+  }
+  if (people.length) {
+    // Friends of friends: who they are known through is said by name, and so is the order.
+    const SHOWN = 5;
+    const rows = people.map((user) => personNoted(user, `דרך ${user.through.map((friend) => friend.name).join(', ')}`,
+      friendAction('בקשת חברות', 'POST', user.id)));
+    rows.slice(SHOWN).forEach((row) => { row.hidden = true; });
+    const rest = rows.length - SHOWN;
+    const more = rest > 0 ? el('button', {
+      className: 'plain',
+      type: 'button',
+      onclick: () => {
+        rows.forEach((row) => { row.hidden = false; });
+        more.remove();
+      },
+    }, `ועוד ${rest}`) : null;
+    card.append(el('h2', {}, 'חברים של חברים'),
+      el('p', { className: 'note flush-top' }, 'אנשים שחברים שלך מכירים. מי שיש לכם יותר חברים משותפים מופיע קודם.'),
+      ...rows, more);
   }
   card.append(el('h2', {}, `החברים שלך (${friends.length})`), ...friends.map((user) => person(user,
     messageLink(user, 'הודעה'),
@@ -1188,7 +1273,7 @@ function editablePicture(kind, label, content, error) {
 
 async function profilePage(id) {
   const paint = painter();
-  const { user, friendship, posts, hasMore } = await api(`/users/${id}`);
+  const { user, friendship, friends, posts, hasMore } = await api(`/users/${id}`);
   const list = el('div');
   const more = el('button', { className: 'plain', type: 'button', hidden: !hasMore }, 'פוסטים ישנים יותר');
   let oldest = posts.at(-1)?.id;
@@ -1256,13 +1341,17 @@ async function profilePage(id) {
       lettered,
       el('p', { className: 'note' }, 'לחיצה על תמונה מחליפה אותה. התמונות האלה גלויות כמו השם שלך, גם למי שקורא פוסט ציבורי בלי להתחבר.'),
       el('div', { className: 'row' },
+        link('/friends', `${friends} חברים`),
         rename,
         user.avatar ? remove('avatar', 'הסרת תמונת הפרופיל') : null,
         user.cover ? remove('cover', 'הסרת תמונת הכותרת') : null,
         INSTALLED ? null : link('/app', 'אפליקציה לטלפון'),
+        me.admin ? Object.assign(link('/admin', 'ניהול'), { className: 'phone-only' }) : null,
         el('button', { className: 'plain phone-only', type: 'button', onclick: logout }, 'יציאה מהחשבון'))].filter(Boolean));
   } else if (friendship === 'friends') {
-    body.append(el('div', { className: 'row' }, el('span', { className: 'chip friends' }, icon('check'), 'חברים'), messageLink(user, 'שליחת הודעה')));
+    const theirs = link(`/u/${user.id}/friends`, labelled('users', `${friends} חברים`));
+    theirs.className = 'pill-link';
+    body.append(el('div', { className: 'row' }, el('span', { className: 'chip friends' }, icon('check'), 'חברים'), messageLink(user, 'שליחת הודעה'), theirs));
   } else if (friendship === 'incoming') {
     body.append(el('div', { className: 'row' }, friendAction('אישור בקשת החברות', 'POST', user.id)));
   } else if (friendship === 'outgoing') {
@@ -1758,10 +1847,14 @@ async function pulse() {
   if (!before || me !== before) return;
   me = user;
   const moved = user?.unreadMessages !== before.unreadMessages;
-  if (!user || moved || user.friendRequests !== before.friendRequests) renderNav();
+  const told = user?.notices !== before.notices;
+  if (!user || moved || told || user.friendRequests !== before.friendRequests) renderNav();
   // A session that ended shows the page again the way a visitor sees it.
   if (!user) route();
-  else if (moved) document.dispatchEvent(new CustomEvent('unread'));
+  else {
+    if (moved) document.dispatchEvent(new CustomEvent('unread'));
+    if (told && user.notices) document.dispatchEvent(new CustomEvent('notices'));
+  }
 }
 
 function renderNav() {
@@ -1772,10 +1865,13 @@ function renderNav() {
   topWhy.hidden = !me;
   if (!me) {
     document.title = TITLE;
+    navigator.clearAppBadge?.().catch(() => {});
     nav.replaceChildren(...[why, link('/login', labelled('user', 'כניסה'))].filter(Boolean));
     return;
   }
+  // On a phone the bottom bar is full, so the admin reaches their screen from their own page.
   const admin = me.admin ? link('/admin', labelled('settings', 'ניהול')) : null;
+  admin?.classList.add('desktop-only');
   const mine = me.name ? link(`/u/${me.id}`, labelled('user', 'הדף שלי')) : null;
   const home = link('/', labelled('home', 'בית'));
   const friends = link('/friends', labelled('users', 'חברים'));
@@ -1789,10 +1885,18 @@ function renderNav() {
     mail.classList.add('has-count');
     mail.append(el('span', { className: 'count', ariaLabel: `${me.unreadMessages} הודעות שלא נקראו` }, String(me.unreadMessages)));
   }
-  document.title = me.unreadMessages ? `(${me.unreadMessages}) ${TITLE}` : TITLE;
+  const bell = link('/notices', labelled('bell', 'התראות'));
+  if (me.notices) {
+    bell.classList.add('has-count');
+    bell.append(el('span', { className: 'count', ariaLabel: `${me.notices} התראות חדשות` }, String(me.notices)));
+  }
+  // Everything that waits for the member: on the tab of the browser and on the icon of the app.
+  const waiting = me.unreadMessages + me.notices;
+  document.title = waiting ? `(${waiting}) ${TITLE}` : TITLE;
+  navigator.setAppBadge?.(waiting).catch(() => {});
   const world = link('/globe', labelled('globe', 'גלובוס'));
   const news = link('/update', labelled('sun', 'העדכון'));
-  nav.replaceChildren(...[home, mail, news, mine, friends, world, admin, why, el('button', {
+  nav.replaceChildren(...[home, bell, mail, news, mine, friends, world, admin, why, el('button', {
     className: 'plain desktop-only',
     type: 'button',
     onclick: logout,
@@ -1825,9 +1929,10 @@ async function route() {
   const waiting = arriving ? setTimeout(() => paint(skeleton()), 160) : null;
   const post = location.pathname.match(/^\/p\/(\d+)$/);
   const profile = location.pathname.match(/^\/u\/(\d+)$/);
+  const friendsOf = location.pathname.match(/^\/u\/(\d+)\/friends$/);
   const messages = location.pathname.match(/^\/messages(?:\/(\d+))?$/);
   try {
-    await show(post, profile, messages);
+    await show(post, profile, messages, friendsOf);
   } catch (err) {
     paint(el('div', { className: 'card empty' }, el('p', { className: 'error' }, err.message),
       el('div', { className: 'row center' }, el('button', { className: 'ghost', type: 'button', onclick: route }, 'לנסות שוב'))));
@@ -1837,13 +1942,15 @@ async function route() {
   }
 }
 
-async function show(post, profile, messages) {
+async function show(post, profile, messages, friendsOf) {
   if (post) await postPage(post[1]);
   else if (location.pathname === '/app') appPage();
   else if (!me) loginPage();
   else if (!me.name || welcomeFlag()) welcomePage();
   else if (profile) await profilePage(profile[1]);
+  else if (friendsOf) await friendsOfPage(friendsOf[1]);
   else if (messages) await messagesPage(messages[1]);
+  else if (location.pathname === '/notices') await noticesRoute();
   else if (location.pathname === '/friends') await friendsPage();
   else if (location.pathname === '/globe') await globePage();
   else if (location.pathname === '/update') updatePage();
@@ -1862,7 +1969,8 @@ async function start() {
       linkFailed = true;
     }
   }
-  ({ user: me, inviteOnly, googleLogin } = await api('/me'));
+  ({ user: me, inviteOnly, googleLogin, pushKey } = await api('/me'));
+  if (me) pushKeep(pushKey, api).catch(() => {});
   // Opening an old link again is normal: someone already logged in just continues to the site.
   const google = new URLSearchParams(location.search).get('google');
   if (google) {
@@ -1886,6 +1994,20 @@ setInterval(() => {
 window.addEventListener('popstate', async () => {
   await route();
   scrollTo(0, scrollByPath.get(location.pathname) ?? 0);
+});
+// A push that arrives while the page is being looked at is told here, in the page, and the
+// counts follow at once. Pressing a notification of the device brings the page to its place.
+pushListen({
+  onPush: (message, shown) => {
+    if (!me) return;
+    pulse().catch(() => {});
+    // No word is needed on the page the push leads to, or on the notices page, which shows it.
+    const here = location.pathname === (message.path ?? '').split('?')[0] || (location.pathname === '/notices' && !message.tag);
+    if (!shown && !document.hidden && !here && message.title) {
+      toast(`${message.title}: ${message.body ?? ''}`, link(message.path ?? '/notices', 'פתיחה'));
+    }
+  },
+  onOpen: (path) => go(path),
 });
 window.addEventListener('hashchange', start);
 start();

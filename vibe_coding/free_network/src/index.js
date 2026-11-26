@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { outsideNews, israelNews, PICTURE_HOSTS } from './digest.js';
 import { writeLog } from './log.js';
+import { pushDevice, pushReady, sendPush } from './push.js';
 import { CONTACT_SCOPES, DEFAULT_NOTE, MAX_NOTE, SEND_SCOPE, googleContacts, inviteLetter, seal, sendFromGmail, unseal } from './mail.js';
 
 const SESSION_COOKIE = 'session';
@@ -353,8 +354,9 @@ async function showPosts(db, rows, viewer) {
   });
 }
 
-// Sets, replaces or takes back the feeling of the member about one post or one comment.
-async function react(c, column, id) {
+// Sets, replaces or takes back the feeling of the member about one post or one comment. Whoever
+// wrote it (owner) is told, once, if they may still read the post it is on.
+async function react(c, column, id, post, owner) {
   const db = c.env.DB;
   const user = c.get('user');
   const clear = db.prepare(`DELETE FROM reactions WHERE ${column} = ? AND user_id = ?`).bind(id, user.id);
@@ -363,6 +365,10 @@ async function react(c, column, id) {
     const kind = feelingKind((await readJson(c)).kind);
     if (!kind) return c.json({ error: 'אפשר לבחור רגש אחד, או אימוג׳י אחד' }, 400);
     await db.batch([clear, db.prepare(`INSERT INTO reactions (${column}, user_id, kind, created_at) VALUES (?, ?, ?, ?)`).bind(id, user.id, kind, Date.now())]);
+    const onPost = column === 'post_id';
+    if ((await readersOf(db, post, [owner])).length) {
+      await notify(c, user, [{ user: owner, kind: 'felt', post: post.id, comment: onPost ? null : id, feeling: kind, onShare: onPost && !!post.shared_id }]);
+    }
   }
   return c.json({ reactions: (await reactionsOf(db, column, [id], user)).get(id) });
 }
@@ -426,6 +432,195 @@ async function loadVisiblePost(c, id) {
   if (!post) return null;
   if (post.audience === 'public' || viewer?.id === post.author_id) return post;
   return viewer && (await areFriends(db, viewer.id, post.author_id)) ? post : null;
+}
+
+// ---------- Notices ----------
+
+// The kinds of notices, in the groups that the page filters by and that a member can silence.
+const NOTICE_GROUPS = {
+  comments: ['comment', 'reply', 'thread'],
+  feelings: ['felt'],
+  shares: ['share', 'reshare'],
+  friends: ['request', 'accepted', 'joined'],
+};
+const PUSH_GROUPS = ['messages', ...Object.keys(NOTICE_GROUPS)];
+const TOLD_ONCE = ['felt', 'share', 'reshare', 'request', 'accepted', 'joined'];
+const NOTICES_PAGE = 30;
+const MAX_PUSH_DEVICES = 10;
+const FEELING_EMOJI = { love: '❤️', funny: '😂', surprise: '😮', bored: '😑', anger: '😠' };
+const noticeGroup = (kind) => Object.keys(NOTICE_GROUPS).find((group) => NOTICE_GROUPS[group].includes(kind));
+
+// What a notice says after the name of whoever did it. The words name the thing that happened
+// and not the person, so they read the same about a woman and about a man.
+function noticeText(kind, { onShare = false, onComment = false } = {}) {
+  switch (kind) {
+    case 'comment': return onShare ? 'תגובה לשיתוף שלך' : 'תגובה לפוסט שלך';
+    case 'reply': return 'תשובה לתגובה שלך';
+    case 'thread': return 'תגובה נוספת בשרשור שכתבת בו';
+    case 'felt': return onComment ? 'על התגובה שלך' : onShare ? 'על השיתוף שלך' : 'על הפוסט שלך';
+    case 'share': return 'שיתוף של הפוסט שלך';
+    case 'reshare': return 'שיתוף נוסף, דרך השיתוף שלך';
+    case 'request': return 'בקשת חברות';
+    case 'accepted': return 'בקשת החברות שלך אושרה';
+    default: return 'הצטרפות לרשת, בהזמנתך';
+  }
+}
+
+// Where a notice leads: to the comment itself, to the share if the member may open it, to the
+// requests, or to the person.
+function noticePath(kind, { post, comment, share, shareVisible, actor }) {
+  if (kind === 'request') return '/friends';
+  if (kind === 'accepted' || kind === 'joined') return `/u/${actor}`;
+  if (kind === 'share' || kind === 'reshare') return `/p/${shareVisible ? share : post}`;
+  return `/p/${post}${comment ? `?c=${comment}` : ''}`;
+}
+
+// The notices of the member (?1) that still stand. A notice falls away when its post or comment
+// was deleted, when the member may no longer read the post, when the feeling was taken back or
+// the request is no longer waiting. So the page and the count never tell of what is gone.
+const NOTICE_FROM = `
+  FROM notices n JOIN users u ON u.id = n.actor_id
+  LEFT JOIN posts p ON p.id = n.post_id
+  LEFT JOIN comments m ON m.id = n.comment_id
+  LEFT JOIN posts s ON s.id = n.share_id
+  WHERE n.user_id = ?1 AND u.name <> ''
+    AND (n.post_id IS NULL OR (p.deleted_at IS NULL AND ${VISIBLE_TO}))
+    AND (n.comment_id IS NULL OR m.removed_by IS NULL)
+    AND (n.share_id IS NULL OR s.deleted_at IS NULL)
+    AND CASE n.kind
+      WHEN 'felt' THEN CASE WHEN n.comment_id IS NULL
+        THEN EXISTS (SELECT 1 FROM reactions r WHERE r.post_id = n.post_id AND r.user_id = n.actor_id)
+        ELSE EXISTS (SELECT 1 FROM reactions r WHERE r.comment_id = n.comment_id AND r.user_id = n.actor_id) END
+      WHEN 'request' THEN EXISTS (SELECT 1 FROM friendships f
+        WHERE f.requester_id = n.actor_id AND f.addressee_id = ?1 AND f.status = 'pending')
+      WHEN 'accepted' THEN n.actor_id IN (${FRIEND_IDS})
+      ELSE 1 END`;
+
+// The notices that came since the member last opened their notices page, on any device.
+const UNSEEN_NOTICES = `SELECT COUNT(*) AS unseen ${NOTICE_FROM} AND n.at > (SELECT notices_seen_at FROM users WHERE id = ?1)`;
+
+const NOTICE_SELECT = `
+  SELECT n.id, n.kind, n.at, n.post_id, n.comment_id, n.share_id,
+    u.id AS actor_id, u.name AS actor_name, u.avatar_id AS actor_avatar,
+    SUBSTR(p.body, 1, 160) AS post_body, p.shared_id IS NOT NULL AND p.author_id = ?1 AS on_share,
+    SUBSTR(m.body, 1, 240) AS comment_body, EXISTS (SELECT 1 FROM images WHERE comment_id = m.id) AS comment_image,
+    (SELECT SUBSTR(top.body, 1, 160) FROM comments top WHERE top.id = m.parent_id AND top.removed_by IS NULL) AS thread_body,
+    CASE WHEN n.kind = 'felt' THEN (SELECT r.kind FROM reactions r WHERE r.user_id = n.actor_id
+      AND (r.comment_id = n.comment_id OR (n.comment_id IS NULL AND r.post_id = n.post_id))) END AS feeling,
+    s.audience = 'public' OR s.author_id IN (${FRIEND_IDS}) AS share_visible, SUBSTR(s.body, 1, 240) AS share_body
+  ${NOTICE_FROM}`;
+
+// A notice as the page shows it: who, what happened, what they wrote (words), and which of the
+// member's own words it was about.
+function serializeNotice(row, seenAt) {
+  const wrote = NOTICE_GROUPS.comments.includes(row.kind);
+  const onComment = row.kind === 'felt' && row.comment_id !== null;
+  const words = wrote ? row.comment_body : row.share_id && row.share_visible ? row.share_body : null;
+  const about = row.kind === 'reply' || row.kind === 'thread' ? row.thread_body : onComment ? row.comment_body : row.post_body;
+  return {
+    id: row.id,
+    kind: row.kind,
+    at: row.at,
+    fresh: row.at > seenAt,
+    actor: { id: row.actor_id, name: row.actor_name, avatar: row.actor_avatar },
+    text: noticeText(row.kind, { onShare: !!row.on_share, onComment }),
+    feeling: row.feeling ?? null,
+    words: words || null,
+    image: wrote && !!row.comment_image,
+    about: about || null,
+    path: noticePath(row.kind, { post: row.post_id, comment: row.comment_id, share: row.share_id, shareVisible: !!row.share_visible, actor: row.actor_id }),
+  };
+}
+
+// Work that goes on after the answer was sent, so nobody waits for a push service.
+function later(c, work) {
+  const done = work.catch((error) => writeLog(c.env.DB, { source: 'server', level: 'error', message: `push: ${error.message}`, stack: error.stack }));
+  try {
+    c.executionCtx.waitUntil(done);
+  } catch {
+    // Nothing keeps the request open here, and the work goes on by itself.
+  }
+}
+
+// Pushes a message to every device where the member asked for it and is still logged in,
+// unless they silenced this kind. A device that has unsubscribed is forgotten. Returns how many
+// devices took it.
+async function pushTo(c, userId, group, message) {
+  if (!pushReady(c.env)) return 0;
+  const db = c.env.DB;
+  const { results: devices } = await db
+    .prepare(`SELECT d.endpoint, d.p256dh, d.auth FROM push_devices d
+      JOIN sessions s ON s.token_hash = d.session_hash AND s.user_id = d.user_id AND s.expires_at > ?2
+      JOIN users u ON u.id = d.user_id
+      WHERE d.user_id = ?1 AND INSTR(',' || u.push_muted || ',', ',' || ?3 || ',') = 0`)
+    .bind(userId, Date.now(), group)
+    .all();
+  if (!devices.length) return 0;
+  // The number that the icon of the app carries: everything that waits for the member.
+  const [unseen, unread] = (await db.batch([db.prepare(UNSEEN_NOTICES).bind(userId), db.prepare(UNREAD_MESSAGES).bind(userId)]))
+    .map((part) => part.results[0]);
+  const sender = new URL(c.req.url).origin;
+  const taken = await Promise.all(devices.map(async (device) => {
+    const status = await sendPush(c.env, device, { ...message, count: unseen.unseen + unread.n }, sender).catch((error) => error.message);
+    if (status >= 200 && status < 300) return 1;
+    if (status === 404 || status === 410) await db.prepare('DELETE FROM push_devices WHERE endpoint = ?').bind(device.endpoint).run();
+    else await writeLog(db, { source: 'server', level: 'warn', userId, message: `push to ${new URL(device.endpoint).hostname}: ${status}` });
+    return 0;
+  }));
+  return taken.reduce((sum, one) => sum + one, 0);
+}
+
+// Tells members what the actor has just done around them: a line on their notices page, and a
+// push. A notice of a kind that is told once, and is already there, is not told again unless a
+// day has passed, so nobody can ring a person over and over.
+async function notify(c, actor, notices) {
+  const db = c.env.DB;
+  const now = Date.now();
+  const fresh = [];
+  for (const notice of notices) {
+    const { user, kind, post = null, comment = null, share = null } = notice;
+    if (user === actor.id) continue;
+    if (TOLD_ONCE.includes(kind)) {
+      const old = await db
+        .prepare('SELECT id, at FROM notices WHERE user_id = ? AND actor_id = ? AND kind = ? AND IFNULL(post_id, 0) = ? AND IFNULL(comment_id, 0) = ?')
+        .bind(user, actor.id, kind, post ?? 0, comment ?? 0)
+        .first();
+      if (old) {
+        const again = old.at < now - DAY_MS;
+        await db.prepare('UPDATE notices SET share_id = ?, at = ? WHERE id = ?').bind(share, again ? now : old.at, old.id).run();
+        if (again) fresh.push(notice);
+        continue;
+      }
+    }
+    const row = await db
+      .prepare(`INSERT INTO notices (user_id, actor_id, kind, at, post_id, comment_id, share_id) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT DO NOTHING RETURNING id`)
+      .bind(user, actor.id, kind, now, post, comment, share)
+      .first();
+    if (row) fresh.push(notice);
+  }
+  // Someone who has not chosen a name yet is told about on the page, once they have one.
+  if (!actor.name || !fresh.length) return;
+  later(c, Promise.all(fresh.map((notice) => {
+    const text = noticeText(notice.kind, { onShare: notice.onShare, onComment: notice.kind === 'felt' && !!notice.comment });
+    const body = notice.feeling ? `${FEELING_EMOJI[notice.feeling] ?? notice.feeling} ${text}` : notice.words ? `${text}: ${notice.words}` : text;
+    return pushTo(c, notice.user, noticeGroup(notice.kind), {
+      title: actor.name,
+      body,
+      path: noticePath(notice.kind, { ...notice, actor: actor.id }),
+    });
+  })));
+}
+
+// Of these members, those who may read the post: everyone when it is public, and otherwise its
+// writer and the writer's friends. Nobody is told about words they are not allowed to open.
+async function readersOf(db, post, ids) {
+  if (post.audience === 'public' || !ids.length) return ids;
+  const { results } = await db
+    .prepare(`SELECT value AS id FROM json_each(?2) WHERE value = ?1 OR value IN (${FRIEND_IDS})`)
+    .bind(post.author_id, JSON.stringify(ids))
+    .all();
+  return results.map((row) => row.id);
 }
 
 const app = new Hono();
@@ -504,7 +699,7 @@ async function sessionUser(c) {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return null;
   return c.env.DB
-    .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at FROM sessions s JOIN users u ON u.id = s.user_id
+    .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at, u.notices_seen_at, u.push_muted FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ? AND s.expires_at > ?`)
     .bind(await sha256(token), Date.now())
     .first();
@@ -573,6 +768,7 @@ app.post('/api/auth/verify', async (c) => {
     .run();
   const user = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(used.email).first();
   if (used.invited_by) await befriend(c.env.DB, used.invited_by, user.id, now);
+  if (used.invited_by && created.meta.changes) await notify(c, { id: user.id, name: used.name ?? '' }, [{ user: used.invited_by, kind: 'joined' }]);
 
   await createSession(c, user.id);
   return c.json({ ok: true, joined: !!created.meta.changes });
@@ -674,6 +870,7 @@ app.get('/api/auth/google/callback', async (c) => {
     .bind(google.email, invite.name ?? google.name ?? '', subject, now)
     .first();
   await befriend(db, invite.invited_by, user.id, now);
+  await notify(c, { id: user.id, name: invite.name ?? google.name ?? '' }, [{ user: invite.invited_by, kind: 'joined' }]);
   await importGooglePicture(c, user.id, google.picture);
   await createSession(c, user.id);
   return finish('joined');
@@ -681,16 +878,24 @@ app.get('/api/auth/google/callback', async (c) => {
 
 app.post('/api/auth/logout', async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
-  if (token) await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
+  if (token) {
+    const hash = await sha256(token);
+    // A device that was logged out is not told anything any more.
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(hash),
+      c.env.DB.prepare('DELETE FROM push_devices WHERE session_hash = ?').bind(hash),
+    ]);
+  }
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
   return c.json({ ok: true });
 });
 
 app.get('/api/me', async (c) => {
   const user = c.get('user');
-  const [waiting, unread] = !user ? [] : (await c.env.DB.batch([
+  const [waiting, unread, notices] = !user ? [] : (await c.env.DB.batch([
     c.env.DB.prepare(`SELECT COUNT(*) AS n FROM friendships WHERE addressee_id = ? AND status = 'pending'`).bind(user.id),
     c.env.DB.prepare(UNREAD_MESSAGES).bind(user.id),
+    c.env.DB.prepare(UNSEEN_NOTICES).bind(user.id),
   ])).map((part) => part.results[0]);
   return c.json({
     user: user ? {
@@ -701,12 +906,16 @@ app.get('/api/me', async (c) => {
       admin: isAdmin(c),
       friendRequests: waiting.n,
       unreadMessages: unread.n,
+      notices: notices.unseen,
+      pushMuted: user.push_muted ? user.push_muted.split(',') : [],
       googleLinked: !!user.google_sub,
       place: place(user),
       status: status(user),
     } : null,
     inviteOnly: c.env.INVITE_ONLY === '1',
     googleLogin: !!c.env.GOOGLE_CLIENT_ID,
+    // The public half of the key that pushes are signed with. Without one there are no pushes.
+    pushKey: pushReady(c.env) ? c.env.VAPID_PUBLIC : null,
   });
 });
 
@@ -854,15 +1063,17 @@ app.get('/api/posts/:id', async (c) => {
 
 app.on(['PUT', 'DELETE'], '/api/posts/:id/reaction', requireUser, async (c) => {
   const id = parseId(c.req.param('id'));
-  if (!id || !(await loadVisiblePost(c, id))) return c.json({ error: 'הפוסט לא נמצא' }, 404);
-  return react(c, 'post_id', id);
+  const post = id && (await loadVisiblePost(c, id));
+  if (!post) return c.json({ error: 'הפוסט לא נמצא' }, 404);
+  return react(c, 'post_id', id, post, post.author_id);
 });
 
 app.on(['PUT', 'DELETE'], '/api/comments/:id/reaction', requireUser, async (c) => {
   const id = parseId(c.req.param('id'));
-  const comment = id && (await c.env.DB.prepare('SELECT post_id FROM comments WHERE id = ? AND removed_by IS NULL').bind(id).first());
-  if (!comment || !(await loadVisiblePost(c, comment.post_id))) return c.json({ error: 'התגובה לא נמצאה' }, 404);
-  return react(c, 'comment_id', id);
+  const comment = id && (await c.env.DB.prepare('SELECT post_id, author_id FROM comments WHERE id = ? AND removed_by IS NULL').bind(id).first());
+  const post = comment && (await loadVisiblePost(c, comment.post_id));
+  if (!post) return c.json({ error: 'התגובה לא נמצאה' }, 404);
+  return react(c, 'comment_id', id, post, comment.author_id);
 });
 
 // Only the words of a post can change, and only by its writer. The audience stays as the
@@ -907,7 +1118,10 @@ app.delete('/api/posts/:id', requireUser, async (c) => {
   // and what people felt about it and about its comments.
   const posts = 'SELECT value FROM json_each(?1)';
   const attached = `post_id IN (${posts}) OR comment_id IN (SELECT id FROM comments WHERE post_id IN (${posts}))`;
-  await c.env.DB.prepare(`DELETE FROM reactions WHERE ${attached}`).bind(gone).run();
+  await c.env.DB.batch([
+    c.env.DB.prepare(`DELETE FROM reactions WHERE ${attached}`).bind(gone),
+    c.env.DB.prepare(`DELETE FROM notices WHERE post_id IN (${posts}) OR share_id IN (${posts})`).bind(gone),
+  ]);
   const { results } = await c.env.DB.prepare(`SELECT id FROM images WHERE ${attached}`).bind(gone).all();
   if (results.length) {
     await c.env.IMAGES.delete(results.map((image) => image.id));
@@ -928,12 +1142,22 @@ app.post('/api/posts/:id/share', requireUser, async (c) => {
   if (original.author_id === user.id) return c.json({ error: 'הפוסט הזה שלך, הוא כבר על הקיר שלך' }, 400);
 
   // Sharing a post that the member already shared changes nothing.
-  await db
+  const made = await db
     .prepare(`INSERT INTO posts (author_id, body, audience, created_at, shared_id, shared_via)
       VALUES (?, '', 'friends', ?, ?, ?) ON CONFLICT DO NOTHING`)
     .bind(user.id, Date.now(), original.id, found.id === original.id ? null : found.id)
     .run();
   const [shown] = await showPosts(db, [original], user);
+  if (made.meta.changes) {
+    // The writer is told, and so is whoever's share it came through. The share opens for the
+    // writer only if the two are friends, and otherwise the notice leads to their own post.
+    const share = shown.shares.mine;
+    const told = [{ user: original.author_id, kind: 'share', post: original.id, share, shareVisible: await areFriends(db, user.id, original.author_id) }];
+    if (found.id !== original.id && found.author_id !== original.author_id) {
+      told.push({ user: found.author_id, kind: 'reshare', post: found.id, share, shareVisible: true });
+    }
+    await notify(c, user, told);
+  }
   return c.json({ id: shown.shares.mine, shares: shown.shares }, 201);
 });
 
@@ -1048,6 +1272,24 @@ app.post('/api/posts/:id/comments', requireUser, async (c) => {
     .bind(id, user.id, body, Date.now(), parentId)
     .first();
   if (image) await c.env.DB.prepare('UPDATE images SET comment_id = ? WHERE id = ?').bind(row.id, image).run();
+
+  // Who is told: whoever wrote the comment that was answered, the writer of the post, and the
+  // others who wrote in the same thread. Each of them once, and only if they may read the post.
+  const told = new Map();
+  if (parentId) {
+    const [top, others] = await c.env.DB.batch([
+      c.env.DB.prepare('SELECT author_id FROM comments WHERE id = ?').bind(parentId),
+      c.env.DB.prepare('SELECT DISTINCT author_id FROM comments WHERE parent_id = ? AND removed_by IS NULL AND id < ?').bind(parentId, row.id),
+    ]);
+    told.set(top.results[0].author_id, 'reply');
+    for (const other of others.results) if (!told.has(other.author_id)) told.set(other.author_id, 'thread');
+  }
+  if (told.get(post.author_id) !== 'reply') told.set(post.author_id, 'comment');
+  told.delete(user.id);
+  const readers = await readersOf(c.env.DB, post, [...told.keys()]);
+  await notify(c, user, readers.map((reader) => ({
+    user: reader, kind: told.get(reader), post: id, comment: row.id, words: body ? body.slice(0, 140) : 'תמונה', onShare: !!post.shared_id,
+  })));
   return c.json({ id: row.id }, 201);
 });
 
@@ -1084,6 +1326,7 @@ app.delete('/api/comments/:id', requireUser, async (c) => {
   await c.env.DB.batch([
     c.env.DB.prepare('UPDATE comments SET body = NULL, removed_by = ? WHERE id = ?').bind(removedBy, id),
     c.env.DB.prepare('DELETE FROM reactions WHERE comment_id = ?').bind(id),
+    c.env.DB.prepare('DELETE FROM notices WHERE comment_id = ?').bind(id),
   ]);
 
   const image = await c.env.DB.prepare('SELECT id FROM images WHERE comment_id = ?').bind(id).first();
@@ -1208,11 +1451,43 @@ app.get('/api/users/:id', requireUser, async (c) => {
       ORDER BY p.id DESC LIMIT ?4`)
     .bind(id, before, seesAll ? 1 : 0, PAGE_SIZE)
     .all();
+  // How many friends they have is told to whoever may see who they are: the person and their friends.
+  const friends = seesAll ? (await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM users WHERE id IN (${FRIEND_IDS}) AND name <> ''`).bind(id).first()).n : null;
   return c.json({
     user: person,
     friendship,
+    friends,
     posts: await showPosts(c.env.DB, results, viewer),
     hasMore: results.length === PAGE_SIZE,
+  });
+});
+
+// The friends of a member, for the member and for their friends only: this is how people who
+// share a friend find each other. Beside each one is what they are to the reader, and how many
+// friends the two have in common.
+app.get('/api/users/:id/friends', requireUser, async (c) => {
+  const id = parseId(c.req.param('id'));
+  const viewer = c.get('user').id;
+  const db = c.env.DB;
+  const person = id && (await db.prepare(`SELECT id, name, avatar_id AS avatar FROM users WHERE id = ? AND name <> ''`).bind(id).first());
+  if (!person) return c.json({ error: 'המשתמש לא נמצא' }, 404);
+  if (id !== viewer && !(await areFriends(db, viewer, id))) return c.json({ error: 'רק חברים רואים את רשימת החברים' }, 403);
+  const { results } = await db
+    .prepare(`SELECT u.id, u.name, u.avatar_id AS avatar,
+        (SELECT f.status || (f.requester_id = ?1) FROM friendships f
+          WHERE (f.requester_id = ?1 AND f.addressee_id = u.id) OR (f.requester_id = u.id AND f.addressee_id = ?1)) AS link,
+        (SELECT COUNT(*) FROM friendships g WHERE g.status = 'accepted'
+          AND ((g.requester_id = u.id AND g.addressee_id IN (${FRIEND_IDS})) OR (g.addressee_id = u.id AND g.requester_id IN (${FRIEND_IDS})))) AS mutual
+      FROM users u WHERE u.id IN (${FRIEND_IDS.replaceAll('?1', '?2')}) AND u.name <> '' ORDER BY u.name LIMIT 1000`)
+    .bind(viewer, id)
+    .all();
+  const LINKS = { accepted0: 'friends', accepted1: 'friends', pending1: 'outgoing', pending0: 'incoming' };
+  return c.json({
+    user: person,
+    friends: results.map((row) => ({
+      id: row.id, name: row.name, avatar: row.avatar, mutual: row.id === viewer ? 0 : row.mutual,
+      friendship: row.id === viewer ? 'self' : LINKS[row.link] ?? null,
+    })),
   });
 });
 
@@ -1231,6 +1506,25 @@ app.get('/api/friends', requireUser, async (c) => {
     incoming: results.filter((r) => r.status === 'pending' && !r.outgoing).map(person),
     outgoing: results.filter((r) => r.status === 'pending' && r.outgoing).map(person),
   });
+});
+
+// Friends of the reader's friends who are not connected to the reader yet, each with exactly
+// the friends they have in common. The order is plain and said on the page: whoever shares more
+// friends comes first, and then by name.
+app.get('/api/friends/suggested', requireUser, async (c) => {
+  const { results } = await c.env.DB
+    .prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, COUNT(*) AS n,
+        json_group_array(json_object('id', m.id, 'name', m.name)) AS through
+      FROM (SELECT requester_id AS mine, addressee_id AS theirs FROM friendships WHERE status = 'accepted'
+        UNION ALL SELECT addressee_id, requester_id FROM friendships WHERE status = 'accepted') e
+      JOIN users u ON u.id = e.theirs JOIN users m ON m.id = e.mine
+      WHERE e.mine IN (${FRIEND_IDS}) AND e.theirs <> ?1 AND u.name <> '' AND m.name <> ''
+        AND e.theirs NOT IN (SELECT requester_id FROM friendships WHERE addressee_id = ?1
+          UNION SELECT addressee_id FROM friendships WHERE requester_id = ?1)
+      GROUP BY u.id ORDER BY n DESC, u.name LIMIT 40`)
+    .bind(c.get('user').id)
+    .all();
+  return c.json({ people: results.map((row) => ({ id: row.id, name: row.name, avatar: row.avatar, through: JSON.parse(row.through) })) });
 });
 
 // The globe: every friend, and the place of those who chose to share one. Only friends are
@@ -1323,6 +1617,82 @@ app.get('/api/update', requireUser, async (c) => {
   });
 });
 
+// The notices of the member, the newest first, in pages that go back to the beginning. Nothing
+// is folded together and nothing is left out: every comment, feeling and share is its own line.
+app.get('/api/notices', requireUser, async (c) => {
+  const user = c.get('user');
+  const kinds = NOTICE_GROUPS[c.req.query('group')];
+  const [at, id] = (c.req.query('before') ?? '').split('.').map((part) => parseId(part));
+  const now = Date.now();
+  const { results } = await c.env.DB
+    .prepare(`${NOTICE_SELECT}
+      AND (?2 IS NULL OR n.kind IN (SELECT value FROM json_each(?2)))
+      AND (n.at < ?3 OR (n.at = ?3 AND n.id < ?4))
+      ORDER BY n.at DESC, n.id DESC LIMIT ?5`)
+    .bind(user.id, kinds ? JSON.stringify(kinds) : null, at ?? Number.MAX_SAFE_INTEGER, id ?? Number.MAX_SAFE_INTEGER, NOTICES_PAGE + 1)
+    .all();
+  const page = results.slice(0, NOTICES_PAGE);
+  return c.json({
+    notices: page.map((row) => serializeNotice(row, user.notices_seen_at)),
+    before: results.length > NOTICES_PAGE ? `${page.at(-1).at}.${page.at(-1).id}` : null,
+    now,
+  });
+});
+
+// The member has seen their notices up to the moment the page was given to them. The mark only
+// moves forward, and never past now, so what comes later is still counted.
+app.put('/api/notices/seen', requireUser, async (c) => {
+  const { upTo } = await readJson(c);
+  const now = Date.now();
+  await c.env.DB
+    .prepare('UPDATE users SET notices_seen_at = MAX(notices_seen_at, ?) WHERE id = ?')
+    .bind(Number.isSafeInteger(upTo) && upTo > 0 && upTo < now ? upTo : now, c.get('user').id)
+    .run();
+  return c.json({ ok: true });
+});
+
+// This device asks to be told also when the network is closed. It is tied to the session, and
+// a device that was used by someone else before now belongs to whoever is logged in on it.
+app.put('/api/push', requireUser, async (c) => {
+  if (!pushReady(c.env)) return c.json({ error: 'אין כאן התראות למכשיר' }, 404);
+  const device = pushDevice(await readJson(c), { local: c.env.DEV_LOGIN === '1' && isLocalhost(c) });
+  if (!device) return c.json({ error: 'המכשיר לא נרשם להתראות, נסו שוב' }, 400);
+  const db = c.env.DB;
+  const user = c.get('user');
+  await db.batch([
+    db.prepare(`INSERT INTO push_devices (endpoint, user_id, session_hash, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT (endpoint) DO UPDATE SET user_id = excluded.user_id, session_hash = excluded.session_hash,
+        p256dh = excluded.p256dh, auth = excluded.auth`)
+      .bind(device.endpoint, user.id, await sha256(getCookie(c, SESSION_COOKIE)), device.p256dh, device.auth, Date.now()),
+    db.prepare(`DELETE FROM push_devices WHERE user_id = ?1 AND endpoint NOT IN
+      (SELECT endpoint FROM push_devices WHERE user_id = ?1 ORDER BY created_at DESC LIMIT ${MAX_PUSH_DEVICES})`).bind(user.id),
+  ]);
+  return c.json({ ok: true });
+});
+
+app.delete('/api/push', requireUser, async (c) => {
+  const { endpoint } = await readJson(c);
+  await c.env.DB.prepare('DELETE FROM push_devices WHERE endpoint = ? AND user_id = ?').bind(String(endpoint), c.get('user').id).run();
+  return c.json({ ok: true });
+});
+
+// The kinds of things the member does not want pushed, on all their devices. They still appear
+// on the notices page.
+app.put('/api/push/muted', requireUser, async (c) => {
+  const { muted } = await readJson(c);
+  const kept = PUSH_GROUPS.filter((group) => Array.isArray(muted) && muted.includes(group));
+  await c.env.DB.prepare('UPDATE users SET push_muted = ? WHERE id = ?').bind(kept.join(','), c.get('user').id).run();
+  return c.json({ muted: kept });
+});
+
+// A push to the member's own devices, so they can see that it arrives and what it looks like.
+app.post('/api/push/test', requireUser, async (c) => {
+  const delivered = await pushTo(c, c.get('user').id, 'test', {
+    title: 'הרשת החופשית', body: 'זו התראה לדוגמה. ככה זה ייראה כשמישהו יכתוב לך.', path: '/notices', tag: 'test', show: true,
+  });
+  return c.json({ delivered });
+});
+
 // Asking someone who already asked you accepts their request.
 app.post('/api/friends/:id', requireUser, async (c) => {
   const other = parseId(c.req.param('id'));
@@ -1335,13 +1705,17 @@ app.post('/api/friends/:id', requireUser, async (c) => {
     .prepare(`UPDATE friendships SET status = 'accepted' WHERE requester_id = ? AND addressee_id = ?`)
     .bind(other, me)
     .run();
-  if (accepted.meta.changes) return c.json({ status: 'accepted' });
+  if (accepted.meta.changes) {
+    await notify(c, c.get('user'), [{ user: other, kind: 'accepted' }]);
+    return c.json({ status: 'accepted' });
+  }
 
-  await c.env.DB
+  const asked = await c.env.DB
     .prepare(`INSERT INTO friendships (requester_id, addressee_id, status, created_at)
       VALUES (?, ?, 'pending', ?) ON CONFLICT DO NOTHING`)
     .bind(me, other, Date.now())
     .run();
+  if (asked.meta.changes) await notify(c, c.get('user'), [{ user: other, kind: 'request' }]);
   return c.json({ status: 'pending' });
 });
 
@@ -1453,6 +1827,11 @@ app.post('/api/messages/:userId', requireUser, async (c) => {
     db.prepare(`UPDATE conversations SET ${mine} = MAX(${mine}, ?) WHERE id = ?`).bind(row.id, conversation.id),
     ...(image ? [db.prepare('UPDATE images SET message_id = ? WHERE id = ?').bind(row.id, image)] : []),
   ]);
+  // Messages from one person take the place of each other on the device, so a conversation
+  // does not pile up there.
+  later(c, pushTo(c, person.id, 'messages', {
+    title: c.get('user').name, body: body ? body.slice(0, 140) : 'תמונה', path: `/messages/${me}`, tag: `m${me}`,
+  }));
   return c.json({ message: { id: row.id, mine: true, body: body || null, image, at: now, removed: false } }, 201);
 });
 

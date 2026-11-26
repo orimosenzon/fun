@@ -2476,3 +2476,131 @@ dialog { color: var(--text); font: inherit; }
 @media (max-width: 640px) {
   .toast { bottom: calc(70px + env(safe-area-inset-bottom)); }
 }
+
+/* ---------- Notices ---------- */
+
+.notices-page h1 { margin: 0 0 2px; font-size: 24px; }
+
+.notice-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; }
+
+.notice-filter button { min-height: 34px; padding: 2px 12px; font-size: 14.5px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+
+.notice-filter button.chosen { color: var(--on-brand); background: var(--brand); box-shadow: none; }
+
+.notice {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-inline: -8px;
+  padding: 10px 8px;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 14px;
+  transition: background 0.15s ease;
+}
+
+.notice:hover { background: var(--hover); }
+
+.notice + .notice { margin-top: 2px; }
+
+.notice.fresh { background: var(--citrus-tint); }
+
+.notice.fresh:hover { background: #f5d6b4; }
+
+.notice-face { position: relative; flex: none; }
+
+.notice-badge {
+  position: absolute;
+  inset-block-end: -4px;
+  inset-inline-end: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: #fff;
+  background: var(--brand);
+  border: 2px solid var(--card);
+  border-radius: 50%;
+}
+
+.notice-badge .icon { width: 12px; height: 12px; stroke-width: 2.4; }
+
+.notice-badge.share, .notice-badge.reshare { background: var(--a1); }
+
+.notice-badge.request, .notice-badge.accepted, .notice-badge.joined { background: var(--accent); }
+
+.notice-badge.feeling { background: var(--card); border-color: transparent; }
+
+.notice-badge.feeling .rx-art { width: 22px; height: 22px; }
+
+.notice-badge.feeling .rx-emoji { font-size: 16px; line-height: 1; }
+
+.notice-body { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.4; }
+
+.notice-line strong { font-weight: 600; }
+
+.notice-feeling { display: inline-block; margin-inline-end: 4px; vertical-align: -3px; }
+
+.notice-feeling .rx-art { width: 18px; height: 18px; }
+
+.notice-feeling .rx-emoji { font-size: 15px; }
+
+.notice-words, .notice-about { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; }
+
+.notice-words { margin-top: 2px; }
+
+.notice-about { margin-top: 3px; padding-inline-start: 9px; color: var(--muted); font-size: 14.5px; border-inline-start: 3px solid var(--line-strong); }
+
+.notice-when { margin-top: 3px; color: var(--muted); font-size: 13.5px; }
+
+.notice-dot { flex: none; align-self: center; width: 9px; height: 9px; background: var(--accent); border-radius: 50%; }
+
+.notices .day { margin-block: 14px 6px; }
+
+.notices-empty img { opacity: 0.85; }
+
+/* The card that turns pushes on and off, and its small form above the feed. */
+.push-card { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 4px 12px; padding: 14px 16px; }
+
+.push-card[hidden] { display: none; }
+
+.push-card .promise-icon { grid-row: 1 / span 3; margin-top: 2px; }
+
+.push-words { display: flex; flex-direction: column; min-width: 0; }
+
+.push-actions { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; }
+
+.push-kinds { grid-column: 2; margin-top: 6px; }
+
+.push-kinds summary { width: fit-content; color: var(--brand); font-size: 15px; font-weight: 550; cursor: pointer; }
+
+.push-kind { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 15.5px; cursor: pointer; }
+
+.push-kind input { width: 18px; height: 18px; accent-color: var(--brand); }
+
+/* The comment a notice led to. */
+.comment.pointed > .bubble { animation: pointed 2.4s ease-out; }
+
+@keyframes pointed {
+  0%, 35% { box-shadow: 0 0 0 3px var(--accent); }
+  100% { box-shadow: 0 0 0 3px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comment.pointed > .bubble { animation: none; box-shadow: 0 0 0 2px var(--accent); }
+}
+
+/* ---------- Friends of friends ---------- */
+
+.person.noted .head a { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; min-width: 0; text-decoration: none; }
+
+.person.noted .head a .avatar { grid-row: 1 / span 2; }
+
+.person-note { grid-column: 2; overflow: hidden; color: var(--muted); font-size: 13.5px; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
+
+.person[hidden] { display: none; }
+
+.person .row > a:not(.pill-link) { font-size: 14.5px; }
+
+.note.flush-top { margin-top: -2px; }
