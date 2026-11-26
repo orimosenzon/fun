@@ -893,7 +893,11 @@ const Facades = (() => {
       render(gl, matrix) {
         if (!built) return;
         const { ox, oy, s0 } = built;
-        const M = new THREE.Matrix4().fromArray(matrix);
+        // MapLibre 5 hands a custom layer an object where 4 handed it the
+        // matrix itself; the matrix is inside, under the mercator projection.
+        const mat = matrix && matrix.length ? matrix
+          : (matrix.defaultProjectionData && matrix.defaultProjectionData.mainMatrix) || matrix.modelViewProjectionMatrix;
+        const M = new THREE.Matrix4().fromArray(mat);
         const l = new THREE.Matrix4().makeTranslation(ox, oy, 0)
           .scale(new THREE.Vector3(s0, -s0, s0));
         const P = M.multiply(l);

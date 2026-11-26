@@ -128,7 +128,7 @@ try:
         check('few GPU read-backs per tap', reads / 5 <= 12, f'{reads} over 5 taps')
 
         page.wait_for_function('() => !document.querySelector(".editor-ghost")', timeout=15000)
-        n_map = page.evaluate('''() => map.getSource('src-editor')._data.features
+        n_map = page.evaluate('''() => (map.getSource('src-editor')._data.geojson || map.getSource('src-editor')._data).features
                                    .filter((f) => f.geometry.type === 'Point').length''')
         check('the map has all five points once the overlay steps aside', n_map == 5, n_map)
 
@@ -141,7 +141,7 @@ try:
                   page.evaluate('() => selectedId') in (None, ''), page.evaluate('() => selectedId'))
             check('...and adds a point',
                   page.evaluate('() => document.querySelectorAll(".editor-ghost circle").length'
-                                ' || map.getSource("src-editor")._data.features.length - 1') == 6)
+                                ' || (map.getSource("src-editor")._data.geojson || map.getSource("src-editor")._data).features.length - 1') == 6)
 
         # A tap on a waypoint's label while drawing adds a point.
         pin = page.evaluate('''() => {
@@ -155,10 +155,10 @@ try:
           return null;
         }''')
         if pin:
-            before = page.evaluate('() => map.getSource("src-editor")._data.features.length')
+            before = page.evaluate('() => (map.getSource("src-editor")._data.geojson || map.getSource("src-editor")._data).features.length')
             tap(page, pin['x'], pin['y'])
             time.sleep(0.8)
-            after = page.evaluate('() => map.getSource("src-editor")._data.features.length')
+            after = page.evaluate('() => (map.getSource("src-editor")._data.geojson || map.getSource("src-editor")._data).features.length')
             check('a tap on a waypoint label while drawing adds a point', after == before + 1,
                   (before, after))
         else:

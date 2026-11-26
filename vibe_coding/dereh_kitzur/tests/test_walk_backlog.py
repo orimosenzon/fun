@@ -124,7 +124,7 @@ try:
         st = page.evaluate('() => document.getElementById("draft-state").textContent')
         check(f'every point is kept ({total})', f'{total} נקודות' in st, st)
         drawn = page.evaluate('''() => { const s = map.getSource('src-editor') || null;
-           const d = s && (s._data || (s.serialize && s.serialize().data));
+           const d = s && ((s._data && s._data.geojson) || s._data || (s.serialize && s.serialize().data)   /* MapLibre 5 wraps it */);
            const f = d && d.features && d.features.find((x) => x.geometry.type === 'LineString');
            return f ? f.geometry.coordinates.length : -1; }''')
         if drawn != -1:

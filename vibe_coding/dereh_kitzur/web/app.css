@@ -3422,114 +3422,64 @@ body[data-fly-view="trails"] .fly-chip {
   direction: ltr;
 }
 
-/* ---------- the F-16's cockpit (cockpit.js) ----------
+/* ---------- the F-16's cockpit (f16_pit.js) ----------
  *
- * The jet's instruments are the aircraft's own: the HUD glass in green over
- * the picture and the top of the panel along the bottom. The generic gauges,
- * the compass, the throttle bar and the found-trail caption are the other
- * two aircraft's, and go away while the jet is flown; the DED on the panel
- * carries the trail's name instead. */
+ * The cockpit is three-dimensional and drawn on its own canvas over the
+ * map; the map itself is the view out of the canopy, rolled and pitched by
+ * MapLibre, with MapLibre's own sky. So everything the other aircraft paint
+ * over the map to make a sky, a horizon and a sense of speed goes away, and
+ * so do their gauges: the instruments are the aircraft's. What stays is the
+ * name of what was found, moved to the top where the canopy is clear. */
 
-body.fly-jet .fly-readout, body.fly-jet .fly-thr, body.fly-jet .fly-compass,
-body.fly-jet .fly-found, body.fly-jet .fly-hud::after { display: none; }
-body.fly-jet .fly-credit { bottom: calc(var(--ckpt-h, 180px) + 4px); }
-/* The stick's dead zone, in the HUD's ink. */
-body.fly-jet .fly-reticle { box-shadow: inset 0 0 0 1px rgba(140, 255, 150, .38), 0 0 0 1px rgba(0, 0, 0, .2); }
-body.fly-jet .fly-reticle::after { background: rgba(140, 255, 150, .6); }
+body.fly-jet .fly-readout .fly-gauge, body.fly-jet .fly-thr, body.fly-jet .fly-compass,
+body.fly-jet .fly-hud::after, body.fly-jet .fly-sky, body.fly-jet .fly-haze,
+body.fly-jet .fly-rush, body.fly-jet .fly-burner, body.fly-jet .fly-vig,
+body.fly-jet .fly-basket { display: none; }
+body.fly-jet .fly-found { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0px)); }
+body.fly-jet .fly-found strong { font-size: 15px; }
+body.fly-jet .fly-credit { opacity: .55; }
+body.fly-jet .fly-msg { top: 22%; }
+/* The stick's dead zone, in the HUD's ink, and faint: it is a place for the
+ * hand to come back to, not a thing to look at. */
+body.fly-jet .fly-reticle { box-shadow: inset 0 0 0 1px rgba(140, 255, 150, .22); opacity: .7; }
+body.fly-jet .fly-reticle::after { background: rgba(140, 255, 150, .4); }
+.fly-pit { z-index: 3; }
 
-.ckpt { position: absolute; inset: 0; pointer-events: none; }
-.ckpt[hidden] { display: none; }
-
-.ckpt-hud {
-  position: absolute;
+/* What the body takes: the field of view closing in from its edges under
+ * sustained g, red under a hard push, white at the end. */
+.fly-gloc {
+  position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  /* The page is RTL, and in RTL an SVG text-anchor of "start" is the right
-   * end: every number would grow leftwards out of its box. */
-  direction: ltr;
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
-  font-variant-numeric: tabular-nums;
-  fill: #8dff86;
-  stroke: #8dff86;
-  /* The bloom of a phosphor on glass. One filter on the whole layer, which
-   * the compositor does once, rather than a shadow per symbol. */
-  filter: drop-shadow(0 0 1.5px rgba(80, 255, 90, .55));
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at 50% 46%, rgba(0, 0, 0, 0) 4%, rgba(8, 8, 10, .9) 42%, #050506 70%);
 }
-.ckpt-hud text { stroke: none; font-weight: 600; letter-spacing: .4px; }
-.ckpt-hud .ckpt-pane { fill: rgba(80, 200, 110, .035); stroke: rgba(140, 255, 150, .14); stroke-width: 1; }
-.ckpt-hud .rung-line { fill: none; stroke-width: 2; stroke-linecap: round; }
-.ckpt-hud .below .rung-line { stroke-dasharray: 9 6; }
-.ckpt-hud .horizon .rung-line { stroke-width: 2.4; }
-.ckpt-hud .rung-num { font-size: .95em; }
-.ckpt-hud .fpm-ring, .ckpt-hud .fpm-wing { fill: none; stroke-width: 2.2; stroke-linecap: round; }
-.ckpt-hud .ckpt-fpm.lim .fpm-ring { stroke-dasharray: 4 3; }
-.ckpt-hud .tick { stroke-width: 1.6; }
-.ckpt-hud .tape-num { font-size: .85em; }
-.ckpt-hud .box { fill: rgba(0, 0, 0, .38); stroke-width: 1.8; }
-.ckpt-hud .box-num { font-size: 1.05em; font-weight: 700; }
-.ckpt-hud .caret { stroke-width: 1.5; fill: rgba(0, 0, 0, .38); }
-.ckpt-hud .warn { font-size: 1.4em; font-weight: 800; }
+.fly-gloc.red { background: radial-gradient(ellipse at 50% 46%, rgba(120, 0, 0, .15) 4%, rgba(150, 10, 10, .85) 60%, #7a0000 100%); }
+.fly-gloc.boom { background: radial-gradient(ellipse at 50% 60%, #fff 0%, #ffd9a0 30%, #b9552a 62%, #1a0d08 100%); transition: opacity .12s; }
+body:not(.fly-jet) .fly-gloc { display: none; }
 
-.ckpt-panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--ckpt-h, 180px);
-  overflow: hidden;
+/* On a phone the jet takes the bike's joystick and throttle, and four
+ * buttons of its own in place of the bike's. */
+.fly-touch .tjet { display: none; gap: 6px; margin-top: 6px; }
+@media (pointer: coarse) {
+  body.fly-jet .fly-touch {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body.fly-jet .fly-touch .tjet { display: flex; }
+  body.fly-jet .fly-touch .tvert-pair .tvert:nth-child(2),
+  body.fly-jet .fly-touch .troll, body.fly-jet .fly-touch .tmenu, body.fly-jet .fly-touch .tboost { display: none; }
+  body.fly-jet .fly-reticle { display: none; }
 }
-.ckpt-panel svg { display: block; }
-.ckpt-panel .hood { fill: #17191d; }
-.ckpt-panel .lip { fill: none; stroke: rgba(255, 255, 255, .16); stroke-width: 1.5; }
-.ckpt-panel .bezel { fill: #101215; stroke: #2a2e34; stroke-width: 1; }
-.ckpt-panel .screen { fill: #04110a; stroke: #0b2a16; }
-.ckpt-panel .key { fill: #2b2f35; stroke: #14161a; stroke-width: 1; }
-.ckpt-panel .key-t { fill: #d9dde3; font: 600 8px system-ui, sans-serif; text-anchor: middle; letter-spacing: .3px; }
-.ckpt-panel .icp { fill: #1f2226; stroke: #0c0d10; stroke-width: 1.2; }
-.ckpt-panel .ded { fill: #061309; stroke: #0f3a1c; }
-.ckpt-panel .knob { fill: #303439; stroke: #0c0d10; }
-.ckpt-panel .lamp { fill: #2a1d16; stroke: #0c0d10; }
-.ckpt-panel .lamp.lit { fill: #ffb43a; }
-.ckpt-panel .lamp-t { fill: rgba(255, 255, 255, .35); font: 600 5.2px system-ui, sans-serif; text-anchor: middle; }
-.ckpt-panel .lamp.lit + .lamp-t { fill: #2a1d16; }
-.ckpt-panel .gauge { fill: #0c0e11; stroke: #34383e; stroke-width: 1.5; }
-.ckpt-panel .gauge-tick { stroke: #c9ced6; stroke-width: 1.2; }
-.ckpt-panel .needle { stroke: #fff; stroke-width: 1.8; stroke-linecap: round; }
-.ckpt-panel .needle-hub { fill: #d0d4da; }
-.ckpt-panel .gauge-t { fill: #aeb4bd; font: 600 6px system-ui, sans-serif; text-anchor: middle; }
+body:not(.fly-jet) .fly-touch .tjet { display: none; }
 
-/* The DED: three lines of green, the middle one the steerpoint's name. */
-.ckpt-ded {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-sizing: border-box;
-  padding: 2px 6px;
-  overflow: hidden;
-  direction: rtl;
-  color: #7cf28a;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-  line-height: 1.2;
-  text-shadow: 0 0 3px rgba(120, 255, 140, .5);
-}
-.ckpt-ded .l1 { direction: ltr; text-align: left; font-size: .85em; opacity: .85; white-space: pre; }
-.ckpt-ded .l2 { font-family: system-ui, sans-serif; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ckpt-ded .l3 { font-family: system-ui, sans-serif; font-size: .8em; opacity: .8; white-space: nowrap; }
-.ckpt-hsd, .ckpt-fcr { position: absolute; }
-.ckpt-fcr {
-  direction: ltr;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-content: start;
-  gap: 4px 6px;
-  box-sizing: border-box;
-  padding: 6px;
-  color: rgba(120, 255, 140, .5);
-  font: 600 9px ui-monospace, Menlo, Consolas, monospace;
-}
 
 /* ---------- how to fly ---------- */
 

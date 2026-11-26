@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- The F-16's cockpit on its own, over a still, for looking at it without
+     flying. Serve vibe_coding/ and open
+       dereh_kitzur/tests/f16_rig.html?yaw=0&lp=-9&fov=62&pitch=5&roll=20&kt=420&alt=3500
+     yaw, lp: the head, degrees right and up; fov; pitch, roll, hdg: the
+     aircraft; mode=hud for the symbols alone; gear=1; t: seconds to run. -->
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<title>f16 rig</title>
+<script type="importmap">
+{ "imports": { "three": "../../jetbikes/foehn/lib/three.module.min.js" } }
+</script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: linear-gradient(#5b8fd0 0%, #cfe0ee 52%, #7c8a5c 52.2%, #55633f 100%); }
+  #c { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+import { makePit, attitude, F16, KT, FT } from '../web/f16_pit.js';
+const q = new URLSearchParams(location.search);
+const num = (k, d) => (q.has(k) ? +q.get(k) : d);
+const RAD = Math.PI / 180;
+const pit = makePit(document.getElementById('c'), { antialias: !q.has('noaa') });
+window.pit = pit;
+const fit = () => pit.resize(innerWidth, innerHeight, Math.min(devicePixelRatio || 1, 1.5));
+addEventListener('resize', fit); fit();
+pit.setMode(q.get('mode') || 'pit');
+const hdg = num('hdg', 40), pitch = num('pitch', 3), roll = num('roll', 0), kt = num('kt', 380), alt = num('alt', 2500);
+const att = attitude(hdg, pitch * RAD, roll * RAD);
+const f = [Math.sin(hdg * RAD), Math.sin((pitch - 3) * RAD), -Math.cos(hdg * RAD)];
+let n = 0;
+function frame(t) {
+  const S = window.S = {
+    q: att, vel: f.map((v) => v * kt / KT), look: { yaw: num('yaw', 0) * RAD, pitch: num('lp', -9) * RAD }, vfov: num('fov', 62),
+    sun: [0.45, 0.6, 0.66], shake: 0, nz: num('g', 1.2), maxG: 4.3, lever: num('lever', 0.6), stickX: num('sx', 0), stickY: num('sy', 0),
+    cas: kt, alt, ralt: alt, hdg, pitch, roll, track: hdg, mach: kt / 661, aoa: 3, beta: 0, vs: 300,
+    gear: num('gear', 0), gearDown: !!num('gear', 0), sb: 0, ap: false, limit: false, over: false, pull: !!num('pull', 0),
+    grounded: false, fuelLow: false, config: false, caution: false, t: t / 1000,
+    rpm: 0.92, noz: 0.12, ftit: 720, oil: 52, ff: 6400, fuel: 5800,
+    stpt: { dir: [Math.sin((hdg + 3) * RAD) * 0.99, -0.1, -Math.cos((hdg + 3) * RAD) * 0.99], nm: 3.2, n: 3, brg: hdg + 3, name: 'שביל הפרדס הישן', at: [300, 2000] },
+    own: [0, 0], world: [{ line: true, g: 0.8, xy: [[-500, 800], [200, 1500], [900, 2600]] }, { line: true, g: 0.1, xy: [[1500, -400], [1800, 900], [1200, 1800]] }]
+  };
+  pit.render(S);
+  n++;
+  window.frames = n;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

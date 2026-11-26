@@ -325,6 +325,36 @@ const Explore = (() => {
   let stickGain = 0;         // 0..1, the authority of a freshly taken stick
   let introMoved = 0;        // pixels of mouse travel since the take-off card appeared
 
+  /* The F-16 since 26/11/2026: an aeroplane and a cockpit (f16_core.js,
+   * f16_pit.js), where until then it was a camera with a HUD drawn on it.
+   * `ac` is the flight; `pit` the cockpit's scene; `look` where the head is
+   * turned, radians, and `lookWant` where the hand has asked it to go; `cam`
+   * the map's camera as last set, which is the pilot's eye. */
+  const JET = {
+    VFOV: 60,              // degrees, top to bottom of the window: a simulator's, not a telephoto's
+    VFOV_HUD: 42,          // with the cockpit put away (C)
+    VFOV_ZOOM: 28,         // with Z held, to read a dial or a rooftop
+    ALT_START: 760,        // metres: 2,500 ft, high enough to make a mistake in
+    V_START: 185,          // m/s: 360 knots
+    EYE: 2.3,              // metres from the wheels to the pilot's eye
+    LOOK_YAW: 150, LOOK_UP: 75, LOOK_DOWN: 65,
+    SUN: [-0.50, 0.64, 0.58]   // the direction to the sun: south-west, mid-afternoon
+  };
+  const jt = {
+    ac: null, pit: null, canvas: null,
+    look: { yaw: 0, pitch: 0 }, lookWant: { yaw: 0, pitch: 0 }, lookHold: false,
+    fov: 60, zoom: false, mode: 'pit', hold: false,
+    kx: 0, ky: 0, rud: 0, maxG: 1, gInt: 0, shake: 0, pull: false, config: false,
+    cam: { bearing: 0, pitch: 80, roll: 0, f: [0, 0, -1], u: [0, 1, 0], r: [1, 0, 0] }, crashAt: 0, drawn: false, saved: null, state: null
+  };
+  // A phone's screen is too small for a panel of dials to be more than a
+  // texture, so there the cockpit starts put away; the choice is kept.
+  try {
+    const m = localStorage.getItem('dk.fly.pit');
+    jt.mode = m === 'hud' || m === 'pit' ? m : (matchMedia('(pointer: coarse)').matches ? 'hud' : 'pit');
+  } catch (_) { /* fine */ }
+  let elGloc = null;
+
   let canRoll = false;       // fine pointer: a keyboard and a mouse are here
   let ox = 0, oy = 0;        // how far the map hangs past the screen, pixels
   let focal = 1.5;           // camera distance in container heights, see fitFrame
@@ -752,7 +782,8 @@ const Explore = (() => {
     /** The crash: a burst of noise swept down through a low-pass, and a
      *  sub-bass thump under it (fable). */
     function crash() {
-      if (!ctx || muted || !bikeBus || mode !== 'bike') return;
+      const bus = mode === 'jet' ? jetBus : bikeBus;
+      if (!ctx || muted || !bus || (mode !== 'bike' && mode !== 'jet')) return;
       const t = ctx.currentTime, dur = 1.3;
       const buf = ctx.createBuffer(1, Math.floor(dur * ctx.sampleRate), ctx.sampleRate);
       const d = buf.getChannelData(0);
@@ -765,7 +796,7 @@ const Explore = (() => {
       const g = gain(0);
       g.gain.setValueAtTime(1.2, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      src.connect(f); f.connect(g); g.connect(bikeBus);
+      src.connect(f); f.connect(g); g.connect(bus);
       src.start(t);
       const o = ctx.createOscillator();
       o.type = 'sine';
@@ -774,7 +805,7 @@ const Explore = (() => {
       const og = gain(0);
       og.gain.setValueAtTime(0.8, t);
       og.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
-      o.connect(og); og.connect(bikeBus);
+      o.connect(og); og.connect(bus);
       o.start(t); o.stop(t + 0.7);
     }
 
@@ -986,6 +1017,21 @@ const Explore = (() => {
   function fitFrame() {
     const w = innerWidth, h = innerHeight;
     canRoll = matchMedia('(pointer: fine)').matches;
+    if (craft === 'jet') {
+      // The jet's picture is the map's own: it rolls and looks up by itself
+      // (MapLibre 5), so nothing hangs past the screen and the field of
+      // view is simply the window's.
+      ox = 0; oy = 0;
+      const rs0 = document.documentElement.style;
+      rs0.setProperty('--fly-ox', '0px');
+      rs0.setProperty('--fly-oy', '0px');
+      if (map.setPixelRatio) map.setPixelRatio(Math.min(devicePixelRatio || 1, PIXEL_CAP));
+      map.resize();
+      setFov(jt.fov);
+      focal = 0.5 / Math.tan((jt.fov / 2) * RAD);
+      if (jt.pit) jt.pit.resize(w, h, Math.min(devicePixelRatio || 1, PIXEL_CAP));
+      return;
+    }
     if (craft === 'bike' && bk.cam === 0) {
       // The chase camera leans by ROLL_MAX at most, on any device: a corner
       // of the screen turned by that angle reaches half the other side times
@@ -1142,6 +1188,11 @@ const Explore = (() => {
    * revealing them. */
 
   function focusPoint(pitch) {
+    if (craft === 'jet' && jt.ac) {
+      // The jet's eye goes where the head does, up into the sky included,
+      // so what is revealed is what is ahead on the ground along the track.
+      return destination(pos.lat, pos.lng, jt.ac.track, clamp(alt * 2.2, 150, 2600) * 0.55);
+    }
     const ahead = alt * Math.tan(pitch * RAD) * 0.55;
     return destination(pos.lat, pos.lng, bearing, ahead);
   }
@@ -1254,7 +1305,8 @@ const Explore = (() => {
     // container is used instead: a few cards painted where nobody sees them
     // are cheaper than a card missing from a corner that has just rolled in.
     const cw = map.getContainer().clientWidth;
-    const rolled = Math.abs(bank) > 6;
+    const free = craft === 'jet';        // the map's own roll: the window is the container
+    const rolled = !free && Math.abs(bank) > 6;
     const x0 = rolled ? -40 : ox - 40;
     const x1 = rolled ? cw + 40 : ox + innerWidth + 40;
     const y1 = rolled ? vh + 40 : oy + innerHeight + 40;
@@ -1268,8 +1320,11 @@ const Explore = (() => {
       // Behind you is not a view. The projection folds points behind the
       // camera plane back onto the screen, so this cull is correctness and
       // not only economy.
-      const brgTo = Math.atan2(s.x - mx, s.y - my) / RAD;
-      if (Math.abs(angleDiff(brgTo, bearing)) > 88) continue;
+      if (free) { if (!jetSees(s.x - mx, s.y - my)) continue; }
+      else {
+        const brgTo = Math.atan2(s.x - mx, s.y - my) / RAD;
+        if (Math.abs(angleDiff(brgTo, bearing)) > 88) continue;
+      }
       s.d = d;
       live.push(s);
     }
@@ -1281,19 +1336,21 @@ const Explore = (() => {
 
     for (const s of live) {
       if (placed.length >= MAX_CARDS) break;
-      const p = map.project(s.lngLat);
-      if (!isFinite(p.x) || !isFinite(p.y)) continue;
+      const p = free ? jetProject(s.x - mx, s.y - my) : map.project(s.lngLat);
+      if (!p || !isFinite(p.x) || !isFinite(p.y)) continue;
       // Right on the horizon a card is a smudge at the very top of the screen,
       // and it is the tether reaching up out of the frame that you notice, not
       // the picture. Those distances are the reveal radius doing its job; they
       // do not also need a photograph.
-      if (p.y < skyY + 26) continue;
+      if (!free && p.y < skyY + 26) continue;
 
-      const ppm = scaleAt(s.lngLat, p);
+      const ppm = free ? p.ppm : scaleAt(s.lngLat, p);
       if (!isFinite(ppm) || ppm <= 0) continue;
 
       const w = clamp(wMetres * ppm, CARD_MIN_PX, innerHeight * CARD_MAX_VH);
-      const tether = clamp(hMetres * ppm * sinP, 6, innerHeight * 0.22);
+      // From the jet the tilt is the angle to this card, not the camera's.
+      const tilt = free ? Math.hypot(s.x - mx, s.y - my) / Math.hypot(s.x - mx, s.y - my, alt) : sinP;
+      const tether = clamp(hMetres * ppm * tilt, 6, innerHeight * 0.22);
       const cardH = w * 0.75 + 26;
 
       // Off the screen is off the screen. The heading test above only rejects
@@ -1320,8 +1377,16 @@ const Explore = (() => {
       const fade = clamp((1 - s.d / reach) * 5, 0, 1);
 
       const node = cardFor(s);
-      node.style.transform =
-        `translate3d(${p.x.toFixed(1)}px, ${(p.y - tether).toFixed(1)}px, 0) translate(-50%, -100%)`;
+      if (free) {
+        // Standing on the world and not on the screen: banked, the card
+        // leans with the horizon, hung on its tether from the ground point.
+        node.style.transformOrigin = '0 0';
+        node.style.transform =
+          `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0) rotate(${(-clamp(jt.cam.roll, -55, 55)).toFixed(1)}deg) translate(-50%, -100%) translateY(${(-tether).toFixed(1)}px)`;
+      } else {
+        node.style.transform =
+          `translate3d(${p.x.toFixed(1)}px, ${(p.y - tether).toFixed(1)}px, 0) translate(-50%, -100%)`;
+      }
       node.style.width = `${w}px`;
       node.style.setProperty('--tether', `${tether}px`);
       node.style.opacity = fade;
@@ -1354,13 +1419,16 @@ const Explore = (() => {
     // there is a word cut in half at the edge. Once the picture is rolled
     // the window is not axis-aligned in these pixels, and the whole
     // container is allowed, as with the cards.
-    const rolled = Math.abs(bank) > 6;
+    const free = craft === 'jet';
+    const rolled = !free && Math.abs(bank) > 6;
+    const [jmx, jmy] = free ? toLocal(pos.lat, pos.lng) : [0, 0];
     const x0 = rolled ? -40 : ox + 16;
     const x1 = rolled ? (map.getContainer().clientWidth || innerWidth) + 40 : ox + innerWidth - 16;
 
     for (const e of pick) {
-      const p = map.project([e.at[0], e.at[1]]);
-      if (!isFinite(p.x) || !isFinite(p.y)) continue;
+      const ex = free ? (e.at[0] - refLng) * mPerLng - jmx : 0, ey = free ? (e.at[1] - refLat) * M_PER_DEG_LAT - jmy : 0;
+      const p = free ? jetProject(ex, ey) : map.project([e.at[0], e.at[1]]);
+      if (!p || !isFinite(p.x) || !isFinite(p.y)) continue;
       let node = chips.get(e.id);
       if (!node) {
         node = document.createElement('div');
@@ -1369,13 +1437,19 @@ const Explore = (() => {
         chips.set(e.id, node);
       }
       node.textContent = e.name;
-      node.style.transform =
+      if (free) {
+        node.style.transformOrigin = '0 0';
+        node.style.transform =
+          `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0) translate(-50%, -175%)`;   // a name stays level with the screen: it is read, not looked at
+      } else node.style.transform =
         `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0) translate(-50%, -175%)`;
       node.style.fontSize =
         `${clamp(CHIP_MIN_PX + (e.g - 0.42) * 34, CHIP_MIN_PX, CHIP_MAX_PX)}px`;
       node.style.opacity = clamp((e.g - 0.42) * 3.4, 0, 1);
       node.style.zIndex = String(3000 - Math.round(e.d));
-      node.hidden = p.y < -80 || p.y > floor || p.x < x0 || p.x > x1;
+      node.hidden = free
+        ? !jetSees(ex, ey) || p.y < 0 || p.y > innerHeight || p.x < 16 || p.x > innerWidth - 16
+        : p.y < -80 || p.y > floor || p.x < x0 || p.x > x1;
       keep.add(e.id);
     }
     for (const [id, node] of chips) if (!keep.has(id)) node.hidden = true;
@@ -1426,7 +1500,7 @@ const Explore = (() => {
     const sy = stick(mouse.ny) * g;
     const keyTurn = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
     const keyPitch = (keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0);
-    return { held, turnIn: clamp(sx + keyTurn, -1, 1), pitchIn: clamp(sy + keyPitch, -1, 1) };
+    return { held, turnIn: clamp(sx + keyTurn, -1, 1), pitchIn: clamp(sy + keyPitch, -1, 1), mx: sx, my: sy };
   }
 
   /** ISA speed of sound at a height: 340 m/s at sea level, falling 4 m/s per
@@ -1441,112 +1515,271 @@ const Explore = (() => {
     return { a, top: lerp(MACH_SL, MACH_HI, t) * a, mil: lerp(MACH_MIL_SL, MACH_MIL_HI, t) * a };
   }
 
+  /* ---------- the jet's flight ----------
+   *
+   * The flight is f16_core.js; this is the pilot. The mouse is the stick in
+   * both axes, as it is for the bike: to the side is a roll, and towards
+   * you (down the screen) is a pull, in g. The arrows are the same stick
+   * for a hand that prefers keys, eased so that a tap is a nudge and not
+   * nine g. W and S, the wheel, and the mouse button move the throttle,
+   * and it stays where it is put: this is an aeroplane, and an aeroplane
+   * whose engine winds down when you let go is a glider. A and D are the
+   * pedals. */
+
+  const JET_SAY = {
+    gear: 'התרסקות: נגעת בקרקע עם גלגלים למעלה',
+    sink: 'התרסקות: קצב שקיעה גבוה מדי בנגיעה',
+    roll: 'התרסקות: כנף נגעה בקרקע',
+    pitch: 'התרסקות: זווית האף בנגיעה',
+    drift: 'התרסקות: נגיעה בהחלקה הצדה'
+  };
+
+  /** Put the aircraft in the air over where it is, level, at a speed it can
+   *  fly at. At take-off, after a crash, and on R. */
+  function jetReset(keepPlace) {
+    const a = jt.ac;
+    const [x, y] = keepPlace ? [a.pos[0], -a.pos[2]] : toLocal(pos.lat, pos.lng);
+    a.reset({ x, z: -y, alt: JET.ALT_START, bearing: keepPlace ? a.heading : bearing, speed: JET.V_START });
+    a.lever = 0.52;
+    jt.maxG = 1; jt.gInt = 0; jt.kx = jt.ky = jt.rud = 0; jt.crashAt = 0; jt.pull = false;
+    sonic = false;
+  }
+
+  /** Whether a point on the ground, east and north of the aircraft in
+   *  metres, is in front of the pilot's eye and below the horizon enough to
+   *  be a place and not a smear. */
+  function jetSees(dx, dy) {
+    const f = jt.cam.f, d = Math.hypot(dx, dy, alt) || 1;
+    if ((dx * f[0] - alt * f[1] - dy * f[2]) / d < 0.2) return false;
+    return alt / d > 0.02;
+  }
+
   /** The jet, one frame. Returns how much afterburner it wants heard. */
   function jetControls(dt, now) {
-    const env = envelope(alt);
-
-    // Throttle. The button held opens it, the button released lets it wind
-    // down, and the speed follows the throttle rather than the button, so a
-    // press is a push rather than a switch. Rise is quicker than fall on
-    // purpose: a rhythm of short presses holds a speed without effort, and
-    // letting go altogether is a coast to a stop, not a brake. Below the
-    // detent the throttle asks for a speed that grows as its square, so the
-    // bottom of the travel is a walking pace and the detent is the dry
-    // engine's most; past the detent it is the afterburner, and the rest of
-    // the travel runs to the F-16's limit at this height.
-    const open = hold || touchHold;
-    throttle = open ? Math.min(1, throttle + dt / THR_UP)
-                    : Math.max(0, throttle - dt / THR_DOWN);
-    const ab = throttle > MIL;
-    const want = ab ? lerp(env.mil, env.top, (throttle - MIL) / (1 - MIL))
-                    : env.mil * Math.pow(throttle / MIL, 2);
-
-    // How fast the speed may follow: the push is the engine's, and it is
-    // halved in the middle of the transonic band, where the drag rises and
-    // the burner is felt working for it; the brake is drag, and grows with
-    // the square of the speed.
-    mach = Math.abs(speed) / env.a;
-    buffet = clamp(1 - Math.abs(mach - 1) / TRANS_W, 0, 1);
-    const push = (ab ? A_AB : A_MIL) * (1 - TRANS_DRAG * buffet);
-    const brake = (BRAKE_0 + BRAKE_V * Math.pow(speed / env.top, 2)) * (1 + 0.5 * buffet);
-    speed += clamp((want - speed) * SPEED_K, -brake, push) * dt;
-
-    // The barrier. Crossed upwards it is the boom and the cone; crossed
-    // back it is the cone alone. A little hysteresis, so a speed that sits
-    // on Mach 1 is one crossing and not a drum roll.
-    mach = Math.abs(speed) / env.a;
-    if (!sonic && mach >= 1) {
-      sonic = true;
-      booms++;
-      Engine.boom();
-      shockCone();
-    } else if (sonic && mach < 0.985) {
-      sonic = false;
-      shockCone();
+    const a = jt.ac;
+    if (a.crashed) {
+      if (now > jt.crashAt) { jetReset(true); say('חזרה לאוויר', 1600); }
+      return 0;
     }
 
-    // The burner is the top of the throttle, past the detent. Below it, with
-    // the button down, the engine is heard spooling, so the press is
-    // answered the moment it lands.
-    const burnWant = ab ? 1 : open ? 0.45 : 0;
+    // ---- hands ----
+    const st = readStick(now);
+    const kx = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
+    const ky = (keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0);
+    jt.kx += clamp(kx * 0.8 - jt.kx, -dt * 3.5, dt * 3.5);
+    jt.ky += clamp(ky * 0.7 - jt.ky, -dt * 2.6, dt * 2.6);
+    const mx = jt.lookHold ? 0 : st.mx, my = jt.lookHold ? 0 : st.my;
+    a.stickX = clamp(mx + jt.kx + tb.steer, -1, 1);
+    a.stickY = clamp(my + jt.ky + tb.pitch, -1, 1);
+    const rud = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
+    jt.rud += clamp(rud - jt.rud, -dt * 4, dt * 4);
+    a.rudder = jt.rud;
+    const up = keys.has('KeyW') || hold || touchHold || tb.throttleUp;
+    const down = keys.has('KeyS') || tb.throttleDown;
+    if (up || down) a.lever = clamp(a.lever + ((up ? 1 : 0) - (down ? 1 : 0)) * dt / 2.2, 0, 1);
+    // On the ground the speed-brake switch is the wheel brakes too: a phone
+    // has no space bar.
+    a.brake = keys.has('Space') || (a.grounded && a.boards);
 
-    const { held, turnIn } = readStick(now);
+    a.step(dt);
 
-    // Roll. A and D roll at a fixed rate for as long as they are down, past
-    // the vertical and over the top if you like. Released, the wings level
-    // themselves - the short way round, so a roll let go past inverted
-    // finishes rather than unwinds - onto the bank a plain turn would show.
-    const rollIn = canRoll ? (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0) : 0;
-    if (rollIn) {
-      bankRate += (rollIn * ROLL_RATE - bankRate) * clamp(ROLL_ACCEL * dt, 0, 1);
-      bank += bankRate * dt;
+    for (const ev of a.events) {
+      if (ev === 'crash') {
+        jt.crashAt = now + 2800;
+        Engine.crash();
+        say(JET_SAY[a.crashWhy] || 'התרסקות', 2800, 'crash');
+        bk.crashes++;
+      } else if (ev === 'touchdown') {
+        say(a.sinkAtTouch < 2 ? 'נחיתה חלקה' : a.sinkAtTouch < 4 ? 'נחיתה' : 'נחיתה קשה', 2200);
+      } else if (ev === 'liftoff') say('באוויר', 1400);
+      else if (ev === 'gear-down') say('גלגלים למטה ונעולים', 1600);
+      else if (ev === 'gear-up') say('גלגלים למעלה', 1400);
+      else if (ev === 'refuel') say('תדלוק אווירי: המכלים מלאים', 2600);
+      else if (ev === 'ap-off') say('טייס אוטומטי מנותק', 1600);
+    }
+
+    // ---- what the rest of the mode reads ----
+    const [lng, lat] = toLngLat(a.pos[0], -a.pos[2]);
+    pos = { lat, lng };
+    alt = a.pos[1] + JET.EYE;
+    bearing = a.heading;
+    speed = a.tas;
+    throttle = a.lever;
+    bank = a.roll;
+    gee = a.nz;
+    if (a.nz > jt.maxG) jt.maxG = a.nz;
+    mach = a.mach;
+    // The buffet: the shocks walking over the wing through Mach 1, and the
+    // wing itself complaining at a high angle of attack.
+    const aoa = a.alpha / RAD;
+    buffet = a.grounded ? 0 : Math.max(clamp(1 - Math.abs(mach - 1) / TRANS_W, 0, 1),
+      clamp((aoa - 15) / 9, 0, 1) * clamp(a.qbar / 6000, 0, 1) * 0.7);
+    if (!sonic && mach >= 1) { sonic = true; booms++; Engine.boom(); shockCone(); }
+    else if (sonic && mach < 0.985) { sonic = false; shockCone(); }
+
+    // The ground, coming: the height a pull-out from this dive would use,
+    // with a second to notice, against the height there is.
+    jt.pull = false;
+    if (!a.grounded && a.vs < -8 && a.gear < 0.5) {
+      const nAv = Math.max(1.5, Math.min(8, a.qbar * 27.87 * 1.35 / (a.mass * 9.81)));
+      const need = a.tas * a.tas * (1 - Math.cos(a.gamma * RAD)) / (9.81 * (nAv - 1)) - a.vs * 1.2;
+      jt.pull = a.pos[1] < need;
+    }
+    // Low, slow and sinking with the wheels up, or fast with them down.
+    jt.config = (!a.grounded && a.gear < 0.99 && a.pos[1] < 300 && a.cas < 100 && a.vs < -1.5) ||
+                (a.gear > 0.5 && a.tas > 160);
+
+    // What the body takes. Sustained g drains the eyes from the outside in;
+    // it comes back in a couple of seconds once the stick is eased.
+    const over = a.nz > 6.5 ? (a.nz - 6.5) * 0.11 : a.nz < -1.5 ? (-1.5 - a.nz) * 0.25 : -0.45;
+    jt.gInt = clamp(jt.gInt + over * dt, 0, 1);
+    jt.red = a.nz < -1.5;
+    return a.abf;
+  }
+
+  /** The pilot's eye: the head's turn on top of the aircraft's attitude,
+   *  as the compass bearing, the tilt from straight down and the roll that
+   *  MapLibre's camera is given. */
+  function jetView() {
+    const m = Viper.mod, a = jt.ac;
+    let q = m.qmul(a.q, m.qaxis([0, 1, 0], -jt.look.yaw));
+    q = m.qmul(q, m.qaxis([1, 0, 0], jt.look.pitch));
+    const f = m.qrot(q, [0, 0, -1]), u = m.qrot(q, [0, 1, 0]);
+    const el = Math.asin(clamp(f[1], -1, 1));
+    let brg, roll;
+    if (Math.abs(f[1]) > 0.9998) {
+      // Straight up or straight down there is no bearing to look along; the
+      // top of the picture is the only direction there is.
+      const sg = f[1] > 0 ? -1 : 1;
+      brg = Math.atan2(sg * u[0], -sg * u[2]);
+      roll = 0;
     } else {
-      bankRate = 0;
-      const want = canRoll ? turnIn * BANK_MAX : 0;
-      bank += angleDiff(want, bank) * clamp(LEVEL_K * dt, 0, 1);
+      brg = Math.atan2(f[0], -f[2]);
+      // Level 'up' for this line of sight, and 'right' beside it.
+      const k = f[1];
+      let u0 = [-k * f[0], 1 - k * f[1], -k * f[2]];
+      const l = Math.hypot(u0[0], u0[1], u0[2]);
+      u0 = [u0[0] / l, u0[1] / l, u0[2] / l];
+      const r0 = [f[1] * u0[2] - f[2] * u0[1], f[2] * u0[0] - f[0] * u0[2], f[0] * u0[1] - f[1] * u0[0]];
+      roll = Math.atan2(u[0] * r0[0] + u[1] * r0[1] + u[2] * r0[2], u[0] * u0[0] + u[1] * u0[1] + u[2] * u0[2]);
     }
-    bank = angleDiff(bank, 0);
+    const r = [f[1] * u[2] - f[2] * u[1], f[2] * u[0] - f[0] * u[2], f[0] * u[1] - f[1] * u[0]];
+    jt.cam = { bearing: (brg / RAD + 360) % 360, pitch: 90 + el / RAD, roll: roll / RAD, f, u, r };
+    return jt.cam;
+  }
 
-    // Turn: what the stick asks, plus what the bank gives. A bank turns the
-    // nose the way lift does, so a rolled-in turn is tighter than a flat one
-    // and an inverted aircraft goes straight - which is also what makes a
-    // full roll come out pointing where it went in. Over all of it, the
-    // airframe: a turn is a centripetal acceleration of speed times rate,
-    // and past 9 g the F-16's own computer refuses the stick. Slow, the cap
-    // is far above anything the mouse asks; at Mach 1.2 it is twelve degrees
-    // a second and a half-circle two kilometres across, which is why a
-    // fighter turns back for a target with such patience.
-    const v = Math.abs(speed);
-    const yawCap = Math.min(YAW_RATE + BANK_TURN, G_MAX * 9.81 / Math.max(v, 1) / RAD);
-    const wantYaw = clamp(turnIn * YAW_RATE + Math.sin(bank * RAD) * BANK_TURN, -yawCap, yawCap);
-    // The turn dies quickly under a held photo, so it stops sliding away
-    // from the cursor that is trying to click it.
-    yaw += (wantYaw - yaw) * clamp((held ? 12 : YAW_ACCEL) * dt, 0, 1);
-    bearing = (bearing + yaw * dt + 360) % 360;
-    const ac = v * yaw * RAD / 9.81;
-    gee = Math.sqrt(1 + ac * ac);
+  /** A point on the ground, east and north of the aircraft in metres, on
+   *  the screen, with the pixels a metre spans there; null behind the eye.
+   *  The eye's own pinhole and not map.project(): with the camera's centre
+   *  lifted off the ground, as it is whenever the nose is above the
+   *  horizon, MapLibre projects a place as if it were at the centre's
+   *  height, and the trail's name is painted in the sky. */
+  function jetProject(dx, dy) {
+    const c = jt.cam;
+    const z = dx * c.f[0] - alt * c.f[1] - dy * c.f[2];
+    if (z < 1) return null;
+    const F = innerHeight * focal;
+    return {
+      x: innerWidth / 2 + F * (dx * c.r[0] - alt * c.r[1] - dy * c.r[2]) / z,
+      y: innerHeight / 2 - F * (dx * c.u[0] - alt * c.u[1] - dy * c.u[2]) / z,
+      ppm: F / z
+    };
+  }
 
-    // Elevator. W pushes the nose down and dives, S pulls it up and climbs,
-    // the way a stick pushed forward does; the arrows climb and sink without
-    // moving the view. Low down the climb is a fraction of the height you
-    // are at, so rooftop to survey height is a handful of seconds either
-    // way; from a few hundred metres up it is the F-16's own 254 m/s, and
-    // the ceiling is a minute's climb, which is what a ceiling should be.
-    const elev = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
-    const trimWant = elev > 0 ? TRIM_UP : elev < 0 ? -TRIM_DOWN : 0;
-    pitchTrim += (trimWant - pitchTrim) * clamp(4 * dt, 0, 1);
-    const climb = (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0) + elev;
-    if (climb) {
-      const rate = Math.min(alt * CLIMB_K + 6, climb > 0 ? CLIMB_MAX : DIVE_MAX);
-      alt = clamp(alt + climb * rate * dt, ALT_MIN, ALT_MAX);
+  /** The map's camera options for the pilot's eye where the aircraft is. */
+  function jetPose() {
+    const c = jetView();
+    return map.calculateCameraOptionsFromCameraLngLatAltRotation(
+      new maplibregl.LngLat(pos.lng, pos.lat), Math.max(alt, 1.2), c.bearing, c.pitch, c.roll);
+  }
+
+  /** The head: eased to where it was asked to look, and the lens with it. */
+  function jetHead(dt) {
+    const m = Viper.mod;
+    const k = clamp(dt * (jt.lookHold ? 18 : 7), 0, 1);
+    jt.look.yaw += (jt.lookWant.yaw - jt.look.yaw) * k;
+    jt.look.pitch += (jt.lookWant.pitch - jt.look.pitch) * k;
+    // Without the cockpit there is nothing near to keep in the frame, so the
+    // lens is longer: the symbols and the town are half as big again.
+    const want = jt.zoom ? JET.VFOV_ZOOM : jt.mode === 'hud' ? JET.VFOV_HUD : JET.VFOV;
+    if (Math.abs(jt.fov - want) > 0.05) {
+      jt.fov += (want - jt.fov) * clamp(dt * 8, 0, 1);
+      setFov(jt.fov);
+      focal = 0.5 / Math.tan((jt.fov / 2) * RAD);
     }
-    // Banked over, the wings hold less. Gentle enough that a mouse turn's
-    // bank costs nothing you would notice and a knife-edge costs a little.
-    const lift = Math.cos(bank * RAD);
-    if (lift < 0.9) alt = clamp(alt * (1 - (1 - lift) * SINK_K * dt), ALT_MIN, ALT_MAX);
+    if (!jt.lookHold) { jt.lookWant.yaw = 0; jt.lookWant.pitch = jt.mode === 'hud' ? -4 * RAD : m.LOOK_PITCH; }
+  }
 
-    if (speed) pos = destination(pos.lat, pos.lng, bearing, speed * dt);
-    return burnWant;
+  /** Everything the cockpit draws from, and one frame of it. */
+  function jetPaint() {
+    if (!jt.pit || !jt.ac) return;
+    const a = jt.ac;
+    let stpt = null;
+    if (nearest && nearest.at) {
+      const [nx, ny] = toLocal(nearest.at[1], nearest.at[0]);
+      const dx = nx - a.pos[0], dn = ny + a.pos[2];
+      const d = Math.hypot(dx, dn, alt) || 1;
+      stpt = {
+        dir: [dx / d, -alt / d, -dn / d], nm: Math.hypot(dx, dn) / 1852, n: 1 + (near.indexOf(nearest) % 98),
+        brg: (Math.atan2(dx, dn) / RAD + 360) % 360, name: nearest.name || '', at: [nx, ny]
+      };
+    }
+    const s = {
+      q: a.q, vel: a.vel, look: jt.look, vfov: jt.fov, sun: JET.SUN,
+      shake: Math.max(buffet, a.grounded ? clamp(a.vg / 90, 0, 0.35) : 0) * (paused || jt.hold ? 0 : 1),
+      nz: a.nz, maxG: jt.maxG, lever: a.lever, stickX: a.stickX, stickY: a.stickY,
+      cas: a.cas * 1.943844, alt: a.pos[1] * 3.28084, ralt: a.pos[1] * 3.28084,
+      hdg: a.heading, pitch: a.pitch, roll: a.roll, track: a.track, mach: a.mach,
+      aoa: a.alpha / RAD, beta: a.beta / RAD, vs: a.vs * 196.85,
+      gear: a.gear, gearDown: a.gearDown, sb: a.sb, ap: a.ap, limit: a.limit, over: a.over, pull: jt.pull,
+      grounded: a.grounded, fuelLow: a.fuel < 450, config: jt.config, caution: jt.config || a.over || a.fuel < 450,
+      t: performance.now() / 1000,
+      rpm: a.rpm, noz: a.noz, ftit: a.ftit, oil: a.oil, ff: a.ff * 3600 * 2.204623, fuel: a.fuel * 2.204623,
+      stpt, own: [a.pos[0], -a.pos[2]], world
+    };
+    jt.state = s;
+    jt.pit.render(s);
+    jt.drawn = true;
+  }
+
+  function jetGear() {
+    const a = jt.ac;
+    if (!a || a.crashed) return;
+    if (a.grounded) { say('על הקרקע הגלגלים נשארים למטה', 1800); return; }
+    a.gearDown = !a.gearDown;
+    say(a.gearDown ? 'גלגלים יורדים' : 'גלגלים עולים', 1400);
+  }
+  function jetBoards() {
+    const a = jt.ac;
+    if (!a) return;
+    a.boards = !a.boards;
+    say(a.boards ? 'בלמי אוויר פתוחים' : 'בלמי אוויר סגורים', 1400);
+  }
+  function jetAuto() {
+    const a = jt.ac;
+    if (!a || a.grounded || a.crashed) return;
+    a.ap = !a.ap;
+    if (a.ap) {
+      a.apAlt = a.pos[1];
+      a.apRoll = Math.abs(a.roll) < 7 ? 0 : clamp(a.roll, -60, 60) * RAD;
+      say(a.apRoll ? `טייס אוטומטי: שומר גובה והטיה, המטוס חג במעגל` : 'טייס אוטומטי: שומר גובה וכיוון', 2400);
+    } else say('טייס אוטומטי מנותק', 1400);
+  }
+  function jetHold() {
+    jt.hold = !jt.hold;
+    say(jt.hold ? 'הטיסה מוקפאת. P להמשך' : 'ממשיכים', jt.hold ? 60000 : 1000);
+  }
+  function jetMode() {
+    jt.mode = jt.mode === 'pit' ? 'hud' : 'pit';
+    if (jt.pit) jt.pit.setMode(jt.mode);
+    try { localStorage.setItem('dk.fly.pit', jt.mode); } catch (_) { /* fine */ }
+    document.body.classList.toggle('fly-jet-hud', jt.mode === 'hud');
+    say(jt.mode === 'hud' ? 'בלי תא הטייס: רק ה־HUD והנוף' : 'תא הטייס', 1600);
+  }
+  function jetRecover() {
+    if (!jt.ac) return;
+    jetReset(true);
+    say('חזרה לטיסה ישרה ואופקית', 1600);
   }
 
   /* ---------- the balloon's flight ----------
@@ -1974,6 +2207,7 @@ const Explore = (() => {
    *  through the take-off ease, when the map is between two views, and
    *  through any clamp the map applied on the way. */
   function onMapRender() {
+    if (on && craft === 'jet') { if (!jt.drawn) jetPaint(); return; }
     if (!on || !bk.rig || craft !== 'bike') return;
     const c = mapCamera();
     bk.rig.setCamera(c.x, c.y, c.z, c.dx, c.dy, c.dz, bk.camRoll, c.vfov);
@@ -1990,12 +2224,21 @@ const Explore = (() => {
     last = now;
     const isBal = craft === 'balloon';
     const isBike = craft === 'bike';
+    const isJet = craft === 'jet';
     // During the take-off ease the camera belongs to MapLibre, but the sky
     // still has to follow the horizon it is climbing towards - and the
     // balloon's burner is already lit, because that is what lifts it. The
     // bike sits on the ground with its nozzles idling while the camera
     // arrives, so its physics runs, hands off.
     if (!flying) {
+      if (isJet) {
+        // The cockpit is already around you as the map comes up to it.
+        if ((frame++ & 1) === 0) Engine.set(0.5, 0, false);
+        if (!jt.drawn) jetPaint();     // the map drew nothing since the last step
+        jt.drawn = false;
+        jetHead(dt);
+        return;
+      }
       if (isBal) {
         burn += (1 - burn) * clamp(8 * dt, 0, 1);
         if ((frame++ & 1) === 0) Engine.set(0, 1);
@@ -2014,8 +2257,9 @@ const Explore = (() => {
     // A photo open full-size holds everything where it is. The speed you had
     // is the speed you get back, because closing a picture is not landing.
     let burnWant = 0;
-    if (!paused) burnWant = isBal ? balloonControls(dt, now) : isBike ? bikeControls(dt, now) : jetControls(dt, now);
-    const pitch = isBike ? (bk.pose ? bk.pose.pitch : map.getPitch()) : viewPitch();
+    if (!paused && !(isJet && jt.hold)) burnWant = isBal ? balloonControls(dt, now) : isBike ? bikeControls(dt, now) : jetControls(dt, now);
+    if (isJet) jetHead(dt);
+    const pitch = isBike ? (bk.pose ? bk.pose.pitch : map.getPitch()) : isJet ? jetView().pitch : viewPitch();
 
     burn += (burnWant - burn) * clamp((burnWant > burn ? (isBal ? 14 : 6) : (isBal ? 8 : 3)) * dt, 0, 1);
 
@@ -2027,7 +2271,7 @@ const Explore = (() => {
     // is the buffet of the shocks forming and walking back over the wing.
     // The bike's lean is applied when the map has drawn (onMapRender), so
     // it lands in the same frame as the tiles it leans.
-    if (!isBike) {
+    if (!isBike && !isJet) {
       let tf = `rotate(${(-bank).toFixed(2)}deg)`;
       if (!isBal && buffet > 0) {
         const a = buffet * buffet * 5;
@@ -2046,6 +2290,13 @@ const Explore = (() => {
         bk.pose = bikePose(bk.want);
         map.jumpTo(bk.pose);
       }
+    } else if (isJet) {
+      // The map is given the pilot's eye. The cockpit is drawn when the map
+      // draws (onMapRender), so the two land in one frame; if the map had
+      // nothing new to draw, it is drawn here.
+      if (!jt.drawn) jetPaint();       // the map drew nothing since the last step: the cockpit still lives
+      jt.drawn = false;
+      map.jumpTo(jetPose());
     } else {
       const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
       map.jumpTo({
@@ -2078,7 +2329,12 @@ const Explore = (() => {
     if ((frame++ & 1) === 0) {
       if (isBal) Engine.set(0, paused ? 0 : burnWant);
       else if (isBike) Engine.setBike(paused ? 0.1 : bikePower(), paused ? 0 : speed);
-      else Engine.set(paused ? 0.12 : Math.abs(speed) / topSpeed(), paused ? 0 : burn, sonic && !paused);
+      else {
+        // The engine is heard by its compressor, and the air by the speed.
+        const quiet = paused || jt.hold;
+        const a = jt.ac;
+        Engine.set(quiet ? 0.12 : clamp((a.rpm - 0.62) / 0.38 * 0.7 + 0.3 * a.tas / 400, 0, 1), quiet ? 0 : burn, sonic && !quiet);
+      }
     }
   }
 
@@ -2107,6 +2363,26 @@ const Explore = (() => {
   }
 
   function paintHud(pitch) {
+    if (craft === 'jet') {
+      // The jet's instruments are the aircraft's own, in the cockpit; what
+      // is left out here is the name of what was found, and what the body
+      // takes: the grey closing in from the edges under sustained g, the
+      // red of a hard push.
+      if (bk.msg && performance.now() > bk.msgUntil) { bk.msg = ''; elMsg.className = 'fly-msg'; }
+      document.body.classList.toggle('fly-super', sonic);
+      if (elGloc) {
+        elGloc.style.opacity = jt.ac && jt.ac.crashed ? 1 : (jt.gInt * 0.97).toFixed(3);
+        elGloc.classList.toggle('red', !!jt.red);
+        elGloc.classList.toggle('boom', !!(jt.ac && jt.ac.crashed));
+      }
+      if (nearest && nearest.name) {
+        elName.textContent = nearest.name;
+        elName.hidden = false;
+        elHint.hidden = false;
+        elHint.classList.toggle('open', !mediaOf(nearest).length);
+      } else { elName.hidden = true; elHint.hidden = true; }
+      return;
+    }
     // The sky is a band that ends exactly at the horizon, so the pale end of
     // its gradient always meets the ground rather than landing wherever a
     // fixed gradient happened to put it. It sits behind the map, so the seam
@@ -2174,17 +2450,6 @@ const Explore = (() => {
       elMach.textContent = mach.toFixed(2);
       elG.textContent = gee.toFixed(1);
       document.body.classList.toggle('fly-super', sonic);
-      // The cockpit draws the HUD from the same camera the map is given:
-      // the focal length in pixels of the container, the boresight in the
-      // middle of the window. The steerpoint on its DED is the nearest trail.
-      Cockpit.paint({
-        w: innerWidth, h: innerHeight,
-        F: focal * (map.getContainer().clientHeight || 800),
-        pitch, bank, bearing, speed, alt, mach, gee, throttle, burn,
-        nearest: nearest ? { name: nearest.name, d: nearest.d, media: mediaOf(nearest).length > 0 } : null,
-        own: toLocal(pos.lat, pos.lng),
-        world
-      });
     }
     document.body.classList.toggle('fly-burn', burn > 0.5);
     elBurn.hidden = burn < 0.5;
@@ -2489,6 +2754,18 @@ const Explore = (() => {
         case 'KeyN': if (once) bikeSwap(); e.preventDefault(); return;
       }
     }
+    if (craft === 'jet' && jt.ac) {
+      const once = !e.repeat;
+      switch (e.code) {
+        case 'KeyG': if (once) jetGear(); e.preventDefault(); return;
+        case 'KeyB': if (once) jetBoards(); e.preventDefault(); return;
+        case 'KeyT': if (once) jetAuto(); e.preventDefault(); return;
+        case 'KeyP': if (once) jetHold(); e.preventDefault(); return;
+        case 'KeyC': if (once) jetMode(); e.preventDefault(); return;
+        case 'KeyR': if (once) jetRecover(); e.preventDefault(); return;
+        case 'KeyZ': jt.zoom = true; e.preventDefault(); return;
+      }
+    }
     if (/^(Key[WASDE]|Space|Arrow(Up|Down|Left|Right))$/.test(e.code)) {
       e.preventDefault();
       keys.add(e.code);
@@ -2498,6 +2775,7 @@ const Explore = (() => {
   }
 
   function onKeyUp(e) {
+    if (e.code === 'KeyZ') jt.zoom = false;
     keys.delete(e.code);
   }
 
@@ -2516,6 +2794,12 @@ const Explore = (() => {
     if (!intro.hidden && introTimer && flying) {
       if (mouse.in) introMoved += Math.abs(e.clientX - mouse.px) + Math.abs(e.clientY - mouse.py);
       if (introMoved > INTRO_MOVE) dismissIntro();
+    }
+    if (jt.lookHold && craft === 'jet') {
+      // The right button is held: the mouse is the head, not the stick.
+      jt.lookWant.yaw = clamp(jt.lookWant.yaw + (e.movementX || 0) * 0.0042, -JET.LOOK_YAW * RAD, JET.LOOK_YAW * RAD);
+      jt.lookWant.pitch = clamp(jt.lookWant.pitch - (e.movementY || 0) * 0.0042, -JET.LOOK_DOWN * RAD, JET.LOOK_UP * RAD);
+      return;
     }
     mouse.px = e.clientX; mouse.py = e.clientY;
     mouse.nx = clamp((e.clientX - hw) / hw, -1, 1);
@@ -2542,6 +2826,7 @@ const Explore = (() => {
     hover.card = null;
     hover.hud = false;
     hold = false;
+    jt.lookHold = false;
     disarm();
   }
 
@@ -2550,6 +2835,11 @@ const Explore = (() => {
    * The release is taken from anywhere, because a finger that slid off the
    * window is still a finger that let go. */
   function onPointerDown(e) {
+    if (on && craft === 'jet' && e.pointerType !== 'touch' && e.button === 2) {
+      jt.lookHold = true;
+      jt.lookWant.yaw = jt.look.yaw; jt.lookWant.pitch = jt.look.pitch;
+      return;
+    }
     if (!on || e.pointerType === 'touch' || e.button !== 0) return;
     const t = e.target;
     if (t && t.closest && t.closest('.fly-card, .fly-hud, .fly-view, .fly-intro, .fly-touch')) return;
@@ -2557,7 +2847,16 @@ const Explore = (() => {
     Engine.poke();
   }
 
-  function onPointerUp() { hold = false; }
+  function onPointerUp(e) { if (e && e.button === 2) jt.lookHold = false; else hold = false; }
+
+  /** The wheel is the throttle, for the jet: a notch is a twentieth of its travel. */
+  function onWheel(e) {
+    if (!on || craft !== 'jet' || !jt.ac || !viewer.hidden) return;
+    if (e.target && e.target.closest && e.target.closest('.fly-intro, .fly-view')) return;
+    e.preventDefault();
+    jt.ac.lever = clamp(jt.ac.lever - Math.sign(e.deltaY) * 0.05, 0, 1);
+    Engine.poke();
+  }
 
   function disarm() {
     if (!canRoll) return;
@@ -2567,6 +2866,7 @@ const Explore = (() => {
 
   function onBlur() {
     keys.clear();
+    jt.zoom = false;
     touchHold = false;
     touchBurn = false;
     touchVent = false;
@@ -2592,7 +2892,7 @@ const Explore = (() => {
     if (tgt && tgt.closest && tgt.closest('.fly-card, .fly-hud, .fly-view, .fly-touch')) return;
     // The bike has fable's joystick and buttons (buildTouch); a finger on
     // open ground is not a lever there.
-    if (craft === 'bike') { dismissIntro(); Engine.poke(); return; }
+    if (craft === 'bike' || craft === 'jet') { dismissIntro(); Engine.poke(); return; }
     const t = e.touches[0];
     touch = { x: t.clientX, y: t.clientY, y0: t.clientY };
     touchHold = true;
@@ -2716,6 +3016,13 @@ const Explore = (() => {
     tapBtn('tbtn tsmall', rollRow, '↻', () => bikePulse('R'));
     holdBtn('tboost', side, '🔥', () => { tb.boost = true; }, () => { tb.boost = false; });
 
+    // The jet's own: gear, speed brakes, autopilot, the cockpit on and off.
+    const jrow = el('tjet', side);
+    tapBtn('tbtn tsmall', jrow, 'G', jetGear);
+    tapBtn('tbtn tsmall', jrow, 'B', jetBoards);
+    tapBtn('tbtn tsmall', jrow, 'AP', jetAuto);
+    tapBtn('tbtn tsmall', jrow, '👁', jetMode);
+
     const menu = el('tmenu', touchEl);
     tapBtn('tbtn tsmall', menu, '📷', bikeCamera);
     tapBtn('tbtn tsmall', menu, 'T', bikeAssist);
@@ -2823,6 +3130,8 @@ const Explore = (() => {
       <div class="fly-world" id="fly-world"><div class="fly-haze" id="fly-haze"></div></div>
       <canvas class="fly-bike" id="fly-bike" hidden aria-hidden="true"></canvas>
       <canvas class="fly-bike fly-rig" id="fly-rig" hidden aria-hidden="true"></canvas>
+      <canvas class="fly-bike fly-pit" id="fly-pit" hidden aria-hidden="true"></canvas>
+      <div class="fly-gloc" id="fly-gloc" aria-hidden="true"></div>
       <div class="fly-rush" id="fly-rush"></div>
       <div class="fly-burner" id="fly-burner"></div>
       <div class="fly-cone" id="fly-cone" aria-hidden="true"></div>
@@ -2913,32 +3222,39 @@ const Explore = (() => {
       <div class="fly-intro" id="fly-intro">
         <div class="fly-intro-card jet">
           <h2>מצב תעופה: F-16</h2>
-          <p>אתה בתא הטייס של F-16 (בחיל האוויר: נץ, ברק וסופה) מעל פרדס חנה־כרכור.
-             תקרת הטיסה 15,240 מ׳, שהם 50,000 רגל. המהירות המרבית מאך 1.2 קרוב לקרקע,
-             כ־1,470 קמ״ש, ומאך 2 בגובה. שני שלישים מהמצערת הם המנוע היבש; מעבר להם נדלק
-             המבער האחורי, ורק איתו עוברים את מהירות הקול. המעבר מלווה בטלטלה, בענן הלם
-             ובבום על־קולי, ומעבר לו המנוע נשאר מאחור: שומעים רק את הרוח. הפנייה מוגבלת
-             ל־9 g, אז במהירות גבוהה המטוס פונה לאט. דרכי הקיצור נדלקות כשמתקרבים אליהן, והתמונות שלהן
-             תלויות באוויר מעל השביל. טסים אל תמונה, ולוחצים עליה.
-             המכשירים הם של המטוס: ב־HUD המהירות בקשר והגובה ברגל (100 קשר = 185 קמ״ש,
-             1,000 רגל = 305 מ׳), העיגול עם הכנפיים הוא סמן נתיב הטיסה, לאן אתה באמת טס,
-             וה־DED בלוח מציג את השביל הקרוב.</p>
+          <p>אתה בתא הטייס של F-16 (בחיל האוויר: נץ, ברק וסופה) מעל פרדס חנה־כרכור, בגובה
+             2,500 רגל ובמהירות 360 קשר. זה מדמה טיסה: למטוס יש כנף, מנוע ומשקל, והוא לא
+             נעצר באוויר. ההגה לא מזיז הגאים אלא מבקש ממחשב הטיסה: משיכה היא g (עד 9),
+             הצדה היא קצב גלגול. כשמרפים, המטוס ממשיך בנתיב שלו. כדי לפנות מגלגלים הצדה
+             ומושכים. דרכי הקיצור נדלקות כשמתקרבים, והתמונות שלהן תלויות מעל השביל.</p>
+          <p>ב־HUD (הזכוכית שמולך): משמאל המהירות בקשר, מימין הגובה ברגל (100 קשר = 185 קמ״ש,
+             1,000 רגל = 305 מ׳), למטה הכיוון. העיגול עם הכנפיים הוא סמן נתיב הטיסה: לשם המטוס
+             באמת טס. שימו אותו על האופק וטסים ישר. המעוין מסמן את השביל הקרוב, ו־X גדול
+             מהבהב אומר למשוך מיד, הקרקע קרובה.</p>
           <ul class="fly-keys">
-            <li><kbd class="wide">עכבר</kbd><span>ההגה: ימינה ושמאלה פונים</span></li>
-            <li><kbd class="wide">לחיצה</kbd><span>המצערת: כל עוד הכפתור לחוץ המנוע מגביר, וכשמשחררים הוא דועך. להחזיק כחצי דקה כדי לעבור את מאך 1</span></li>
-            <li><kbd>W</kbd><kbd>S</kbd><span>אף למטה, אף למעלה</span></li>
-            <li><kbd>A</kbd><kbd>D</kbd><span>גלגול. להחזיק לגלגול שלם</span></li>
-            <li><kbd>↑</kbd><kbd>↓</kbd><span>גובה. עד התקרה זו דקה של טיפוס</span></li>
-            <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
-            <li><kbd>V</kbd><span>תצוגה: רגיל, נקי (בלי תמונות, כדי לראות את השטח), שבילים (מוארים חזק)</span></li>
+            <li><kbd class="wide">עכבר</kbd><span>ההגה: לצדדים גלגול, אליך (למטה) משיכה, ממך דחיפה. גם החצים</span></li>
+            <li><kbd>W</kbd><kbd>S</kbd><span>מצערת, וגם גלגלת העכבר ולחיצה ארוכה. נשארת איפה שעזבת. מעל שני שלישים נדלק המבער</span></li>
+            <li><kbd>A</kbd><kbd>D</kbd><span>דוושות: הגה כיוון, ועל הקרקע היגוי</span></li>
+            <li><kbd>G</kbd><span>גלגלים</span></li>
+            <li><kbd>B</kbd><span>בלמי אוויר</span></li>
+            <li><kbd class="wide">רווח</kbd><span>בלמי גלגלים, על הקרקע</span></li>
+            <li><kbd>T</kbd><span>טייס אוטומטי: שומר גובה והטיה. בהטיה הוא חג במעגל, וזו הדרך להסתכל על מקום</span></li>
+            <li><kbd>P</kbd><span>הקפאת הטיסה</span></li>
+            <li><kbd>R</kbd><span>חזרה לטיסה ישרה ובטוחה, מכל מצב</span></li>
+            <li><kbd class="wide">כפתור ימני</kbd><span>להחזיק ולהזיז: מבט חופשי בתא ומחוצה לו</span></li>
+            <li><kbd>Z</kbd><span>זום</span></li>
+            <li><kbd>C</kbd><span>תא טייס מלא, או רק ה־HUD והנוף</span></li>
+            <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב (הטיסה מוקפאת בינתיים)</span></li>
+            <li><kbd>V</kbd><span>תצוגה: רגיל, נקי, שבילים</span></li>
             <li><kbd>M</kbd><span>המנוע</span></li>
             <li><kbd>Esc</kbd><span>יציאה</span></li>
           </ul>
           <p class="fly-intro-foot">הזזת העכבר סוגרת את הכרטיס הזה ותופסת את ההגה; <kbd>?</kbd> מחזיר אותו.
-             כשהסמן נח על תמונה ההגה משתחרר, כדי שאפשר יהיה ללחוץ עליה.
-             בניגוד ל־F-16 אמיתי, כשמרפים מהמצערת המטוס נעצר באוויר: זה מטוס שנועד להסתכל.</p>
-          <p class="fly-intro-touch">אצבע על המסך היא המצערת: מחזיקים וטסים, משחררים ונעצרים.
-             גרירה לצדדים פונה, למעלה ולמטה משנה גובה. נגיעה בתמונה פותחת אותה.</p>
+             נחיתה: גלגלים למטה, כ־140 קשר, שקיעה עדינה, וכל שדה פתוח הוא מסלול. המראה: מצערת מלאה,
+             ומושכים ב־150 קשר. מתחת ל־130 קשר בערך הכנף כבר לא נושאת, ומחשב הטיסה לא ייתן למטוס
+             להסתחרר אלא ישקע איתו.</p>
+          <p class="fly-intro-touch">ג'ויסטיק משמאל הוא ההגה: לצדדים גלגול, למטה משיכה. מימין המצערת,
+             ומתחתיה גלגלים (G), בלמי אוויר (B), טייס אוטומטי (AP) והסתרת תא הטייס.</p>
         </div>
         <div class="fly-intro-card balloon">
           <h2>כדור פורח</h2>
@@ -3103,10 +3419,11 @@ const Explore = (() => {
     elCab.addEventListener('click', (e) => { e.stopPropagation(); elCab.blur(); toggleBare(); });
     bk.canvas = el('fly-bike');
     br.canvas = el('fly-rig');
+    jt.canvas = el('fly-pit');
+    elGloc = el('fly-gloc');
     buildTouch(root);
     // The jet's HUD and panel live inside the instrument layer, over the
     // picture and under the buttons; built once, shown for the jet.
-    Cockpit.mount(root.querySelector('.fly-hud'));
 
     el('fly-x').addEventListener('click', () => exit());
     el('fly-help').addEventListener('click', toggleIntro);
@@ -3215,7 +3532,12 @@ const Explore = (() => {
     document.body.classList.add('flying');
     document.body.classList.toggle('fly-balloon', isBal);
     document.body.classList.toggle('fly-bike', isBike);
-    Cockpit.show(!isBal && !isBike);
+    const isJet = !isBal && !isBike;
+    document.body.classList.toggle('fly-jet', isJet);
+    document.body.classList.toggle('fly-jet-hud', isJet && jt.mode === 'hud');
+    jt.hold = false; jt.lookHold = false; jt.zoom = false; jt.fov = JET.VFOV;
+    jt.look.yaw = jt.lookWant.yaw = 0; jt.look.pitch = jt.lookWant.pitch = -12 * RAD;
+    if (elGloc) elGloc.style.opacity = 0;
     applyBare(false);   // the class and the button; the rig itself is made below, with the take-off waiting on it
 
     // Full screen is asked for, never depended on: iOS refuses it outright and
@@ -3279,6 +3601,28 @@ const Explore = (() => {
         bk.pose = bikePose(bk.want);
         target = bk.pose;
         map.on('render', onMapRender);
+      } else if (isJet) {
+        // The aircraft is put in the air where the map was, heading the way
+        // the map faced, and the map's camera becomes the pilot's eye: free
+        // of the ground, free to roll and to look above the horizon.
+        const m = Viper.mod;
+        if (!jt.ac) jt.ac = new m.F16();
+        if (!jt.pit) jt.pit = m.makePit(jt.canvas);
+        jt.canvas.hidden = false;
+        jt.pit.setMode(jt.mode);
+        jt.saved = { maxPitch: map.getMaxPitch(), maxZoom: map.getMaxZoom(), sky: map.getSky ? map.getSky() : undefined };
+        map.setMaxPitch(180);
+        map.setMaxZoom(24);
+        map.setCenterClampedToGround(false);
+        map.setSky({
+          'sky-color': '#5e97da', 'horizon-color': '#dbe8f1', 'fog-color': '#d2dde2',
+          'sky-horizon-blend': 0.85, 'horizon-fog-blend': 0.8, 'fog-ground-blend': 0.9, 'atmosphere-blend': 0
+        });
+        fitFrame();
+        jetReset(false);
+        alt = jt.ac.pos[1] + JET.EYE;
+        target = jetPose();
+        map.on('render', onMapRender);
       } else {
         const pitch = basePitch();
         const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
@@ -3317,7 +3661,7 @@ const Explore = (() => {
     // the flat rim, and the basket arrives when it arrives.
     const ready = isBike ? loadBike()
       : isBal ? Promise.race([useBalloonRig(), new Promise((res) => setTimeout(res, 2500))])
-      : Promise.resolve();
+      : Viper.load();
     ready.then(() => {
       if (!on) return;
       if (baseIndex !== 1) {
@@ -3329,7 +3673,7 @@ const Explore = (() => {
     }).catch((err) => {
       console.error('bike: three.js did not load', err);
       exit();
-      alert('האופנוע צריך ספרייה תלת־ממדית שלא נטענה. בדוק את החיבור ונסה שוב.');
+      alert(isBike ? 'האופנוע צריך ספרייה תלת־ממדית שלא נטענה. בדוק את החיבור ונסה שוב.' : 'תא הטייס של ה־F-16 לא נטען. בדוק את החיבור ונסה שוב.');
     });
 
     addEventListener('keydown', onKeyDown);
@@ -3346,6 +3690,7 @@ const Explore = (() => {
     addEventListener('pointercancel', onPointerUp);
     addEventListener('click', onClick);
     addEventListener('contextmenu', onContextMenu);
+    addEventListener('wheel', onWheel, { passive: false });
     document.documentElement.addEventListener('mouseleave', onPointerLeave);
     addEventListener('touchstart', onTouchStart, { passive: true });
     addEventListener('touchmove', onTouchMove, { passive: true });
@@ -3385,6 +3730,7 @@ const Explore = (() => {
     removeEventListener('pointercancel', onPointerUp);
     removeEventListener('click', onClick);
     removeEventListener('contextmenu', onContextMenu);
+    removeEventListener('wheel', onWheel);
     document.documentElement.removeEventListener('mouseleave', onPointerLeave);
     removeEventListener('touchstart', onTouchStart);
     removeEventListener('touchmove', onTouchMove);
@@ -3414,8 +3760,19 @@ const Explore = (() => {
     worldEl.style.transform = '';
     sky.style.transform = '';
     elThr.style.background = '';
-    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-rig3d', 'fly-bare', 'fly-bike', 'fly-f5', 'fly-car', 'fly-super');
-    Cockpit.show(false);
+    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-rig3d', 'fly-bare', 'fly-bike', 'fly-f5', 'fly-car', 'fly-super', 'fly-jet', 'fly-jet-hud');
+    if (jt.canvas) jt.canvas.hidden = true;
+    if (elGloc) elGloc.style.opacity = 0;
+    if (jt.saved) {
+      // The map gets its own camera back: clamped to the ground, level, its
+      // own sky and its own ceilings.
+      map.setCenterClampedToGround(true);
+      map.setMaxPitch(jt.saved.maxPitch);
+      map.setMaxZoom(jt.saved.maxZoom);
+      map.setRoll(0);
+      try { map.setSky(jt.saved.sky); } catch (_) { /* the style has none */ }
+      jt.saved = null;
+    }
     delete document.body.dataset.flyView;
     coneEl.classList.remove('go');
     document.documentElement.style.removeProperty('--fly-ox');
@@ -3444,6 +3801,8 @@ const Explore = (() => {
     // those were choices made before the flight and not by it.
     const land = () => map.easeTo({
       center: [pos.lng, pos.lat],
+      roll: 0,
+      elevation: 0,
       zoom: Math.max(back.zoom, 15.5),
       bearing: back.bearing,
       pitch: back.pitch,
@@ -3506,6 +3865,17 @@ const Explore = (() => {
       chips: [...chips.values()].filter((n) => !n.hidden).length,
       lit: near.filter((e) => e.line).map((e) => e.g),
       envelope: envelope(alt),
+      jet: jt.ac ? {
+        x: jt.ac.pos[0], y: jt.ac.pos[1], z: jt.ac.pos[2], tas: jt.ac.tas, cas: jt.ac.cas, vs: jt.ac.vs,
+        heading: jt.ac.heading, pitch: jt.ac.pitch, roll: jt.ac.roll, gamma: jt.ac.gamma, track: jt.ac.track,
+        aoa: jt.ac.alpha / RAD, beta: jt.ac.beta / RAD, nz: jt.ac.nz, lever: jt.ac.lever, rpm: jt.ac.rpm, abf: jt.ac.abf,
+        gear: jt.ac.gear, gearDown: jt.ac.gearDown, sb: jt.ac.sb, grounded: jt.ac.grounded, crashed: jt.ac.crashed,
+        crashWhy: jt.ac.crashWhy, ap: jt.ac.ap, fuel: jt.ac.fuel, ff: jt.ac.ff, stickX: jt.ac.stickX, stickY: jt.ac.stickY,
+        look: { ...jt.look }, fov: jt.fov, mode: jt.mode, hold: jt.hold, pull: jt.pull, gInt: jt.gInt, maxG: jt.maxG,
+        cam: { bearing: jt.cam.bearing, pitch: jt.cam.pitch, roll: jt.cam.roll },
+        map: map ? { bearing: map.getBearing(), pitch: map.getPitch(), roll: map.getRoll ? map.getRoll() : 0, fov: getFov() } : null,
+        pit: jt.pit ? jt.pit.debug() : null, canvas: !!(jt.canvas && !jt.canvas.hidden), msg: bk.msg
+      } : null,
       balloon: { dT: bal.dT, plume: bal.plume, vz: bal.vz, drift: bal.drift, ride: bal.ride,
                  roll: bal.roll, pit: bal.pit, launch: bal.launch,
                  rig: !!(br.rig && br.canvas && !br.canvas.hidden), glance: br.glance, bare },
@@ -3540,5 +3910,7 @@ const Explore = (() => {
   } : null);
 
   return { enter, exit, toggle, isOn, setCraft, getCraft, PICKS, setView, cycleView,
-    getView, returnBase, place, debug, balloonRig: () => br.rig, carRig: () => bk.rigs.car || null };
+    getView, returnBase, place, debug, balloonRig: () => br.rig, carRig: () => bk.rigs.car || null,
+    /** The F-16's flight, for the tests: to stand it on the ground or put it on short finals. */
+    jetAc: () => jt.ac };
 })();

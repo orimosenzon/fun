@@ -1,6 +1,7 @@
 """The view button: what hangs over the ground, in a real Chrome.
 
-Takes off as the jet over the moshava, waits for photos to hang over the
+Takes off as the balloon (the jet until 26/11/2026, when it became an aeroplane
+that does not wait over a town) over the moshava, waits for photos to hang over the
 trails, and steps the view through its three positions with the key and
 with the button: normal (photos, names, lit trails), clean (trails alone),
 trails (no photos, names, trails lit hard). Then checks that the choice is
@@ -18,6 +19,7 @@ from playwright.sync_api import sync_playwright
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(os.path.dirname(OUT), 'web')
+ROOT = os.path.dirname(os.path.dirname(OUT))      # vibe_coding: the jet's cockpit imports three.js from FÖHN's folder
 PORT = 8767
 
 fails = []
@@ -47,7 +49,7 @@ def take_off(page):
     time.sleep(0.3)
 
 srv = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT), '--bind', '127.0.0.1'],
-                       cwd=WEB, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                       cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(0.8)
 try:
     with sync_playwright() as p:
@@ -56,12 +58,12 @@ try:
             '--use-gl=angle', '--use-angle=gl',
             '--ignore-gpu-blocklist'])
         ctx = b.new_context(viewport={'width': 1440, 'height': 900}, locale='he-IL')
-        ctx.add_init_script("try { localStorage.setItem('dk.welcome.v1', '1'); localStorage.setItem('dk.fly.craft', 'jet'); localStorage.removeItem('dk.fly.view'); } catch (e) {}")
+        ctx.add_init_script("try { localStorage.setItem('dk.welcome.v1', '1'); localStorage.setItem('dk.fly.craft', 'balloon'); localStorage.removeItem('dk.fly.view'); } catch (e) {}")
         page = ctx.new_page()
         errors = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
-        page.goto(f'http://127.0.0.1:{PORT}/index.html')
+        page.goto(f'http://127.0.0.1:{PORT}/dereh_kitzur/web/index.html')
         page.wait_for_function('() => typeof Explore !== "undefined" && typeof map !== "undefined" && map && map.loaded()', timeout=30000)
         time.sleep(1)
         page.evaluate('() => { const w = document.getElementById("welcome-sheet"); if (w) w.hidden = true; }')
@@ -128,7 +130,7 @@ try:
         check('the button steps round to normal', d['view'] == 'normal' and L['name'] == 'רגיל', (d['view'], L['name']))
         check('photos back', d['cards'] > 0, d['cards'])
         check('trail paint back', L['core'] == core_normal and L['glow'] == glow_normal, (L['core'], L['glow']))
-        check('a press on the button is not the throttle', d['throttle'] < 0.05, d['throttle'])
+        # (For the balloon `throttle` is the envelope's heat bar, so there is nothing to read here.)
 
         # ---- kept between flights ----
         page.click('#fly-look')   # clean

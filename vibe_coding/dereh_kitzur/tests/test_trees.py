@@ -45,7 +45,7 @@ try:
         check('the layer is switched on', pg.evaluate('Layers.byId("trees").on'))
         shown = pg.evaluate('Layers.byId("trees").waypoints.filter(p => !p.hidden).length')
         check('the cut matches the survey', shown == len(hollow_by_road), (shown, len(hollow_by_road)))
-        drawn = pg.evaluate('''map.getSource("src-trees")._data.features.length''')
+        drawn = pg.evaluate('''(map.getSource("src-trees")._data.geojson || map.getSource("src-trees")._data).features.length''')
         check('the map draws exactly the cut', drawn == shown, (drawn, shown))
         check('the count says so', f'{shown}' in pg.inner_text('.tx-count'))
         key = pg.evaluate('Layers.byId("trees").groups.map(g => g.name)')

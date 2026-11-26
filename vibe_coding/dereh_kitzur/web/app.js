@@ -518,6 +518,13 @@ function setBasemap(i) {
   // months and leaving the flight, which has touched the layers on the way in,
   // did not. A full reload every time is a few tiles more work and one
   // behaviour instead of two.
+  //
+  // The terrain goes first (26/11/2026, MapLibre 5). The new style has no
+  // projection until it has loaded, and a frame drawn in between still tried
+  // to draw the old terrain's depth with it: "Cannot read properties of
+  // undefined (reading 'shaderPreludeCode')". applyOverlays puts the terrain
+  // back on the style.load that follows.
+  try { if (map.getTerrain && map.getTerrain()) map.setTerrain(null); } catch (_) { /* no style yet */ }
   map.setStyle(BASEMAPS[i].style, { diff: false });
 }
 

@@ -37,7 +37,7 @@ STATE = r'''() => {
   Object.keys(map.getStyle().sources).forEach((src) => {
     if (!src.startsWith('src-')) return;
     const s = map.getSource(src);
-    const d = s._data || (s.serialize && s.serialize().data);
+    const d = (s._data && s._data.geojson) || s._data || (s.serialize && s.serialize().data)   /* MapLibre 5 wraps it */;
     if (!d || !d.features) return;
     d.features.forEach((f) => {
       const st = map.getFeatureState({ source: src, id: f.id }) || {};

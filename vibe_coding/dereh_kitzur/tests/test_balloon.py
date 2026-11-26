@@ -19,6 +19,7 @@ from playwright.sync_api import sync_playwright
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(os.path.dirname(OUT), 'web')
+ROOT = os.path.dirname(os.path.dirname(OUT))      # vibe_coding: the jet's cockpit imports three.js from FÖHN's folder
 PORT = 8765
 
 TAP = """
@@ -67,7 +68,7 @@ def sample(page, seconds, every=0.25):
     return out
 
 srv = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT), '--bind', '127.0.0.1'],
-                       cwd=WEB, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                       cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(0.8)
 try:
     with sync_playwright() as p:
@@ -82,7 +83,7 @@ try:
         errors = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
-        page.goto(f'http://127.0.0.1:{PORT}/index.html')
+        page.goto(f'http://127.0.0.1:{PORT}/dereh_kitzur/web/index.html')
         page.wait_for_function('() => typeof Explore !== "undefined" && typeof map !== "undefined" && map && map.loaded()', timeout=30000)
         time.sleep(1)
         page.evaluate('() => { const w = document.getElementById("welcome-sheet"); if (w) w.hidden = true; }')
@@ -326,10 +327,12 @@ try:
         page.evaluate('() => document.getElementById("fly-intro").click()')
         d = dbg(page)
         check('jet has no balloon dressing', not page.evaluate('() => document.body.classList.contains("fly-balloon")') and not page.locator('#fly-vsi-g').is_visible() and not page.locator('.fly-basket').is_visible())
-        check('jet burner gauge reads אחורי', page.evaluate('() => document.querySelector("#fly-burn i").textContent') == 'אחורי')
-        a0 = d['alt']
-        page.keyboard.down('ArrowUp'); time.sleep(1); page.keyboard.up('ArrowUp')
-        check('jet climbs at once', dbg(page)['alt'] > a0 * 1.3, (a0, dbg(page)['alt']))
+        # Since 26/11/2026 the jet is an aeroplane (test_f16.py flies it); here
+        # only that it is one: in the air, at speed, and in its own cockpit.
+        j = d['jet']
+        check('the jet is flying, not hovering', j is not None and j['tas'] > 150 and not j['grounded'], j and j['tas'])
+        check('in its cockpit', j is not None and j['canvas'])
+        time.sleep(1.0)
         rms = page.evaluate(RMS)['rms']
         check('jet engine idles audibly', rms > 0.003, rms)
         page.screenshot(path=f'{OUT}/shot_jet.png')

@@ -49,7 +49,7 @@ try:
         ctx.add_init_script("try { localStorage.setItem('dk.welcome.v1','yes'); } catch(e){}")
         pg = ctx.new_page()
         errs = []
-        pg.on('pageerror', lambda e: errs.append(str(e)))
+        pg.on('pageerror', lambda e: (errs.append(str(e)), print('    page error:', (getattr(e, 'stack', '') or '')[:1400])))
         glErrs = []
         pg.on('console', lambda m: glErrs.append(m.text[:300])
               if m.type == 'error' and ('THREE' in m.text or 'WebGL' in m.text or 'facades' in m.text) else None)
