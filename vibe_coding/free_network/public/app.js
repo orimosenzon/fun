@@ -85,7 +85,23 @@ const GOOGLE_MESSAGES = {
   unknown: 'חשבון הגוגל הזה לא מוכר כאן. נכנסים עם חשבון Google של הכתובת שאליה נשלחה ההזמנה, או עם הקישור האישי שבמייל.',
   taken: 'חשבון הגוגל הזה כבר מחובר למשתמש אחר.',
   failed: 'הכניסה עם גוגל לא הצליחה, נסו שוב.',
+  quiet: null,
 };
+// In the installed app, a phone that is signed in to Google lets its member in by itself. It is
+// tried once per opening of the app, and not again after logging out, until the next login.
+const QUIET_TRIED = 'google-quiet-tried';
+const LOGGED_OUT = 'logged-out';
+
+function quietGoogle() {
+  try {
+    if (!INSTALLED || !googleLogin || sessionStorage.getItem(QUIET_TRIED) || localStorage.getItem(LOGGED_OUT)) return false;
+    sessionStorage.setItem(QUIET_TRIED, '1');
+  } catch {
+    return false;
+  }
+  location.replace('/api/auth/google?quiet=1');
+  return true;
+}
 const scrollByPath = new Map();
 history.scrollRestoration = 'manual';
 let movedInside = false;
@@ -1912,7 +1928,7 @@ function loginPage() {
   app.replaceChildren(el('section', { className: 'hero' },
     el('img', { src: '/favicon.svg', alt: '' }),
     el('h1', {}, 'השכונה שלך, בלי הרעש'),
-    el('p', {}, 'הרשת החופשית של פרדס חנה-כרכור. מקום לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
+    el('p', {}, 'רשת חברתית לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
   googleLogin ? el('div', { className: 'card' }, el('p', { className: 'flush' }, 'הוזמנת בכתובת של Google, או כבר חיברת חשבון?'),
     el('div', { className: 'row' }, googleButton('/api/auth/google', 'כניסה עם Google'))) : '',
   inviteOnly ? inviteNote : el('form', {
@@ -1987,6 +2003,9 @@ function welcomePage() {
 
 async function logout() {
   await api('/auth/logout', { method: 'POST' });
+  try {
+    localStorage.setItem(LOGGED_OUT, '1');
+  } catch {}
   me = null;
   seenUpTo = undefined;
   go('/login');
@@ -2143,6 +2162,12 @@ async function start() {
   }
   ({ user: me, inviteOnly, googleLogin, pushKey } = await api('/me'));
   if (me) pushKeep(pushKey, api).catch(() => {});
+  if (me) {
+    try {
+      localStorage.removeItem(LOGGED_OUT);
+    } catch {}
+  }
+  if (!me && !token && !location.search.includes('google=') && quietGoogle()) return;
   // Opening an old link again is normal: someone already logged in just continues to the site.
   const google = new URLSearchParams(location.search).get('google');
   if (google) {

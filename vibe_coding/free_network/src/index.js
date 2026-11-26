@@ -787,7 +787,9 @@ app.post('/api/auth/verify', async (c) => {
 // the redirect back belongs to this browser.
 app.get('/api/auth/google', (c) => {
   if (!c.env.GOOGLE_CLIENT_ID) return c.json({ error: 'לא נמצא' }, 404);
-  const mode = c.req.query('mail') === '1' ? 'mail' : c.req.query('link') === '1' ? 'link' : 'login';
+  // quiet: the installed app asks Google, without showing anything, who is signed in on the
+  // phone. A member Google vouches for is let in; anyone else just gets the login screen.
+  const mode = c.req.query('mail') === '1' ? 'mail' : c.req.query('link') === '1' ? 'link' : c.req.query('quiet') === '1' ? 'quiet' : 'login';
   if (mode === 'link' && !c.get('user')) return c.redirect('/login');
   if (mode === 'mail' && !isAdmin(c)) return c.redirect('/');
 
@@ -807,7 +809,7 @@ app.get('/api/auth/google', (c) => {
     // To send invitations, Google is asked for sending, and for reading the contacts so that an
     // address completes itself. Never for reading mail. The admin may tick only the sending.
     scope: mode === 'mail' ? ['openid', 'email', SEND_SCOPE, ...CONTACT_SCOPES].join(' ') : 'openid email profile',
-    prompt: mode === 'mail' ? 'consent' : 'select_account',
+    prompt: mode === 'mail' ? 'consent' : mode === 'quiet' ? 'none' : 'select_account',
     ...(mode === 'mail' ? { access_type: 'offline' } : {}),
     state,
   });
@@ -818,7 +820,8 @@ app.get('/api/auth/google/callback', async (c) => {
   if (!c.env.GOOGLE_CLIENT_ID) return c.json({ error: 'לא נמצא' }, 404);
   const [mode, state] = (getCookie(c, GOOGLE_STATE_COOKIE) ?? '').split('.');
   deleteCookie(c, GOOGLE_STATE_COOKIE, { path: GOOGLE_STATE_PATH });
-  const finish = (result) => c.redirect(`/?google=${result}`);
+  // A quiet attempt that did not end in a login says nothing: the login screen is all that follows.
+  const finish = (result) => c.redirect(`/?google=${mode === 'quiet' && result !== 'login' ? 'quiet' : result}`);
 
   const code = c.req.query('code');
   if (!state || state !== c.req.query('state') || !code) return finish('failed');
@@ -864,7 +867,9 @@ app.get('/api/auth/google/callback', async (c) => {
     return finish('login');
   }
 
-  // Someone new whose invitation still waits: signing in with that address takes it.
+  // Someone new whose invitation still waits: signing in with that address takes it. Only when
+  // they asked to, not in a quiet attempt.
+  if (mode === 'quiet') return finish('unknown');
   const now = Date.now();
   const invite = await db
     .prepare(`UPDATE login_tokens SET used_at = ?1 WHERE token_hash = (SELECT token_hash FROM login_tokens

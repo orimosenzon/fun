@@ -1303,15 +1303,17 @@ test('the waiting friend requests are counted, for the addressee only', async ()
 });
 
 // Plays both redirects of a Google sign-in, with `code` standing for who chose to sign in.
-async function googleFlow(code, { user, link = false, mail = false, forgedState = false } = {}) {
+async function googleFlow(code, { user, link = false, mail = false, quiet = false, forgedState = false } = {}) {
   const base = `http://localhost:${INVITE_PORT}/api/auth/google`;
   const session = user?.call.cookie() ?? '';
-  const start = await fetch(`${base}${link ? '?link=1' : mail ? '?mail=1' : ''}`, { redirect: 'manual', headers: { Cookie: session } });
+  const start = await fetch(`${base}${link ? '?link=1' : mail ? '?mail=1' : quiet ? '?quiet=1' : ''}`, { redirect: 'manual', headers: { Cookie: session } });
   const asked = new URL(start.headers.get('location'), base);
   const state = asked.searchParams.get('state');
   if (!state) return { result: null, asked };
   const stateCookie = start.headers.get('set-cookie')?.split(';')[0] ?? '';
-  const back = await fetch(`${base}/callback?code=${code}&state=${forgedState ? 'forged' : state}`, {
+  // Google answers a quiet request it cannot settle without the person with an error, not a code.
+  const answer = code ? `code=${code}` : 'error=interaction_required';
+  const back = await fetch(`${base}/callback?${answer}&state=${forgedState ? 'forged' : state}`, {
     redirect: 'manual',
     headers: { Cookie: [session, stateCookie].filter(Boolean).join('; ') },
   });
@@ -1340,6 +1342,23 @@ test('Google never creates an account, and a forged redirect gets nothing', asyn
   assert.equal(forged.result, 'failed');
   assert.equal(forged.cookie, undefined);
   assert.equal((await googleFlow('wrong-audience')).result, 'failed');
+});
+
+test('the installed app lets in quietly a member Google vouches for, and says nothing otherwise', async () => {
+  const boss = await theBoss();
+  const quiet = await googleFlow('google-lior', { quiet: true });
+  assert.equal(quiet.asked.searchParams.get('prompt'), 'none');
+  assert.equal(quiet.result, 'login');
+  assert.ok(quiet.cookie);
+  for (const code of ['google-stranger', null, 'wrong-audience']) {
+    const failed = await googleFlow(code, { quiet: true });
+    assert.equal(failed.result, 'quiet');
+    assert.equal(failed.cookie, undefined);
+  }
+  // A waiting invitation is taken only by someone who chose to sign in.
+  await boss.call('POST', '/admin/email-invites', { email: 'quiet.one@gmail.com', name: 'שקטה' });
+  assert.equal((await googleFlow('google-quiet:quietone@gmail.com', { quiet: true })).result, 'quiet');
+  assert.equal((await googleFlow('google-quiet:quietone@gmail.com')).result, 'joined');
 });
 
 test('one Google account belongs to one person, and it can be unlinked', async () => {
