@@ -3,10 +3,11 @@
 // the server for news every few seconds, slows down when nothing happens, and stops asking
 // while the page is hidden.
 
+import { keepWhole } from '/limit.js';
+
 const FAST_MS = 3000;
 const SLOW_MS = 12000;
 const CALM_AFTER_MS = 2 * 60 * 1000;
-const MAX_MESSAGE = 4000;
 // Messages from the same side within a few minutes sit close together.
 const NEAR_MS = 5 * 60 * 1000;
 const BOTTOM_SLACK = 60;
@@ -392,12 +393,12 @@ export async function messenger({ me, withId, ui }) {
 
     const text = el('textarea', {
       placeholder: 'כתיבת הודעה',
-      maxLength: MAX_MESSAGE,
       rows: 1,
       dir: 'auto',
       ariaLabel: `הודעה אל ${other.name}`,
-      enterKeyHint: coarse ? 'enter' : 'send',
+      enterKeyHint: coarse || !ui.prefs().enterMessages ? 'enter' : 'send',
     });
+    keepWhole(text);
     const grow = () => {
       if (CSS.supports('field-sizing', 'content')) return;
       text.style.height = 'auto';
@@ -445,6 +446,7 @@ export async function messenger({ me, withId, ui }) {
     });
 
     function submit() {
+      if (!text.reportValidity()) return;
       const body = text.value.trim();
       if (!body && !photo) return;
       const item = { key: `pending-${nextKey++}`, mine: true, pending: true, body: body || null, blob: photo, preview: photo ? URL.createObjectURL(photo) : null, at: Date.now() };
@@ -469,10 +471,12 @@ export async function messenger({ me, withId, ui }) {
       draft(text.value);
       grow();
     });
-    // On a keyboard Enter sends and Shift+Enter breaks the line. On a phone Enter breaks the
-    // line, and the button sends.
+    // On a keyboard Enter sends and Shift+Enter breaks the line, unless the member chose in their
+    // preferences that Enter breaks the line, and then Ctrl+Enter sends. On a phone Enter breaks
+    // the line, and the button sends.
     text.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' || e.shiftKey || e.isComposing || coarse) return;
+      if (e.key !== 'Enter' || e.isComposing) return;
+      if (!e.ctrlKey && !e.metaKey && (e.shiftKey || coarse || !ui.prefs().enterMessages)) return;
       e.preventDefault();
       submit();
     });
@@ -492,7 +496,7 @@ export async function messenger({ me, withId, ui }) {
     }, previews, chooser,
     el('button', { className: 'chat-attach', type: 'button', ariaLabel: 'צירוף תמונה', title: 'צירוף תמונה', onclick: () => chooser.click() }, icon('image')),
     text,
-    el('button', { className: 'chat-send', type: 'submit', ariaLabel: 'שליחה', title: coarse ? 'שליחה' : 'שליחה (Enter). שורה חדשה: Shift+Enter' }, icon('send')),
+    el('button', { className: 'chat-send', type: 'submit', ariaLabel: 'שליחה', title: coarse ? 'שליחה' : ui.prefs().enterMessages ? 'שליחה (Enter). שורה חדשה: Shift+Enter' : 'שליחה (Ctrl+Enter)' }, icon('send')),
     error);
     const closed = el('p', { className: 'chat-closed' });
     const foot = el('div', { className: 'chat-foot' });

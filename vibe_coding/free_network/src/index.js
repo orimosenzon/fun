@@ -15,9 +15,11 @@ const EMAIL_INVITE_MS = 30 * 24 * 60 * 60 * 1000;
 const NO_MAILBOX = '@invite.invalid';
 const LOGIN_REQUESTS_PER_HOUR = 5;
 const PAGE_SIZE = 30;
-const MAX_POST = 5000;
-const MAX_COMMENT = 2000;
-const MAX_MESSAGE = 4000;
+// One length for everything a person writes: long enough for an essay, and the page tells the
+// writer before sending if they passed it (public/limit.js holds the same number).
+const MAX_POST = 50000;
+const MAX_COMMENT = 50000;
+const MAX_MESSAGE = 50000;
 const MESSAGES_PAGE = 50;
 // A removal is reported again for a few seconds, so one that landed between two questions is not missed.
 const REMOVAL_OVERLAP_MS = 10000;
@@ -125,6 +127,26 @@ function place(row) {
 
 function status(row, now = Date.now()) {
   return row.status_text && row.status_at > now - STATUS_MS ? { text: row.status_text, at: row.status_at } : null;
+}
+
+// The preferences: how the network behaves for one member, by their own choice. Each has the
+// value it starts from. More will be added here, and the page shows them all in one place.
+const PREFS = {
+  // Enter publishes a post or a comment, and Shift+Enter breaks the line. Otherwise Enter
+  // breaks the line and Ctrl+Enter publishes.
+  enterPosts: false,
+  // The same, for private messages.
+  enterMessages: true,
+};
+
+function prefsOf(user) {
+  let chosen = {};
+  try {
+    chosen = JSON.parse(user.prefs || '{}');
+  } catch {
+    // Nothing readable was kept, so everything follows the defaults.
+  }
+  return Object.fromEntries(Object.keys(PREFS).map((name) => [name, typeof chosen[name] === typeof PREFS[name] ? chosen[name] : PREFS[name]]));
 }
 
 function isLocalhost(c) {
@@ -801,7 +823,7 @@ async function sessionUser(c) {
   const hash = await sha256(token);
   const now = Date.now();
   const user = await c.env.DB
-    .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at, u.notices_seen_at, u.push_muted, s.seen_at AS session_seen
+    .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at, u.notices_seen_at, u.push_muted, u.prefs, s.seen_at AS session_seen
       FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ? AND s.expires_at > ?`)
     .bind(hash, now)
@@ -1047,6 +1069,7 @@ app.get('/api/me', async (c) => {
       unreadMessages: unread.n,
       notices: notices.unseen,
       pushMuted: user.push_muted ? user.push_muted.split(',') : [],
+      prefs: prefsOf(user),
       googleLinked: !!user.google_sub,
       place: place(user),
       status: status(user),
@@ -1063,6 +1086,20 @@ app.put('/api/me', requireUser, async (c) => {
   if (!name) return c.json({ error: 'צריך שם, עד 60 תווים' }, 400);
   await c.env.DB.prepare('UPDATE users SET name = ? WHERE id = ?').bind(name, c.get('user').id).run();
   return c.json({ ok: true });
+});
+
+// The member changes one preference or several. Only the known ones, each of its own kind.
+app.put('/api/me/prefs', requireUser, async (c) => {
+  const input = await readJson(c);
+  const user = c.get('user');
+  const prefs = prefsOf(user);
+  for (const [name, value] of Object.entries(input ?? {})) {
+    if (!Object.hasOwn(PREFS, name) || typeof value !== typeof PREFS[name]) return c.json({ error: 'העדפה לא מוכרת' }, 400);
+    prefs[name] = value;
+  }
+  const changed = Object.fromEntries(Object.entries(prefs).filter(([name, value]) => value !== PREFS[name]));
+  await c.env.DB.prepare('UPDATE users SET prefs = ? WHERE id = ?').bind(JSON.stringify(changed), user.id).run();
+  return c.json({ prefs });
 });
 
 app.delete('/api/me/google', requireUser, async (c) => {

@@ -2771,3 +2771,9 @@ html.page-full main { z-index: 100; }
 .tag-list li { justify-content: flex-start; align-items: center; gap: 10px; }
 
 .notice-badge.mention { background: var(--a5); }
+
+/* The preferences: each choice is a switch with a line under it that says what it does. */
+.settings h1 { margin-top: 0; }
+.settings .pref { margin: 14px 0; }
+.settings .pref .note { margin: 4px 56px 0 0; }
+.settings-more { margin: 0; padding-inline-start: 20px; line-height: 1.9; }

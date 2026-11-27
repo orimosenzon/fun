@@ -1,4 +1,5 @@
 import { friendsGlobe } from '/globe.js';
+import { keepWhole } from '/limit.js';
 import { updatePanel } from '/update.js';
 import { messenger } from '/messages.js';
 import { feelings } from '/reactions.js';
@@ -17,6 +18,7 @@ let reports = 0;
 const ICONS = {
   user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8',
   info: 'M12 22a10 10 0 1 0 0-20a10 10 0 0 0 0 20M12 16v-4M12 8h.01',
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
   logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   comment: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
   link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
@@ -501,6 +503,19 @@ function richText(text, mentions = []) {
 }
 
 // The friends that can be tagged, asked for when "@" is first typed and kept for a minute.
+// Whether this key press publishes what is being written. Ctrl+Enter always does. Plain Enter
+// does when the member chose so in their preferences, and then Shift+Enter breaks the line. On a
+// phone there is no Shift beside the Enter, so there Enter always breaks the line.
+const COARSE = matchMedia('(pointer: coarse)').matches;
+const enterPublishes = () => !COARSE && !!me?.prefs?.enterPosts;
+function publishKey(e) {
+  if (e.key !== 'Enter' || e.isComposing) return false;
+  if (!e.ctrlKey && !e.metaKey && (e.shiftKey || !enterPublishes())) return false;
+  e.preventDefault();
+  return true;
+}
+const publishHint = () => (enterPublishes() ? 'Enter שולח. שורה חדשה: Shift+Enter. אפשר לשנות בהעדפות' : 'אפשר גם Ctrl+Enter. אפשר לשנות בהעדפות');
+
 let friendsKept = null;
 function friendsToTag() {
   if (!friendsKept || Date.now() - friendsKept.at > 60000) {
@@ -881,19 +896,19 @@ function editedMark(ms) {
 }
 
 // Published words, opened for rewriting in the place where they are read.
-function editBox(words, { maxLength, label, save, close, page, mentions = [] }) {
+function editBox(words, { label, save, close, page, mentions = [] }) {
   const text = el('textarea', {
-    maxLength,
     dir: 'auto',
     ariaLabel: label,
     onkeydown: (e) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) text.form.requestSubmit();
+      if (publishKey(e)) text.form.requestSubmit();
       if (e.key === 'Escape') close();
     },
   });
   text.value = words;
+  keepWhole(text);
   const error = el('p', { className: 'error', hidden: true });
-  const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'שמירה');
+  const submit = el('button', { type: 'submit', title: publishHint() }, 'שמירה');
   // A post keeps its live page while it is edited, and may gain or lose one.
   const live = page === undefined ? null : pageField(page, () => text.value);
   const tags = tagging(text, mentions);
@@ -950,7 +965,6 @@ function shareWords(shareId) {
     box.remove();
   };
   const form = editBox('', {
-    maxLength: 5000,
     label: 'כמה מילים משלך',
     close: shut,
     save: async (body, page, mentions) => {
@@ -1132,7 +1146,6 @@ function postCard(post, options = {}) {
       onclick: () => {
         if (!box) {
           box = editBox(post.body, {
-            maxLength: 5000,
             label: 'עריכת הפוסט',
             close,
             page: post.shared ? undefined : post.page?.url ?? '',
@@ -1158,13 +1171,13 @@ async function composer(onPosted) {
   const { friends, last } = await api('/audience');
   const text = el('textarea', {
     placeholder: 'מה חדש?',
-    maxLength: 5000,
     dir: 'auto',
     onfocus: () => text.closest('form').classList.add('open'),
     onkeydown: (e) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) text.closest('form').requestSubmit();
+      if (publishKey(e)) text.closest('form').requestSubmit();
     },
   });
+  keepWhole(text);
   const note = el('span', {});
   const error = el('p', { className: 'error', hidden: true });
   const radio = (value, label, picture, checked) => el('label', {},
@@ -1211,7 +1224,7 @@ async function composer(onPosted) {
   const tags = tagging(text);
   const addTag = el('button', { className: 'plain', type: 'button', ariaLabel: 'תיוג חבר', title: 'תיוג חבר. אפשר גם להקליד @ בתוך הטקסט', onclick: tags.start }, labelled('at', 'תיוג'));
 
-  const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'פרסום');
+  const submit = el('button', { type: 'submit', title: publishHint() }, 'פרסום');
   return el('form', {
     className: 'card composer',
     onsubmit: async (e) => {
@@ -1361,7 +1374,7 @@ async function messagesPage(id) {
   const page = await messenger({
     me,
     withId: id ? Number(id) : null,
-    ui: { el, icon, avatar, link, api, ask, tell, richText, lightbox, prepareImage, dayLabel, daysAgo, back, pulse, unread: () => me?.unreadMessages ?? 0 },
+    ui: { el, icon, avatar, link, api, ask, tell, prefs: () => me?.prefs ?? {}, richText, lightbox, prepareImage, dayLabel, daysAgo, back, pulse, unread: () => me?.unreadMessages ?? 0 },
   });
   if (paint.stale()) {
     page.leave();
@@ -1428,7 +1441,6 @@ function comment(item, reload, onReply) {
       onclick: () => {
         if (!box) {
           box = editBox(item.body ?? '', {
-            maxLength: 2000,
             label: 'עריכת התגובה',
             close,
             mentions: item.mentions,
@@ -1466,14 +1478,14 @@ function comment(item, reload, onReply) {
 function commentForm(postId, parentId, placeholder) {
   const text = el('textarea', {
     placeholder,
-    maxLength: 2000,
     dir: 'auto',
     onkeydown: (e) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) text.form.requestSubmit();
+      if (publishKey(e)) text.form.requestSubmit();
     },
   });
+  keepWhole(text);
   const error = el('p', { className: 'error', hidden: true });
-  const submit = el('button', { type: 'submit', title: 'אפשר גם Ctrl+Enter' }, 'שליחה');
+  const submit = el('button', { type: 'submit', title: publishHint() }, 'שליחה');
   const tags = tagging(text);
   const previews = el('div', { className: 'previews' });
   const picker = el('input', { type: 'file', accept: 'image/*', hidden: true });
@@ -1624,6 +1636,41 @@ function messageLink(user, label) {
   const anchor = link(`/messages/${user.id}`, labelled('chat', label));
   anchor.className = 'pill-link';
   return anchor;
+}
+
+// The preferences: one place where the member decides how the network behaves for them. A
+// change is saved at once, and follows them to every device.
+function settingsPage() {
+  const error = el('p', { className: 'error', hidden: true });
+  const choice = (name, label, detail) => {
+    const input = el('input', { type: 'checkbox', checked: !!me.prefs[name] });
+    input.addEventListener('change', async () => {
+      error.hidden = true;
+      try {
+        ({ prefs: me.prefs } = await api('/me/prefs', { method: 'PUT', body: { [name]: input.checked } }));
+      } catch (err) {
+        input.checked = !input.checked;
+        error.textContent = err.message;
+        error.hidden = false;
+      }
+    });
+    return el('div', { className: 'pref' },
+      el('label', { className: 'switch' }, input, el('span', { className: 'switch-track' }), label),
+      el('p', { className: 'note' }, detail));
+  };
+  app.replaceChildren(el('div', { className: 'card settings' },
+    el('h1', {}, 'העדפות'),
+    el('p', { className: 'muted' }, 'כאן קובעים איך הרשת מתנהגת אצלך. כל שינוי נשמר מיד, ותקף בכל מכשיר שנכנסים ממנו.'),
+    el('h2', {}, 'כתיבה'),
+    choice('enterPosts', 'Enter מפרסם פוסט ותגובה', 'כשזה פועל, Enter שולח ו-Shift+Enter יורד שורה. כשזה כבוי, Enter יורד שורה ו-Ctrl+Enter שולח.'),
+    choice('enterMessages', 'Enter שולח הודעה פרטית', 'כשזה פועל, Enter שולח ו-Shift+Enter יורד שורה. כשזה כבוי, Enter יורד שורה ו-Ctrl+Enter שולח.'),
+    el('p', { className: 'note' }, 'בטלפון, בלי מקלדת, Enter תמיד יורד שורה והכפתור שולח.'),
+    error,
+    el('h2', {}, 'עוד דברים שבשליטתך'),
+    el('ul', { className: 'settings-more' },
+      el('li', {}, link('/notices', 'התראות'), ': על מה להתריע במכשיר הזה.'),
+      el('li', {}, link(`/u/${me.id}`, 'הדף שלי'), ': השם, התמונות וחיבור חשבון Google.'),
+      el('li', {}, link('/globe', 'גלובוס'), ': האם לשתף מקום, ואיפה.'))));
 }
 
 async function friendsPage() {
@@ -1800,6 +1847,7 @@ async function profilePage(id) {
         user.avatar ? remove('avatar', 'הסרת תמונת הפרופיל') : null,
         user.cover ? remove('cover', 'הסרת תמונת הכותרת') : null,
         INSTALLED ? null : link('/app', 'אפליקציה לטלפון'),
+        link('/settings', 'העדפות'),
         me.admin ? Object.assign(link('/admin', 'ניהול'), { className: 'phone-only' }) : null,
         el('button', { className: 'plain phone-only', type: 'button', onclick: logout }, 'יציאה מהחשבון'))].filter(Boolean));
   } else if (friendship === 'friends') {
@@ -2376,7 +2424,9 @@ function renderNav() {
     return;
   }
   // On a phone the bottom bar is full, so the admin reaches their screen from their own page.
-  const admin = me.admin ? link('/admin', labelled('settings', 'ניהול')) : null;
+  const admin = me.admin ? link('/admin', labelled('shield', 'ניהול')) : null;
+  const prefs = link('/settings', labelled('settings', 'העדפות'));
+  prefs.classList.add('desktop-only');
   admin?.classList.add('desktop-only');
   const mine = me.name ? link(`/u/${me.id}`, labelled('user', 'הדף שלי')) : null;
   const home = link('/', labelled('home', 'בית'));
@@ -2402,7 +2452,7 @@ function renderNav() {
   navigator.setAppBadge?.(waiting).catch(() => {});
   const world = link('/globe', labelled('globe', 'גלובוס'));
   const news = link('/update', labelled('sun', 'העדכון'));
-  nav.replaceChildren(...[home, bell, mail, news, mine, friends, world, admin, getApp, why, el('button', {
+  nav.replaceChildren(...[home, bell, mail, news, mine, friends, world, prefs, admin, getApp, why, el('button', {
     className: 'plain desktop-only',
     type: 'button',
     onclick: logout,
@@ -2460,6 +2510,7 @@ async function show(post, profile, messages, friendsOf) {
   else if (location.pathname === '/friends') await friendsPage();
   else if (location.pathname === '/globe') await globePage();
   else if (location.pathname === '/update') updatePage();
+  else if (location.pathname === '/settings') settingsPage();
   else if (location.pathname === '/admin') await adminPage();
   else await feedPage();
 }

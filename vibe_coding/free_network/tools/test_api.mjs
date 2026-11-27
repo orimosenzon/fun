@@ -433,7 +433,7 @@ test('only the author rewrites a post, and readers are told it was edited', asyn
 
   assert.equal((await alice.call('PUT', `/posts/${id}`, { body: '  ' })).status, 400);
   assert.equal((await alice.call('PUT', `/posts/${id}`, {})).status, 400);
-  assert.equal((await alice.call('PUT', `/posts/${id}`, { body: 'א'.repeat(5001) })).status, 400);
+  assert.equal((await alice.call('PUT', `/posts/${id}`, { body: 'א'.repeat(50001) })).status, 400);
   assert.equal((await read()).body, after.body);
   await alice.call('DELETE', `/posts/${id}`);
   assert.equal((await alice.call('PUT', `/posts/${id}`, { body: 'אחרי מחיקה' })).status, 404);
@@ -468,7 +468,7 @@ test('only the writer rewrites a comment, not the owner of the post, and not aft
   assert.equal(after.youtubeId, 'dQw4w9WgXcQ');
   assert.ok(after.editedAt >= started);
   assert.equal((await bob.call('PUT', `/comments/${id}`, { body: '' })).status, 400);
-  assert.equal((await bob.call('PUT', `/comments/${id}`, { body: 'א'.repeat(2001) })).status, 400);
+  assert.equal((await bob.call('PUT', `/comments/${id}`, { body: 'א'.repeat(50001) })).status, 400);
 
   await bob.call('DELETE', `/comments/${id}`);
   assert.equal((await bob.call('PUT', `/comments/${id}`, { body: 'אחרי הסרה' })).status, 404);
@@ -901,6 +901,41 @@ test('a stranger cannot flood the journal or the log, and what is written is not
   assert.equal(answer.headers.get('cache-control'), 'private, no-store');
 });
 
+test('a long text is taken whole, in a post, a comment and a message, up to one clear limit', async () => {
+  const [writer, friend] = [await signUp('longwriter'), await signUp('longfriend')];
+  await writer.call('POST', `/friends/${friend.id}`);
+  await friend.call('POST', `/friends/${writer.id}`);
+  const long = 'מילה '.repeat(10000).trim();
+  assert.equal(long.length, 49999);
+  const { data: { id } } = await writer.call('POST', '/posts', { body: long, audience: 'friends' });
+  const { data: { id: commentId } } = await friend.call('POST', `/posts/${id}/comments`, { body: long });
+  const read = (await writer.call('GET', `/posts/${id}`)).data;
+  assert.equal(read.post.body, long);
+  assert.equal(read.comments.find((item) => item.id === commentId).body, long);
+  assert.equal((await writer.call('POST', `/messages/${friend.id}`, { body: long })).data.message.body, long);
+  const tooLong = `${long}xx`;
+  assert.equal((await writer.call('POST', '/posts', { body: tooLong, audience: 'friends' })).status, 400);
+  assert.equal((await friend.call('POST', `/posts/${id}/comments`, { body: tooLong })).status, 400);
+  assert.equal((await writer.call('POST', `/messages/${friend.id}`, { body: tooLong })).status, 400);
+});
+
+test('a member sets their own preferences, and they follow them to another device', async () => {
+  const picky = await signUp('picky');
+  assert.deepEqual((await picky.call('GET', '/me')).data.user.prefs, { enterPosts: false, enterMessages: true });
+  assert.deepEqual((await picky.call('PUT', '/me/prefs', { enterPosts: true })).data.prefs, { enterPosts: true, enterMessages: true });
+  assert.deepEqual((await picky.call('PUT', '/me/prefs', { enterMessages: false })).data.prefs, { enterPosts: true, enterMessages: false });
+  // Another device of the same member, logged in with a new link.
+  const other = client();
+  const { data } = await other('POST', '/auth/request', { email: 'picky@example.com' });
+  await other('POST', '/auth/verify', { token: data.devLink.split('#token=')[1] });
+  assert.deepEqual((await other('GET', '/me')).data.user.prefs, { enterPosts: true, enterMessages: false });
+  // Only known preferences, each of its own kind, and nobody else's.
+  assert.equal((await picky.call('PUT', '/me/prefs', { enterPosts: 'yes' })).status, 400);
+  assert.equal((await picky.call('PUT', '/me/prefs', { admin: true })).status, 400);
+  assert.equal((await anon('PUT', '/me/prefs', { enterPosts: true })).status, 401);
+  assert.deepEqual((await alice.call('GET', '/me')).data.user.prefs, { enterPosts: false, enterMessages: true });
+});
+
 test('a reply to a reply stays at the second level, and replies cannot cross posts', async () => {
   const omer = await signUp('omer');
   const { data: { id: postId } } = await omer.call('POST', '/posts', { body: 'x', audience: 'public' });
@@ -1220,7 +1255,7 @@ test('a message reaches the friend it was written to, and nobody else', async ()
   assert.equal((await write(dana, dana, 'לעצמי')).status, 404);
   assert.equal((await write(dana, { id: 999999 }, 'לאף אחד')).status, 404);
   assert.equal((await write(dana, eli, '   ')).status, 400);
-  assert.equal((await write(dana, eli, 'x'.repeat(4001))).status, 400);
+  assert.equal((await write(dana, eli, 'x'.repeat(50001))).status, 400);
   assert.equal((await talk(dana, eli)).messages.length, 2);
 });
 
