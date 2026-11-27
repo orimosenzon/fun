@@ -762,6 +762,9 @@ app.use('/api/*', async (c, next) => {
   const started = Date.now();
   await next();
   c.header('X-Request-Id', requestId);
+  // What the network answers is for whoever asked, now. Nothing keeps a copy, unless the answer
+  // itself says it may be kept (a video's title, a picture).
+  if (!c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'private, no-store');
 
   // 401 and 404 are normal traffic. Any other refusal may mean the app sent something wrong.
   const { status } = c.res;
@@ -784,6 +787,7 @@ app.post('/api/client-log', async (c) => {
     source: 'client',
     level: 'error',
     requestId: c.get('requestId'),
+    userId: c.get('user')?.id,
     path: typeof path === 'string' ? path.slice(0, 200) : null,
     message,
     stack: typeof stack === 'string' ? stack : null,
@@ -1429,7 +1433,7 @@ app.post('/api/posts/:id/comments', requireUser, async (c) => {
 
   let parentId = null;
   if (input.parentId !== undefined && input.parentId !== null) {
-    const parent = await c.env.DB
+    const parent = Number.isSafeInteger(input.parentId) && await c.env.DB
       .prepare('SELECT id, parent_id FROM comments WHERE id = ? AND post_id = ? AND removed_by IS NULL')
       .bind(input.parentId, id)
       .first();

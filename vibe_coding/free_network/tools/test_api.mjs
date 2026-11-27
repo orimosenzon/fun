@@ -876,6 +876,31 @@ test('removing a comment or its post really deletes the image', async () => {
   assert.equal((await fetchImage(tal.call, second)).status, 404);
 });
 
+test('a stranger cannot flood the journal or the log, and what is written is not kept by anyone on the way', async () => {
+  const state = join(root, String(UPLOADS_PORT));
+  const count = (...more) => Number(execFileSync('node', ['tools/logs.mjs', '--persist-to', state, '--limit', '1000', ...more], { encoding: 'utf8' }).match(/(\d+) (lines|entries)\n$/)[1]);
+  const nobody = client(UPLOADS_PORT);
+  const member = await signUp('flooded', UPLOADS_PORT);
+  for (let round = 0; round < 16; round++) {
+    await Promise.all(Array.from({ length: 20 }, () => [
+      nobody('POST', '/journal', { mode: 'browser' }),
+      nobody('POST', '/client-log', { message: 'flood' }),
+      nobody('POST', '/auth/verify', { token: 'no-such-link' }),
+    ]).flat());
+  }
+  assert.equal(count('--journal', '--kind', 'open'), 300);
+  // Browser errors and refusals each stop at their own limit.
+  assert.equal(count(), 600);
+  // A member still gets their own lines, and a refusal answers the same whether it was written or not.
+  const opened = await member.call('POST', '/journal', { mode: 'app' });
+  assert.equal(opened.status, 200);
+  assert.equal(count('--journal', '--user', String(member.id), '--kind', 'open'), 1);
+  assert.equal((await nobody('POST', '/auth/verify', { token: 'no-such-link' })).status, 400);
+
+  const answer = await fetch(`http://localhost:${UPLOADS_PORT}/api/me`);
+  assert.equal(answer.headers.get('cache-control'), 'private, no-store');
+});
+
 test('a reply to a reply stays at the second level, and replies cannot cross posts', async () => {
   const omer = await signUp('omer');
   const { data: { id: postId } } = await omer.call('POST', '/posts', { body: 'x', audience: 'public' });
@@ -887,6 +912,7 @@ test('a reply to a reply stays at the second level, and replies cannot cross pos
   const { comments } = (await anon('GET', `/posts/${postId}`)).data;
   assert.deepEqual(comments.map((item) => item.parentId), [null, top, top]);
   assert.equal((await send(otherPost, 'זר', top)).status, 404);
+  assert.equal((await send(postId, 'משובש', { id: top })).status, 404);
   await omer.call('DELETE', `/comments/${reply}`);
   assert.equal((await send(postId, 'להוסרה', reply)).status, 404);
 });
