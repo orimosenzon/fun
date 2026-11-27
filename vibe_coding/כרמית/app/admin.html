@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611261327">
+<link rel="stylesheet" href="style.css?v=202611270728">
 </head>
 <body class="admin">
   <div id="app">
@@ -305,6 +305,13 @@
         <img id="image-preview" class="preview hidden" alt="">
         <span class="drop-hint">תמונת החידה *<small>לחיצה לבחירה, גרירה לכאן, או הדבקה (Ctrl+V)</small></span>
       </label>
+      <details id="slide-maker" class="slide-maker">
+        <summary>✎ חידה בלי תמונה? ליצור שקופית ממשפט</summary>
+        <textarea id="slide-text" rows="2" autocomplete="off" placeholder="כותבים כאן את המשפט, והשקופית נוצרת למעלה"></textarea>
+        <label class="slide-size"><span>גודל הגופן</span>
+          <input type="range" id="slide-size" min="40" max="160" step="4" value="88">
+          <output id="slide-size-out">88</output></label>
+      </details>
       <label class="inline ai-check"><input type="checkbox" id="ai-image"> התמונה נוצרה בבינה מלאכותית
         <small>השחקן יראה על זה שורה קטנה מתחת לתמונה</small></label>
 
@@ -404,6 +411,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611261327"></script>
+  <script type="module" src="admin.js?v=202611270728"></script>
 </body>
 </html>

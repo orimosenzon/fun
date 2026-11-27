@@ -2,7 +2,7 @@
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>', '#bundle/<id>'.
 import { app, db, fs, ADMINS, LEVELS, GENERAL, loadRiddles, loadQuizzes, loadBundles, loadLetters, loadCategories, loadRatings, loadComments, loadVisits, loadGever, sendGever, markOwnDevice, dayKey, primaryAnswer, hasAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611261327';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611270728';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -29,6 +29,7 @@ let editing = null;      // id of the riddle being edited in the dialog, or null
 let addToQuiz = null;    // a new riddle saved from the quiz view joins this quiz
 let image = '';          // data URLs of the dialog form
 let answerImage = '';
+let slide = null;         // { text, size } when the riddle image was made from a sentence in the dialog
 
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
@@ -1973,9 +1974,68 @@ addEventListener('paste', (e) => {
 for (const ev of ['dragover', 'drop']) {
   addEventListener(ev, (e) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); });
 }
-dropZone($('image-drop'), $('image-file'), $('image-preview'), (d) => { image = d; });
+dropZone($('image-drop'), $('image-file'), $('image-preview'), (d) => { image = d; slide = null; });
 dropZone($('answer-drop'), $('answer-file'), $('answer-preview'), (d) => { answerImage = d; });
 dropZone($('letter-drop'), $('letter-file'), $('letter-preview'), setLetterImage, letterError, [1000, 300_000]);
+
+// A riddle without a picture: Carmit writes the sentence and it becomes a plain slide, the way she used to
+// make them outside the app (clean font, clean background), so she doesn't have to. It redraws on every keystroke.
+const SLIDE_W = 1280, SLIDE_H = 720;
+const SLIDE_FONT = (size) => `700 ${size}px "IBM Plex Sans Hebrew", Arial, sans-serif`;
+
+// Break the sentence into lines that fit the slide; her own line breaks are kept.
+function slideLines(ctx, text, maxW) {
+  const lines = [];
+  for (const para of text.split('\n')) {
+    let line = '';
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(next).width > maxW) { lines.push(line); line = word; } else line = next;
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+async function drawSlide(text, size) {
+  // A canvas silently falls back to another font if the web font isn't loaded yet.
+  await document.fonts.load(SLIDE_FONT(size), text).catch(() => {});
+  const c = document.createElement('canvas');
+  c.width = SLIDE_W;
+  c.height = SLIDE_H;
+  const ctx = c.getContext('2d');
+  const bg = ctx.createRadialGradient(SLIDE_W / 2, SLIDE_H / 2, 0, SLIDE_W / 2, SLIDE_H / 2, SLIDE_W * 0.7);
+  bg.addColorStop(0, '#f5efe4');
+  bg.addColorStop(1, '#ebe1d1');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, SLIDE_W, SLIDE_H);
+  ctx.font = SLIDE_FONT(size);
+  ctx.fillStyle = '#1b2748';
+  ctx.direction = 'rtl';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lines = slideLines(ctx, text.trim(), SLIDE_W * 0.86);
+  const lh = size * 1.3;
+  lines.forEach((l, i) => ctx.fillText(l, SLIDE_W / 2, SLIDE_H / 2 + (i - (lines.length - 1) / 2) * lh));
+  return c.toDataURL('image/jpeg', 0.9);
+}
+
+let slideTurn = 0;
+async function updateSlide() {
+  const text = $('slide-text').value;
+  const size = +$('slide-size').value;
+  $('slide-size-out').textContent = size;
+  if (!text.trim()) return;
+  const turn = ++slideTurn;
+  const data = await drawSlide(text, size);
+  if (turn !== slideTurn) return;   // a newer keystroke already drew
+  image = data;
+  slide = { text: text.trim(), size };
+  showPreview($('image-preview'), data);
+  showError('');
+}
+$('slide-text').addEventListener('input', updateSlide);
+$('slide-size').addEventListener('input', updateSlide);
 
 // ---------- answers ----------
 
@@ -2027,7 +2087,10 @@ function resetForm() {
   editing = null;
   image = '';
   answerImage = '';
+  slide = null;
   $('riddle-form').reset();
+  $('slide-maker').open = false;
+  $('slide-size-out').textContent = $('slide-size').value;
   showPreview($('image-preview'), '');
   showPreview($('answer-preview'), '');
   $('answers-list').innerHTML = '';
@@ -2062,6 +2125,14 @@ function openRiddle(r, quiz = null) {
     $('question').value = r.question || '';
     $('hint').value = r.hint || '';
     $('ai-image').checked = !!r.aiImage;
+    // A slide made here opens with its sentence, so changing the wording or the size is easy.
+    if (r.slide?.text) {
+      slide = r.slide;
+      $('slide-text').value = r.slide.text;
+      $('slide-size').value = r.slide.size;
+      $('slide-size-out').textContent = r.slide.size;
+      $('slide-maker').open = true;
+    }
     setType(r.answerType);
     if (r.answerType === 'text' && r.answers.length) {
       $('answers-list').innerHTML = '';
@@ -2102,6 +2173,7 @@ $('riddle-form').addEventListener('submit', async (e) => {
     hint: $('hint').value.trim(),
     category: $('riddle-category').dataset.value || '',
     aiImage: $('ai-image').checked,
+    slide,
     answerType: type,
     answers,
     primary,

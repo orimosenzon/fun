@@ -1226,6 +1226,14 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 }
 .ai-note::before { content: "✦ "; color: var(--violet); }
 /* In the riddle form and on the pool tile. */
+/* a riddle image made from a sentence (admin.js drawSlide) */
+.slide-maker { margin: -4px 0 0; }
+.slide-maker summary { cursor: pointer; color: var(--cyan); font-size: 0.95rem; width: fit-content; }
+.slide-maker[open] summary { margin-bottom: 8px; }
+.slide-maker textarea { width: 100%; box-sizing: border-box; font-size: 1.05rem; }
+.slide-size { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 0.9rem; color: var(--muted); }
+.slide-size input { flex: 1; accent-color: var(--cyan); }
+.slide-size output { min-width: 2.5em; font-family: var(--mono); color: var(--text); }
 .ai-check { margin: -4px 0 0; font-size: 0.95rem; flex-wrap: wrap; cursor: pointer; }
 .ai-check input { width: 17px; height: 17px; margin: 0; accent-color: var(--violet); }
 .ai-check small { flex: 1 1 100%; color: var(--muted); font-size: 0.8rem; padding-inline-start: 23px; }
