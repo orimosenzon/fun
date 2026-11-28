@@ -2777,3 +2777,31 @@ html.page-full main { z-index: 100; }
 .settings .pref { margin: 14px 0; }
 .settings .pref .note { margin: 4px 56px 0 0; }
 .settings-more { margin: 0; padding-inline-start: 20px; line-height: 1.9; }
+.take-out { margin: 10px 0 0; }
+.take-out .note { min-height: 1.4em; }
+
+/* The profile picture, opened to be placed in its circle. */
+.face-stage {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  margin: 14px auto 12px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--line);
+  box-shadow: 0 0 0 4px var(--card), 0 0 0 5px var(--line-strong);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.face-stage:active { cursor: grabbing; }
+.face-stage:focus-visible { outline: 2px solid var(--citrus); outline-offset: 6px; }
+.face-stage img { position: absolute; inset-block-start: 50%; left: 50%; max-width: none; pointer-events: none; }
+.face-zoom { display: flex; align-items: center; gap: 10px; margin: 0 6px 16px; color: var(--muted); }
+.face-zoom input { flex: 1; }
+.face-more { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; }
+
+/* The bot of the network is always marked. */
+.chip.bot { color: var(--citrus-ink); background: var(--citrus-tint); }
+.bot-line { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0 10px; color: var(--muted); font-size: 14.5px; }
+.bot-line .chip { flex: none; margin-top: 2px; }

@@ -1638,6 +1638,30 @@ function messageLink(user, label) {
   return anchor;
 }
 
+// The button that hands the member everything they have here, as one file on their computer.
+function takeOut() {
+  const state = el('p', { className: 'note', role: 'status' });
+  const button = el('button', {
+    className: 'ghost',
+    type: 'button',
+    onclick: async () => {
+      button.disabled = true;
+      try {
+        const { exportAll } = await import('/export.js');
+        const { name, blob, counts } = await exportAll({ api, progress: (line) => { state.textContent = line; } });
+        const address = URL.createObjectURL(blob);
+        el('a', { href: address, download: name }).click();
+        setTimeout(() => URL.revokeObjectURL(address), 60000);
+        state.textContent = `הקובץ ${name} ירד: ${counts.posts} פוסטים ו-${counts.pictures} תמונות.${counts.missing ? ` ${counts.missing} תמונות כבר לא פתוחות בפניך, והן רשומות בקובץ.` : ''}`;
+      } catch (err) {
+        state.textContent = `הייצוא לא הצליח: ${err.message}`;
+      }
+      button.disabled = false;
+    },
+  }, icon('download'), 'הורדת כל המידע שלי');
+  return el('div', { className: 'take-out' }, button, state);
+}
+
 // The preferences: one place where the member decides how the network behaves for them. A
 // change is saved at once, and follows them to every device.
 function settingsPage() {
@@ -1666,6 +1690,9 @@ function settingsPage() {
     choice('enterMessages', 'Enter שולח הודעה פרטית', 'כשזה פועל, Enter שולח ו-Shift+Enter יורד שורה. כשזה כבוי, Enter יורד שורה ו-Ctrl+Enter שולח.'),
     el('p', { className: 'note' }, 'בטלפון, בלי מקלדת, Enter תמיד יורד שורה והכפתור שולח.'),
     error,
+    el('h2', {}, 'המידע שלך'),
+    el('p', { className: 'note' }, 'כל מה שיש לך כאן יורד למחשב כקובץ אחד: הפוסטים שלך עם התגובות עליהם, תגובות שכתבת אצל אחרים, ההודעות הפרטיות, התמונות ורשימת החברים. בקובץ יש דף שנקרא בלי הרשת, ואותו מידע בפורמט פתוח, למי שרוצה לעבור למקום אחר.'),
+    takeOut(),
     el('h2', {}, 'עוד דברים שבשליטתך'),
     el('ul', { className: 'settings-more' },
       el('li', {}, link('/notices', 'התראות'), ': על מה להתריע במכשיר הזה.'),
@@ -1747,7 +1774,176 @@ async function savePicture(kind, imageId) {
   await route();
 }
 
-// On your own page, a picture is its own button: pressing it replaces it.
+// The profile picture, opened by its owner: they move it inside the circle and choose how close
+// it is, replace it, or take it away. What is saved is the square that the circle shows, so the
+// picture looks the same everywhere. `source` is a new file, or nothing for the picture they have.
+const FACE_STAGE = 240;
+const FACE_SAVED = 640;
+const FACE_ZOOM = 4;
+
+async function facePicture(source, error) {
+  const box = el('dialog', { className: 'dialog face-dialog' });
+  const shut = () => {
+    box.close();
+    box.remove();
+  };
+  const picture = el('img', { alt: '', draggable: false });
+  const stage = el('div', { className: 'face-stage', tabIndex: 0, ariaLabel: 'התמונה בתוך העיגול. גוררים כדי להזיז, והחיצים מזיזים גם הם' }, picture);
+  const zoom = el('input', { type: 'range', min: '1', max: String(FACE_ZOOM), step: '0.01', value: '1', ariaLabel: 'קירוב התמונה' });
+  const trouble = el('p', { className: 'error', hidden: true });
+  const picker = el('input', { type: 'file', accept: 'image/*', hidden: true });
+  const save = el('button', { type: 'button' }, 'שמירה');
+  let address = null;
+  let at = { x: 0, y: 0 };
+  // How many screen points one point of the picture takes, when the picture just fills the circle.
+  const fill = () => FACE_STAGE / Math.min(picture.naturalWidth, picture.naturalHeight);
+  const scale = () => fill() * Number(zoom.value);
+
+  // The picture always covers the whole circle: it cannot be moved so far that an edge shows.
+  function place() {
+    const reach = (side) => Math.max(0, (side * scale() - FACE_STAGE) / 2);
+    at = {
+      x: Math.min(reach(picture.naturalWidth), Math.max(-reach(picture.naturalWidth), at.x)),
+      y: Math.min(reach(picture.naturalHeight), Math.max(-reach(picture.naturalHeight), at.y)),
+    };
+    picture.style.width = `${picture.naturalWidth * scale()}px`;
+    picture.style.height = `${picture.naturalHeight * scale()}px`;
+    picture.style.transform = `translate(calc(-50% + ${at.x}px), calc(-50% + ${at.y}px))`;
+  }
+
+  // Closer or farther, around the middle of the circle: what is in the middle stays there.
+  function zoomTo(value) {
+    const before = scale();
+    zoom.value = String(Math.min(FACE_ZOOM, Math.max(1, value)));
+    at = { x: at.x * scale() / before, y: at.y * scale() / before };
+    place();
+  }
+
+  function load(blob) {
+    if (address) URL.revokeObjectURL(address);
+    address = blob ? URL.createObjectURL(blob) : null;
+    return new Promise((resolve, reject) => {
+      picture.onload = () => {
+        zoom.value = '1';
+        at = { x: 0, y: 0 };
+        place();
+        resolve();
+      };
+      picture.onerror = () => reject(new Error('התמונה לא נפתחה, נסו תמונה אחרת'));
+      picture.src = address ?? `/api/images/${me.avatar}`;
+    });
+  }
+
+  const fingers = new Map();
+  let spread = null;
+  stage.addEventListener('pointerdown', (e) => {
+    stage.setPointerCapture(e.pointerId);
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    spread = null;
+  });
+  stage.addEventListener('pointermove', (e) => {
+    const was = fingers.get(e.pointerId);
+    if (!was) return;
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (fingers.size === 1) {
+      at = { x: at.x + e.clientX - was.x, y: at.y + e.clientY - was.y };
+      place();
+    } else if (fingers.size === 2) {
+      // Two fingers moving apart bring the picture closer.
+      const [a, b] = [...fingers.values()];
+      const now = Math.hypot(a.x - b.x, a.y - b.y);
+      if (spread) zoomTo(Number(zoom.value) * now / spread);
+      spread = now;
+    }
+  });
+  for (const name of ['pointerup', 'pointercancel']) {
+    stage.addEventListener(name, (e) => {
+      fingers.delete(e.pointerId);
+      spread = null;
+    });
+  }
+  stage.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomTo(Number(zoom.value) * (e.deltaY < 0 ? 1.08 : 1 / 1.08));
+  }, { passive: false });
+  stage.addEventListener('keydown', (e) => {
+    const step = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, -8], ArrowDown: [0, 8] }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    at = { x: at.x + step[0], y: at.y + step[1] };
+    place();
+  });
+  zoom.addEventListener('input', () => zoomTo(Number(zoom.value)));
+
+  picker.addEventListener('change', async () => {
+    trouble.hidden = true;
+    try {
+      await load(await prepareImage(picker.files[0]));
+    } catch (err) {
+      trouble.textContent = err.message;
+      trouble.hidden = false;
+    }
+  });
+
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    trouble.hidden = true;
+    try {
+      // The square of the picture that the circle shows, drawn at the size that is kept.
+      const side = FACE_STAGE / scale();
+      const canvas = el('canvas', { width: FACE_SAVED, height: FACE_SAVED });
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, FACE_SAVED, FACE_SAVED);
+      context.drawImage(picture, picture.naturalWidth / 2 - at.x / scale() - side / 2, picture.naturalHeight / 2 - at.y / scale() - side / 2, side, side, 0, 0, FACE_SAVED, FACE_SAVED);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      const { id } = await api('/images', { method: 'POST', body: blob });
+      shut();
+      await savePicture('avatar', id);
+    } catch (err) {
+      trouble.textContent = err.message;
+      trouble.hidden = false;
+      save.disabled = false;
+    }
+  });
+
+  const remove = !me.avatar ? null : el('button', {
+    className: 'plain danger',
+    type: 'button',
+    onclick: async () => {
+      if (!await ask('להסיר את תמונת הפרופיל? במקומה תופיע התמונה שמצוירת מהשם שלך.', 'הסרה')) return;
+      shut();
+      await savePicture('avatar', null);
+    },
+  }, 'הסרת התמונה');
+
+  try {
+    await load(source ?? null);
+  } catch (err) {
+    error.textContent = err.message;
+    error.hidden = false;
+    return;
+  }
+  box.append(el('div', { className: 'dialog-body' },
+    el('h2', {}, 'תמונת הפרופיל'),
+    el('p', { className: 'muted' }, 'גוררים את התמונה כדי למקם אותה בעיגול, ומקרבים עם המחוון, עם הגלגלת או בשתי אצבעות.'),
+    stage,
+    el('label', { className: 'face-zoom' }, icon('image'), zoom),
+    trouble, picker,
+    el('div', { className: 'dialog-actions' }, save, el('button', { className: 'ghost', type: 'button', onclick: shut }, 'ביטול')),
+    el('div', { className: 'face-more' }, el('button', { className: 'plain', type: 'button', onclick: () => picker.click() }, 'תמונה אחרת'), remove)));
+  box.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    shut();
+  });
+  box.addEventListener('close', () => address && URL.revokeObjectURL(address));
+  document.body.append(box);
+  box.showModal();
+  place();
+}
+
+// On your own page, a picture is its own button. The cover is replaced by pressing it. The
+// profile picture opens, to be placed in its circle, replaced or taken away.
 function editablePicture(kind, label, content, error) {
   const picker = el('input', { type: 'file', accept: 'image/*', hidden: true });
   const button = el('button', {
@@ -1755,13 +1951,20 @@ function editablePicture(kind, label, content, error) {
     type: 'button',
     ariaLabel: label,
     title: label,
-    onclick: () => picker.click(),
+    onclick: () => (kind === 'avatar' && me.avatar ? facePicture(null, error) : picker.click()),
   }, content, el('span', { className: 'badge' }, icon('camera')));
   picker.addEventListener('change', async () => {
     error.hidden = true;
     button.classList.add('busy');
     try {
-      const { id } = await api('/images', { method: 'POST', body: await prepareImage(picker.files[0]) });
+      const prepared = await prepareImage(picker.files[0]);
+      if (kind === 'avatar') {
+        await facePicture(prepared, error);
+        button.classList.remove('busy');
+        picker.value = '';
+        return;
+      }
+      const { id } = await api('/images', { method: 'POST', body: prepared });
       await savePicture(kind, id);
     } catch (err) {
       error.textContent = err.message;
@@ -1793,8 +1996,12 @@ async function profilePage(id) {
   const face = avatar(user, { large: true });
   const cover = el('div', { className: `cover${user.cover ? '' : ' plain-cover'}` }, user.cover ? el('img', { src: `/api/images/${user.cover}`, alt: '' }) : null);
   const body = el('div', { className: 'profile-body' },
-    ...(mine ? editablePicture('avatar', 'החלפת תמונת הפרופיל', face, error) : [face]),
+    ...(mine ? editablePicture('avatar', user.avatar ? 'תמונת הפרופיל: מיקום, החלפה או הסרה' : 'העלאת תמונת פרופיל', face, error) : [face]),
     el('h1', { dir: 'auto' }, user.name));
+  if (user.bot) {
+    body.append(el('p', { className: 'bot-line' }, el('span', { className: 'chip bot' }, 'בוט'),
+      'החשבון הזה הוא בוט: בינה מלאכותית שבונה את הרשת ועונה לחברים. אפשר לכתוב לו גם בלי להיות חברים.'));
+  }
   if (mine) {
     const rename = el('button', {
       className: 'plain',
@@ -1840,7 +2047,7 @@ async function profilePage(id) {
       error,
       google,
       lettered,
-      el('p', { className: 'note' }, 'לחיצה על תמונה מחליפה אותה. התמונות האלה גלויות כמו השם שלך, גם למי שקורא פוסט ציבורי בלי להתחבר.'),
+      el('p', { className: 'note' }, 'לחיצה על תמונת הפרופיל פותחת אותה: שם ממקמים אותה בעיגול, מחליפים או מסירים. לחיצה על תמונת הכותרת מחליפה אותה. התמונות האלה גלויות כמו השם שלך, גם למי שקורא פוסט ציבורי בלי להתחבר.'),
       el('div', { className: 'row' },
         link('/friends', `${friends} חברים`),
         rename,
@@ -1861,6 +2068,7 @@ async function profilePage(id) {
   } else if (!friendship) {
     body.append(el('div', { className: 'row' }, friendAction('בקשת חברות', 'POST', user.id)));
   }
+  if (user.bot && !mine && friendship !== 'friends') body.append(el('div', { className: 'row' }, messageLink(user, 'שליחת הודעה')));
 
   paint(el('section', { className: 'card profile' },
     ...(mine ? editablePicture('cover', 'החלפת תמונת הכותרת', cover, error) : [cover]), body), list, more);

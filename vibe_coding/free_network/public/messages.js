@@ -520,7 +520,8 @@ export async function messenger({ me, withId, ui }) {
             back('/messages');
           },
         }, icon('right')),
-        link(`/u/${other.id}`, avatar(other, { small: true }), el('span', { className: 'chat-name', dir: 'auto' }, other.name))),
+        link(`/u/${other.id}`, avatar(other, { small: true }), el('span', { className: 'chat-name', dir: 'auto' }, other.name)),
+        other.bot ? el('span', { className: 'chip bot', title: 'בינה מלאכותית שבונה את הרשת ועונה לחברים' }, 'בוט') : null),
       log, foot);
     render();
 

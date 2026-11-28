@@ -936,6 +936,71 @@ test('a member sets their own preferences, and they follow them to another devic
   assert.deepEqual((await alice.call('GET', '/me')).data.user.prefs, { enterPosts: false, enterMessages: true });
 });
 
+test('a member takes out everything they have here, and nothing that is not theirs to read', async () => {
+  const [mover, pal, outsider] = [await signUp('mover'), await signUp('mover-pal'), await signUp('mover-outsider')];
+  await mover.call('POST', `/friends/${pal.id}`);
+  await pal.call('POST', `/friends/${mover.id}`);
+  const { data: { id: picture } } = await mover.call('POST', '/images', phoneJpeg());
+  const { data: { id: mine } } = await mover.call('POST', '/posts', { body: 'הפוסט שלי', audience: 'friends', images: [picture] });
+  const { data: { id: said } } = await pal.call('POST', `/posts/${mine}/comments`, { body: 'תגובה של חבר' });
+  await mover.call('POST', `/posts/${mine}/comments`, { body: 'תשובה שלי', parentId: said });
+  await pal.call('PUT', `/posts/${mine}/reaction`, { kind: 'love' });
+  const { data: { id: theirs } } = await pal.call('POST', '/posts', { body: 'פוסט של חבר', audience: 'friends' });
+  await mover.call('POST', `/posts/${theirs}/comments`, { body: 'כתבתי אצל חבר' });
+  await mover.call('PUT', `/posts/${theirs}/reaction`, { kind: 'funny' });
+  await outsider.call('POST', '/posts', { body: 'סוד של זר', audience: 'friends' });
+  await mover.call('POST', `/messages/${pal.id}`, { body: 'הודעה ממני' });
+  await pal.call('POST', `/messages/${mover.id}`, { body: 'הודעה אליי' });
+  await pal.call('POST', `/friends/${outsider.id}`);
+  await outsider.call('POST', `/friends/${pal.id}`);
+  await pal.call('POST', `/messages/${outsider.id}`, { body: 'שיחה של אחרים' });
+  await mover.call('PUT', '/me/prefs', { enterPosts: true });
+
+  const { status, data } = await mover.call('GET', '/me/export');
+  assert.equal(status, 200);
+  assert.equal(data.format, 'free-network-export');
+  assert.equal(data.profile.name, 'mover');
+  assert.equal(data.profile.prefs.enterPosts, true);
+  assert.deepEqual(data.friends.map((friend) => [friend.name, friend.status]), [['mover-pal', 'friends']]);
+  assert.equal(data.posts.length, 1);
+  assert.deepEqual(data.posts[0].images, [picture]);
+  assert.deepEqual(data.posts[0].comments.map((item) => [item.author.name, item.body, item.parentId]), [['mover-pal', 'תגובה של חבר', null], ['mover', 'תשובה שלי', said]]);
+  assert.deepEqual(data.posts[0].reactions.map((group) => [group.kind, group.people.map((person) => person.name)]), [['love', ['mover-pal']]]);
+  assert.deepEqual(data.comments.map((item) => [item.body, item.post.author.name, item.post.words]), [['כתבתי אצל חבר', 'mover-pal', 'פוסט של חבר']]);
+  assert.deepEqual(data.reactions.map((item) => [item.kind, item.postId]), [['funny', theirs]]);
+  assert.deepEqual(data.conversations.map((talk) => [talk.with.name, talk.messages.map((message) => [message.mine, message.body])]),
+    [['mover-pal', [[true, 'הודעה ממני'], [false, 'הודעה אליי']]]]);
+  const all = JSON.stringify(data);
+  assert.ok(!all.includes('סוד של זר') && !all.includes('שיחה של אחרים') && !all.includes('example.com'));
+  // After the friendship ends, the words of the friend's post are no longer handed over.
+  await mover.call('DELETE', `/friends/${pal.id}`);
+  assert.equal((await mover.call('GET', '/me/export')).data.comments[0].post.words, null);
+  assert.equal((await anon('GET', '/me/export')).status, 401);
+});
+
+test('the bot of the network writes with every member, is marked as a bot, and reads no more than a stranger', async () => {
+  const [bot, member, other] = [await signUp('helper-bot'), await signUp('bot-reader'), await signUp('bot-other')];
+  assert.equal((await bot.call('POST', `/messages/${member.id}`, { body: 'לפני' })).status, 403);
+  execFileSync('npx', ['wrangler', 'd1', 'execute', 'free-network', '--local', '--persist-to', join(root, String(PORT)), '--command', `UPDATE users SET bot = 1 WHERE id = ${bot.id}`],
+    { stdio: 'ignore', env: { ...process.env, CI: '1' } });
+  assert.equal((await bot.call('POST', `/messages/${member.id}`, { body: 'שלום, אני הבוט' })).status, 201);
+  const talk = (await member.call('GET', `/messages/${bot.id}`)).data;
+  assert.equal(talk.canSend, true);
+  assert.equal(talk.user.bot, true);
+  assert.deepEqual(talk.messages.map((message) => message.body), ['שלום, אני הבוט']);
+  assert.equal((await member.call('GET', '/me')).data.user.unreadMessages, 1);
+  assert.equal((await member.call('POST', `/messages/${bot.id}`, { body: 'תודה' })).status, 201);
+  assert.equal((await bot.call('GET', '/me')).data.user.unreadMessages, 1);
+  assert.equal((await member.call('GET', `/users/${bot.id}`)).data.user.bot, true);
+  assert.equal((await member.call('GET', `/users/${other.id}`)).data.user.bot, false);
+  // Two members who are not friends still cannot write to each other, and the bot is no friend:
+  // a post for friends stays closed to it.
+  assert.equal((await member.call('POST', `/messages/${other.id}`, { body: 'זר' })).status, 403);
+  const { data: { id } } = await member.call('POST', '/posts', { body: 'רק לחברים', audience: 'friends' });
+  assert.equal((await bot.call('GET', `/posts/${id}`)).status, 404);
+  assert.equal((await bot.call('GET', '/feed')).data.posts.length, 0);
+});
+
 test('a reply to a reply stays at the second level, and replies cannot cross posts', async () => {
   const omer = await signUp('omer');
   const { data: { id: postId } } = await omer.call('POST', '/posts', { body: 'x', audience: 'public' });

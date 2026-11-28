@@ -454,6 +454,13 @@ async function areFriends(db, a, b) {
   return !!row;
 }
 
+// Whether these two may write to each other: friends may, and anyone may write with the bot of
+// the network (migrations/0025_bot.sql), which answers members in its own name.
+async function mayWrite(db, a, b) {
+  if (await areFriends(db, a, b)) return true;
+  return !!(await db.prepare('SELECT 1 FROM users WHERE id IN (?, ?) AND bot = 1').bind(a, b).first());
+}
+
 // The two people of a conversation are kept smaller id first, so each pair has one row.
 function conversationOf(db, a, b) {
   return db.prepare('SELECT * FROM conversations WHERE low_id = ? AND high_id = ?').bind(Math.min(a, b), Math.max(a, b)).first();
@@ -1102,6 +1109,70 @@ app.put('/api/me/prefs', requireUser, async (c) => {
   return c.json({ prefs });
 });
 
+// Everything the member has here, for them to keep or to take elsewhere: what they wrote, and
+// what was written to them or under their posts, which they can read here anyway. Words only:
+// the pictures are fetched by their ids, each through the same check as always.
+app.get('/api/me/export', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const me = user.id;
+  const image = (alias, column) => `(SELECT id FROM images WHERE ${column} = ${alias}.id) AS image_id`;
+  const [joined, friends, posts, under, written, felt, talks, messages] = (await db.batch([
+    db.prepare('SELECT created_at FROM users WHERE id = ?').bind(me),
+    db.prepare(`SELECT u.id, u.name, f.status, f.created_at, f.requester_id = ?1 AS outgoing FROM friendships f
+      JOIN users u ON u.id = CASE WHEN f.requester_id = ?1 THEN f.addressee_id ELSE f.requester_id END
+      WHERE (f.requester_id = ?1 OR f.addressee_id = ?1) AND u.name <> '' ORDER BY u.name`).bind(me),
+    db.prepare(`${POST_SELECT} WHERE p.author_id = ? AND p.deleted_at IS NULL ORDER BY p.id`).bind(me),
+    db.prepare(`SELECT m.id, m.post_id, m.parent_id, m.body, m.created_at, m.edited_at, m.removed_by, m.author_id, u.name AS author_name, ${image('m', 'comment_id')}
+      FROM comments m JOIN users u ON u.id = m.author_id JOIN posts p ON p.id = m.post_id
+      WHERE p.author_id = ? AND p.deleted_at IS NULL ORDER BY m.id`).bind(me),
+    // What the member wrote under the posts of others, with a few words of the post while they may still read it.
+    db.prepare(`SELECT m.id, m.post_id, m.parent_id, m.body, m.created_at, m.edited_at, ${image('m', 'comment_id')},
+        p.author_id, u.name AS author_name, CASE WHEN ${VISIBLE_TO} THEN SUBSTR(p.body, 1, 300) END AS post_words
+      FROM comments m JOIN posts p ON p.id = m.post_id JOIN users u ON u.id = p.author_id
+      WHERE m.author_id = ?1 AND m.removed_by IS NULL AND p.author_id <> ?1 AND p.deleted_at IS NULL ORDER BY m.id`).bind(me),
+    db.prepare('SELECT kind, created_at, post_id, comment_id FROM reactions WHERE user_id = ? ORDER BY created_at, rowid').bind(me),
+    db.prepare(`SELECT k.id, u.id AS user_id, u.name FROM conversations k
+      JOIN users u ON u.id = CASE WHEN k.low_id = ?1 THEN k.high_id ELSE k.low_id END
+      WHERE k.low_id = ?1 OR k.high_id = ?1 ORDER BY k.id`).bind(me),
+    db.prepare(`${MESSAGE_SELECT} WHERE m.conversation_id IN (SELECT id FROM conversations WHERE low_id = ?1 OR high_id = ?1) ORDER BY m.id`).bind(me),
+  ])).map((part) => part.results);
+
+  const shown = await showPosts(db, posts, user);
+  await journal(c, 'export', `${posts.length} posts, ${messages.length} messages`);
+  c.header('Cache-Control', 'private, no-store');
+  return c.json({
+    format: 'free-network-export',
+    version: 1,
+    exportedAt: Date.now(),
+    site: new URL(c.req.url).origin,
+    profile: {
+      id: me, name: user.name, joinedAt: joined[0].created_at, avatar: user.avatar_id, cover: user.cover_id,
+      place: place(user), status: status(user), prefs: prefsOf(user), googleLinked: !!user.google_sub,
+    },
+    friends: friends.map((row) => ({
+      id: row.id, name: row.name, since: row.status === 'accepted' ? row.created_at : null,
+      status: row.status === 'accepted' ? 'friends' : row.outgoing ? 'asked-by-me' : 'asked-me',
+    })),
+    posts: shown.map(({ mine, ...post }) => ({
+      ...post,
+      comments: under.filter((row) => row.post_id === post.id).map((row) => ({
+        id: row.id, parentId: row.parent_id, author: { id: row.author_id, name: row.author_name },
+        body: row.body, image: row.image_id, createdAt: row.created_at, editedAt: row.removed_by ? null : row.edited_at ?? null, removed: !!row.removed_by,
+      })),
+    })),
+    comments: written.map((row) => ({
+      id: row.id, parentId: row.parent_id, body: row.body, image: row.image_id, createdAt: row.created_at, editedAt: row.edited_at ?? null,
+      post: { id: row.post_id, author: { id: row.author_id, name: row.author_name }, words: row.post_words ?? null },
+    })),
+    reactions: felt.map((row) => ({ kind: row.kind, at: row.created_at, postId: row.post_id, commentId: row.comment_id })),
+    conversations: talks.map((talk) => ({
+      with: { id: talk.user_id, name: talk.name },
+      messages: messages.filter((row) => row.conversation_id === talk.id).map(({ id, ...message }) => ({ id, ...serializeMessage({ id, ...message }, me) })),
+    })),
+  });
+});
+
 app.delete('/api/me/google', requireUser, async (c) => {
   await c.env.DB.prepare('UPDATE users SET google_sub = NULL WHERE id = ?').bind(c.get('user').id).run();
   return c.json({ ok: true });
@@ -1656,7 +1727,7 @@ app.get('/api/users/:id', requireUser, async (c) => {
   const id = parseId(c.req.param('id'));
   const viewer = c.get('user');
   const person = id && (await c.env.DB
-    .prepare(`SELECT id, name, avatar_id AS avatar, cover_id AS cover FROM users WHERE id = ? AND name <> ''`)
+    .prepare(`SELECT id, name, avatar_id AS avatar, cover_id AS cover, bot FROM users WHERE id = ? AND name <> ''`)
     .bind(id)
     .first());
   if (!person) return c.json({ error: 'המשתמש לא נמצא' }, 404);
@@ -1681,7 +1752,7 @@ app.get('/api/users/:id', requireUser, async (c) => {
   // How many friends they have is told to whoever may see who they are: the person and their friends.
   const friends = seesAll ? (await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM users WHERE id IN (${FRIEND_IDS}) AND name <> ''`).bind(id).first()).n : null;
   return c.json({
-    user: person,
+    user: { ...person, bot: !!person.bot },
     friendship,
     friends,
     posts: await showPosts(c.env.DB, results, viewer),
@@ -1963,7 +2034,8 @@ app.delete('/api/friends/:id', requireUser, async (c) => {
 async function correspondent(c) {
   const id = parseId(c.req.param('userId'));
   if (!id || id === c.get('user').id) return null;
-  return c.env.DB.prepare(`SELECT id, name, avatar_id AS avatar FROM users WHERE id = ? AND name <> ''`).bind(id).first();
+  const person = await c.env.DB.prepare(`SELECT id, name, avatar_id AS avatar, bot FROM users WHERE id = ? AND name <> ''`).bind(id).first();
+  return person && { ...person, bot: !!person.bot };
 }
 
 // Every conversation of the reader, the one with the newest message first.
@@ -1999,7 +2071,7 @@ app.get('/api/messages/:userId', requireUser, async (c) => {
   if (!person) return c.json({ error: 'המשתמש לא נמצא' }, 404);
 
   const now = Date.now();
-  const [conversation, canSend] = await Promise.all([conversationOf(db, me, person.id), areFriends(db, me, person.id)]);
+  const [conversation, canSend] = await Promise.all([conversationOf(db, me, person.id), mayWrite(db, me, person.id)]);
   const base = { user: person, canSend, now };
   if (!conversation) return c.json({ ...base, messages: [], removed: [], hasMore: false, readUpTo: 0 });
   base.readUpTo = conversation.low_id === me ? conversation.low_read : conversation.high_read;
@@ -2029,7 +2101,7 @@ app.post('/api/messages/:userId', requireUser, async (c) => {
   const me = c.get('user').id;
   const person = await correspondent(c);
   if (!person) return c.json({ error: 'המשתמש לא נמצא' }, 404);
-  if (!(await areFriends(db, me, person.id))) return c.json({ error: 'אפשר לכתוב רק לחברים' }, 403);
+  if (!(await mayWrite(db, me, person.id))) return c.json({ error: 'אפשר לכתוב רק לחברים' }, 403);
 
   const input = await readJson(c);
   const body = typeof input.body === 'string' ? input.body.trim() : '';
